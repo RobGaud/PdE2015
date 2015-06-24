@@ -347,8 +347,7 @@ public class PdE2015_API
 		
 		DefaultBean response = new DefaultBean();
 		response.setResult("Gruppo aggiornato con successo!");
-		return response;
-		
+		return response;	
 	}
 	
 	@ApiMethod(
@@ -382,7 +381,8 @@ public class PdE2015_API
 				path = "partita",
 				httpMethod = HttpMethod.POST
 	          )
-	public DefaultBean inserisciPartita(InfoPartitaBean partitaBean) {
+	public DefaultBean inserisciPartita(InfoPartitaBean partitaBean)
+	{
 		setUp();
 		switch(partitaBean.getTipo()) {
 			case CODICE_CALCETTO:
@@ -442,11 +442,73 @@ public class PdE2015_API
 					lg.addPartita(it3.next());
 				break;
 		}
+		
 		tearDown();
 		return lg;
-		
 	}
 	
+	
+	@ApiMethod(
+			name = "partita.eliminaPartita",
+			path = "partita/delete",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean eliminaPartita(InfoPartitaBean partitaBean) {
+		setUp();
+		Partita partita = ofy().load().type(Partita.class).id(partitaBean.getId()).now();
+		
+		if(partita == null) {
+			DefaultBean response = new DefaultBean();
+			response.setResult("Partita non esistente!");
+			tearDown();
+			return response;
+		}
+		
+		ofy().delete().type(Partita.class).id(partitaBean.getId()).now();
+		tearDown();
+		
+		DefaultBean response = new DefaultBean();
+		response.setResult("Partita eliminata con successo!");
+		return response;
+	}
+	
+	@ApiMethod(
+			name = "partita.modificaPartita",
+			path = "partita",
+			httpMethod = HttpMethod.PUT
+          )
+	public DefaultBean modificaPartita(InfoPartitaBean partitaBean) {
+		setUp();
+		Partita partita = ofy().load().type(Partita.class).id(partitaBean.getId()).now();
+		
+		if(partita == null) {
+			DefaultBean response = new DefaultBean();
+			response.setResult("Partita non esistente!");
+			tearDown();
+			return response;
+		}
+		
+		if(partitaBean.getDataOraPartita() != null)
+			partita.setDataOraPartita(partitaBean.getDataOraPartita());
+		if(partitaBean.getTipo() != 0)
+		{
+			/*	TODO: dovremmo eliminare l'oggetto nel Datastore
+			 * 	e rimpiazzarlo con uno del nuovo tipo.
+			 * 	PROBLEMA: cambia l'id: come influisce con la gestione
+			 * 	delle Partite a cui un utente si è iscritto?
+			 */
+		}
+		if(partitaBean.getQuota() != 0.0f)
+			partita.setQuota(partitaBean.getQuota());
+
+		ofy().save().entity(partita).now();
+		tearDown();
+		
+		DefaultBean response = new DefaultBean();
+		response.setResult("Partita aggiornata con successo!");
+		return response;
+		
+	}
 	
 	@BeforeMethod
     private void setUp() {

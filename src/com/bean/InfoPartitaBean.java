@@ -5,7 +5,9 @@ import java.util.Date;
 public class InfoPartitaBean {
 	
 	//public enum tipoPartita {CALCIO, CALCIOTTO, CALCETTO};
+	//private tipoPartita tipo;
 	
+	private Long id;
 	private Date dataOraPartita;
 	private int tipo;
 	private float quota;
@@ -14,6 +16,15 @@ public class InfoPartitaBean {
 		this.tipo = 0;
 	}
 
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		if(id != null)
+			this.id = id;
+	}
+	
 	public Date getDataOraPartita() {
 		return dataOraPartita;
 	}
