@@ -1,0 +1,44 @@
+package com.bean;
+
+import java.util.Date;
+
+public class InfoPartitaBean {
+	
+	//public enum tipoPartita {CALCIO, CALCIOTTO, CALCETTO};
+	
+	private Date dataOraPartita;
+	private int tipo;
+	private float quota;
+	
+	public InfoPartitaBean() {
+		this.tipo = 0;
+	}
+
+	public Date getDataOraPartita() {
+		return dataOraPartita;
+	}
+
+	public void setDataOraPartita(Date dataOraPartita) {
+		if(dataOraPartita != null)
+			this.dataOraPartita = dataOraPartita;
+	}
+
+	public int getTipo() {
+		return tipo;
+	}
+
+	public void setTipo(int tipo) {
+		if(tipo >=1 && tipo <= 3)
+			this.tipo = tipo;
+	}
+
+	public float getQuota() {
+		return quota;
+	}
+
+	public void setQuota(float quota) {
+		if(quota >= 0.0f)
+			this.quota = quota;
+	}
+
+}
