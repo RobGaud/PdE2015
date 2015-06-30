@@ -171,18 +171,18 @@ public class PdE2015_API
           )
 	public DefaultBean inserisciGiocatore(InfoGiocatoreBean giocatoreBean) {
 		setUp();
-		List<Giocatore> l = ofy().load().type(Giocatore.class).filter("email", giocatoreBean.getEmail()).list();
+		Giocatore giocatore = ofy().load().type(Giocatore.class).id(giocatoreBean.getEmail()).now();
 		
-		if(l.size() > 0) {
+		if(giocatore != null) {
 			DefaultBean response = new DefaultBean();
 			response.setResult("Giocatore già esistente!");
 			tearDown();
 			return response;
 		}
 		
-		Giocatore g = new Giocatore(giocatoreBean.getNome(), giocatoreBean.getEmail(), giocatoreBean.getTelefono(),
+		giocatore = new Giocatore(giocatoreBean.getNome(), giocatoreBean.getEmail(), giocatoreBean.getTelefono(),
 									giocatoreBean.getRuoloPreferito(), giocatoreBean.getFotoProfilo());
-		ofy().save().entity(g).now();
+		ofy().save().entity(giocatore).now();
 		tearDown();
 		
 		DefaultBean response = new DefaultBean();
@@ -216,17 +216,14 @@ public class PdE2015_API
 	          )
 	public DefaultBean modificaGiocatore(InfoGiocatoreBean ig) {
 		setUp();
-		List<Giocatore> l = ofy().load().type(Giocatore.class)
-							.filter("email", ig.getEmail()).list();
+		Giocatore g = ofy().load().type(Giocatore.class).id(ig.getEmail()).now();
 		
-		if(l.size() <= 0) {
+		if(g == null) {
 			DefaultBean response = new DefaultBean();
 			response.setResult("Giocatore non esistente!");
 			tearDown();
 			return response;
 		}
-		
-		Giocatore g = l.get(0);
 		
 		if(ig.getNome() != null)
 			g.setNome(ig.getNome());
@@ -253,16 +250,15 @@ public class PdE2015_API
           )
 	public DefaultBean eliminaGiocatore(InfoGiocatoreBean giocatoreBean) {
 		setUp();
-		List<Giocatore> l = ofy().load().type(Giocatore.class).filter("email", giocatoreBean.getEmail()).list();
+		Giocatore giocatore = ofy().load().type(Giocatore.class).id(giocatoreBean.getEmail()).now();
 		
-		if(l.size() <= 0) {
+		if(giocatore == null) {
 			DefaultBean response = new DefaultBean();
 			response.setResult("Giocatore non esistente!");
 			tearDown();
 			return response;
 		}
 		
-		Giocatore giocatore = l.get(0);
 		ofy().delete().entity(giocatore).now();
 		tearDown();
 		
@@ -493,14 +489,6 @@ public class PdE2015_API
 		
 		if(partitaBean.getDataOraPartita() != null)
 			partita.setDataOraPartita(partitaBean.getDataOraPartita());
-		if(partitaBean.getTipo() != 0)
-		{
-			/*	TODO: dovremmo eliminare l'oggetto nel Datastore
-			 * 	e rimpiazzarlo con uno del nuovo tipo.
-			 * 	PROBLEMA: cambia l'id: come influisce con la gestione
-			 * 	delle Partite a cui un utente si è iscritto?
-			 */
-		}
 		if(partitaBean.getQuota() != 0.0f)
 			partita.setQuota(partitaBean.getQuota());
 
@@ -510,7 +498,165 @@ public class PdE2015_API
 		DefaultBean response = new DefaultBean();
 		response.setResult("Partita aggiornata con successo!");
 		return response;
+	}
+	
+	@ApiMethod(
+			name = "invito.inserisciInvito",
+			path = "invito",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean inserisciInvito(InfoInvitoBean invitoBean)
+	{
+		//TODO controllo se il destinatario non fa già parte del gruppo
+		if( invitoBean.getEmailDestinatario().equals(invitoBean.getEmailMittente()))
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Mittente e destinatario coincidenti!");
+			tearDown();
+			return response;
+		}
 		
+		setUp();
+		//Controllo se il mittente esiste nel Datastore
+		Giocatore mittente = ofy().load().type(Giocatore.class).id(invitoBean.getEmailMittente()).now();
+		if( mittente == null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Mittente non esistente!");
+			tearDown();
+			return response;
+		}
+		//Controllo se il destinatario esiste nel Datastore
+		Giocatore destinatario = ofy().load().type(Giocatore.class).id(invitoBean.getEmailDestinatario()).now();
+		if( destinatario == null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Destinatario non esistente!");
+			tearDown();
+			return response;
+		}
+		//Controllo se il gruppo esiste nel Datastore
+		Gruppo gruppo = ofy().load().type(Gruppo.class).id(invitoBean.getIdGruppo()).now();
+		if( gruppo == null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Gruppo non esistente!");
+			tearDown();
+			return response;
+		}
+		//Controllo che il destinatario non sia già stato invitato nel gruppo
+		Iterator<Long> it = destinatario.getLinkDestinatario().iterator();
+		while(it.hasNext())
+		{
+			Long idLink = it.next();
+			TipoLinkDestinatario link = ofy().load().type(TipoLinkDestinatario.class).id(idLink).now();
+			if( link == null )
+			{	
+				log.log(Level.SEVERE, "Il destinatario "+destinatario.getEmail()+
+						" ha memorizzato l'id di un linkDestinario che non esiste!");
+				continue;
+			}
+			Invito i = ofy().load().type(Invito.class).id(link.getIdInvito()).now();
+			if( i == null )
+			{
+				log.log(Level.SEVERE, "Il linkDestinatario "+link.getId()+
+						" ha memorizzato l'id di un Invito che non esiste!");
+				continue;
+			}
+			try {
+				if(i.getGruppo().equals(gruppo.getId()))
+				{
+					DefaultBean response = new DefaultBean();
+					response.setResult("Il destinatario è già stato invitato nel gruppo!");
+					tearDown();
+					return response;
+				}
+			} catch (EccezioneMolteplicitaMinima e) {
+				log.log(Level.SEVERE, "L'invito "+i.getId()+
+						" non ha memorizzato l'id di un gruppo!");
+				continue;
+			}
+		}
+		//Carico preventivamente l'invito sul Datastore per ottenere un id
+		Invito invito = new Invito(invitoBean.getEmailMittente(), invitoBean.getIdGruppo());
+		ofy().save().entity(invito).now();
+		invito = ofy().load().entity(invito).now();
+		//TODO ricordati di vedere il fatto dell'id dopo il caricamento
+		//Creazione TipoLinkDestinatario
+		try {
+			TipoLinkDestinatario link = new TipoLinkDestinatario(invitoBean.getEmailDestinatario(), invito.getId());
+			ofy().save().entity(link).now();
+			destinatario.inserisciLinkDestinatario(link.getId());
+			invito.inserisciLinkDestinatario(link.getId());
+			ofy().save().entity(invito).now();
+			ofy().save().entity(destinatario).now();
+		} catch (EccezionePrecondizioni e)
+		{
+			ofy().delete().entity(invito).now();
+			log.log(Level.SEVERE, "Uno tra invito.getId() e invitoBean.getEmailDestinatario() ha restituito null");
+			DefaultBean response = new DefaultBean();
+			response.setResult("Errore imprevisto!");
+			tearDown();
+			return response;
+		}
+		
+		DefaultBean response = new DefaultBean();
+		response.setResult("Invito inserito con successo!");
+		tearDown();
+		return response;
+	}
+	
+	@ApiMethod(
+			name = "invito.eliminaInvito",
+			path = "invito/delete",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean eliminaInvito(@Named("emailDestinatario")String emailDestinatario,
+									 @Named("idInvito")Long idInvito)
+	{
+		setUp();
+		//Controllo se l'invito esiste nel Datastore
+		Invito invito = ofy().load().type(Invito.class).id(idInvito).now();
+		if( invito == null )
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Invito non esistente!");
+			tearDown();
+			return response;
+		}
+		//Controllo se l'invito esiste nel Datastore
+		Giocatore destinatario= ofy().load().type(Giocatore.class).id(emailDestinatario).now();
+		if( destinatario == null )
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Destinatario non esistente!");
+			tearDown();
+			return response;
+		}
+		
+		Long idLink;
+		try {
+			idLink = invito.getLinkDestinatario();
+			//Rimozione idLink da destinatario.linkDestinatario
+			destinatario.eliminaLinkDestinatario(idLink);
+			ofy().save().entity(destinatario).now();
+			//Rimozione tipolink dal Datastore
+			ofy().delete().type(TipoLinkDestinatario.class).id(idLink).now();
+			//Rimozione invito dal Datastore
+			ofy().delete().type(Invito.class).id(idInvito).now();
+		
+		} catch (EccezioneMolteplicitaMinima e) {
+			log.log(Level.SEVERE, "L'invito"+invito.getId()+" non ha memorizzato l'id di un linkDestinatario!");
+			DefaultBean response = new DefaultBean();
+			response.setResult("Errore non previsto!");
+			tearDown();
+			return response;
+		}
+		
+		DefaultBean response = new DefaultBean();
+		response.setResult("Invito rimosso con successo!");
+		tearDown();
+		return response;
 	}
 	
 	@BeforeMethod

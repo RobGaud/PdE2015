@@ -9,10 +9,12 @@ public class TipoLinkDestinatario
 {
 	@Id Long id;
 	
-	@Index private final String emailDestinatario;
-	private final Long idInvito;
+	@Index private String emailDestinatario;
+	private Long idInvito;
 	
-	public TipoLinkDestinatario(String emailDestinatario, Long idInvito, Date dataIscriz) throws EccezionePrecondizioni
+	private TipoLinkDestinatario(){}
+	
+	public TipoLinkDestinatario(String emailDestinatario, Long idInvito) throws EccezionePrecondizioni
 	{
 		if( emailDestinatario==null || idInvito==null)
 			throw new EccezionePrecondizioni("Gli oggetti devono essere inizializzati!!");
@@ -20,6 +22,18 @@ public class TipoLinkDestinatario
 		this.idInvito = idInvito;
 	}
 
+	public void setId(Long id) {
+		this.id = id;
+	}
+
+	public void setEmailDestinatario(String emailDestinatario) {
+		this.emailDestinatario = emailDestinatario;
+	}
+
+	public void setIdInvito(Long idInvito) {
+		this.idInvito = idInvito;
+	}
+	
 	public Long getId() {
 		return id;
 	}

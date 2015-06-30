@@ -7,8 +7,16 @@ import com.googlecode.objectify.annotation.*;
 @Entity
 public class Gruppo
 {	
-	@Id public Long id;
+	@Id private Long id;
 	
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
+
 	@Index private String nome;
 	private Date dataCreazione;
 	//private LinkedList<TipoLinkIscritto> giocatoriIscritti;

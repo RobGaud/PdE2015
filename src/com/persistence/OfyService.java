@@ -23,6 +23,8 @@ public class OfyService {
 		ObjectifyService.register(PartitaCalcetto.class);
 		ObjectifyService.register(PartitaCalciotto.class);
 		ObjectifyService.register(PartitaCalcio.class);
+		ObjectifyService.register(Invito.class);
+		ObjectifyService.register(TipoLinkDestinatario.class);
 
 	}
 	 

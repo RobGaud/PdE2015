@@ -9,93 +9,96 @@ public class Invito
 {
 	@Id Long id;
 	
-	private final String emailMittente;
-	private TipoLinkDestinatario destinatario;
-	private final Long gruppo;
-	private final Date dataInvio;
+	private String emailMittente;
+	@Index private Long idLinkDestinatario;
+	private Long idGruppo;
+	private Date dataInvio;
 	
 	private static final int MIN_LINK_MITTENTE = 1;
 	private static final int MIN_LINK_DESTINATARIO = 1;
 	private static final int MIN_LINK_GRUPPO = 1;
 	
-	public Invito(String emailMittente, Gruppo gruppo, Date dataInvio) {
-		this.mittente = mittente;
-		this.gruppo = gruppo;
-		this.dataInvio = dataInvio;
+	private Invito(){}
+	
+	public Invito(String emailMittente, Long idGruppo) {
+		this.emailMittente = emailMittente;
+		this.idGruppo = idGruppo;
+		this.dataInvio = new Date();	//Nota: new Date() scrive la data e l'ora di quell'istante
 	}
 	
+	public void setId(Long id) {
+		this.id = id;
+	}
+
+	public Long getId() {
+		return id;
+	}
+
+	
+	
 	int quantiMittente() {
-		if( this.mittente == null )
+		if( this.emailMittente == null )
 			return 0;
 		else
 			return 1;
 	}
 	
 	int quantiDestinatario() {
-		if( this.destinatario == null )
+		if( this.idLinkDestinatario == null )
 			return 0;
 		else
 			return 1;
 	}
 	
 	int quantiGruppo() {
-		if( this.gruppo == null )
+		if( this.idGruppo == null )
 			return 0;
 		else
 			return 1;
 	}
 	
-	public Giocatore getMittente() throws EccezioneMolteplicitaMinima {
+	public String getEmailMittente() throws EccezioneMolteplicitaMinima {
 		if (this.quantiMittente() < this.MIN_LINK_MITTENTE)
 			throw new EccezioneMolteplicitaMinima("Cardinalita' min/max violata");
-		return mittente;
+		return emailMittente;
 	}
 
-	public Gruppo getGruppo() throws EccezioneMolteplicitaMinima {
+	public Long getGruppo() throws EccezioneMolteplicitaMinima {
 		if (this.quantiGruppo() < this.MIN_LINK_GRUPPO)
 			throw new EccezioneMolteplicitaMinima("Cardinalita' min/max violata");
-		return gruppo;
+		return idGruppo;
 	}
 
 	public Date getDataInvio() {
 		return dataInvio;
 	}
 	
-	public void inserisciLinkDestinatario(TipoLinkDestinatario l) {
-		if(l != null && l.getInvito().equals(this))
-			ManagerDestinatario.inserisci(l);
-	}
-	public void eliminaLinkDestinatario(TipoLinkDestinatario l) {
-		if(l != null && l.getInvito().equals(this))
-			ManagerDestinatario.elimina(l);
+	public void inserisciLinkDestinatario(Long idLink)
+	{
+		if(idLink != null) this.idLinkDestinatario = idLink;
 	}
 	
-	public TipoLinkDestinatario getDestinatario() throws EccezioneMolteplicitaMinima {
+	public void eliminaLinkDestinatario(Long idLink)
+	{
+		if(idLink != null && idLink.equals(this.idLinkDestinatario))
+			this.idLinkDestinatario = null;
+	}
+	
+	public Long getLinkDestinatario() throws EccezioneMolteplicitaMinima {
 		if(this.quantiDestinatario() < this.MIN_LINK_DESTINATARIO)
 			throw new EccezioneMolteplicitaMinima("Molteplicita min/max violata!!");
-		return destinatario;
-	}
-
-	public void inserisciPerManagerDestinatario(ManagerDestinatario m) {
-		if(m!=null)
-			destinatario = m.getLink();
-		
-	}
-
-	public void eliminaPerManagerDestinatario(ManagerDestinatario m) {
-		if(m!=null)
-			destinatario = null;	
+		return idLinkDestinatario;
 	}
 	
 	public boolean equals(Object o) {
 		if(o==null || !o.getClass().equals(this.getClass()))
 			return false;
 		Invito i = (Invito)o;
-		return i.mittente.equals(this.mittente) && i.destinatario.equals(this.destinatario) &&
-			   i.gruppo.equals(this.gruppo);
+		return i.emailMittente.equals(this.emailMittente) && i.idLinkDestinatario.equals(this.idLinkDestinatario) &&
+			   i.idGruppo.equals(this.idGruppo);
 	}
 	
 	public int hashCode() {
-		return mittente.hashCode() + destinatario.hashCode() + gruppo.hashCode();
+		return emailMittente.hashCode() + idLinkDestinatario.hashCode() + idGruppo.hashCode();
 	}
 }

@@ -1,15 +1,12 @@
 package com.modello;
 
 import java.util.*;
-
 import com.googlecode.objectify.annotation.*;
 
 @Entity
 public class Giocatore {
 	
-	//@Id public Long id;
-	
-	/*@Index*/ @Id private String email;
+	@Id private String email;
 	@Index private String nome;
 	private String telefono;
 	private String ruoloPreferito;
@@ -19,7 +16,10 @@ public class Giocatore {
 	//private HashSet<TipoLinkIscritto> eIscritto;
 	private HashSet<Long> linkDestinatario;
 	
-	private Giocatore(){}
+	private Giocatore()
+	{
+		this.linkDestinatario = new HashSet<Long>();
+	}
 	
 	public Giocatore(String nome, String email, String telefono,
 			String ruoloPreferito, String fotoProfilo) {
@@ -183,7 +183,7 @@ public class Giocatore {
 
 	public void inserisciLinkDestinatario(Long idLink)
 	{
-		if(idLink != null ) this.linkDestinatario.add(idLink);
+		if(idLink != null) this.linkDestinatario.add(idLink);
 	}
 
 	public void eliminaLinkDestinatario(Long idLink)
@@ -191,20 +191,7 @@ public class Giocatore {
 		if(idLink != null) this.linkDestinatario.remove(idLink);
 	}
 
-	public Set<Long> getEDestinatario() {
+	public Set<Long> getLinkDestinatario() {
 		return (HashSet<Long>)linkDestinatario.clone();
 	}
-/*
-	public void inserisciPerManagerDestinatario(ManagerDestinatario m) {
-		if(m!=null)
-			this.linkDestinatario.add(m.getLink());
-		
-	}
-
-	public void eliminaPerManagerDestinatario(ManagerDestinatario m) {
-		if(m!=null)
-			this.eDestinatario.remove(m.getLink());
-		
-	}
-*/	
 }
