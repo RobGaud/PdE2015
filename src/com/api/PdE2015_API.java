@@ -714,6 +714,7 @@ public class PdE2015_API
 	          )
 	public DefaultBean inserisciVotoUomoPartita(InfoVotoUomoPartitaBean votoBean)
 	{
+		setUp();
 		//Controllo che il votante esista nel Datastore
 		Giocatore votante = ofy().load().type(Giocatore.class).id(votoBean.getVotante()).now();
 		if( votante == null )

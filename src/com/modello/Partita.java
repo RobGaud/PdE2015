@@ -24,12 +24,16 @@ public class Partita {
 	public static final int MIN_LINK_DISPONIBILE = 1;
 	public static final int MIN_LINK_ORGANIZZA = 1;
 	
-	protected Partita(){}
+	protected Partita(){
+		this.elencoVoti = new HashSet<Long>();
+	}
 	
 	public Partita(Date d, float q)
 	{
 		this.dataOraPartita = d;
 		this.quota = q;
+		this.elencoVoti = new HashSet<Long>();
+
 	}
 	
 	public Date getDataOra()
