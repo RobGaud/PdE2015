@@ -17,6 +17,8 @@ public class VotoUomoPartita
 	private Long linkVotoPerPartita;	//Partita
 	private String votato;	//Giocatore
 	
+	private VotoUomoPartita(){}
+	
 	public VotoUomoPartita(String c)
 	{
 		this.commento = c;

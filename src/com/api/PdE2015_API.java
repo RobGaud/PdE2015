@@ -665,7 +665,7 @@ public class PdE2015_API
 			tearDown();
 			return response;
 		}
-		//Controllo se l'invito esiste nel Datastore
+		//Controllo se il destinatario esiste nel Datastore
 		Giocatore destinatario= ofy().load().type(Giocatore.class).id(emailDestinatario).now();
 		if( destinatario == null )
 		{
@@ -708,7 +708,7 @@ public class PdE2015_API
 	
 	//TODO API VotoUomoPartita
 	@ApiMethod(
-				name = "voto.inserisciVoto",
+				name = "voto.inserisciVotoUomoPartita",
 				path = "voto",
 				httpMethod = HttpMethod.PUT
 	          )
@@ -743,13 +743,13 @@ public class PdE2015_API
 			return response;
 		}
 		//Controllo che non esista già un voto da parte dello stesso votante per la stessa partita
-		List<VotoUomoPartita> idVoti = ofy().load().type(VotoUomoPartita.class)
-									   .filter("linkVotoPerPartita", votoBean.getLinkVotoPerPartita()).list();
-		Iterator<VotoUomoPartita> it = idVoti.iterator();
+		Set<Long> idVoti = partita.getLinkPerPartita();
+		Iterator<Long> it = idVoti.iterator();
 		while(it.hasNext())
 		{
-			VotoUomoPartita v = it.next();
+			VotoUomoPartita v = ofy().load().type(VotoUomoPartita.class).id(it.next()).now();
 			try {
+				log.log(Level.WARNING, "v.getVotante()="+v.getVotanteUP()+", votante.getEmail()="+votante.getEmail());
 				if( v.getVotanteUP().equals(votante.getEmail()) )
 				{
 					DefaultBean response = new DefaultBean();
@@ -777,6 +777,54 @@ public class PdE2015_API
 		response.setResult("Voto inserito con successo!");
 		tearDown();
 		return response;
+	}
+	
+	@ApiMethod(
+			name = "voto.eliminaVotoUomoPartita",
+			path = "voto/delete",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean eliminaVotoUomoPartita(@Named("emailVotante")String emailVotante,
+											  @Named("idVoto")Long idVoto)
+	{
+		setUp();
+		//Controllo se il voto esiste nel Datastore
+		VotoUomoPartita voto = ofy().load().type(VotoUomoPartita.class).id(idVoto).now();
+		if( voto == null )
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Voto non esistente!");
+			tearDown();
+			return response;
+		}
+		//Controllo se il votante esiste nel Datastore
+		Giocatore votante= ofy().load().type(Giocatore.class).id(emailVotante).now();
+		if( votante == null )
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Votante non esistente!");
+			tearDown();
+			return response;
+		}
+		
+		try {
+			//Rimozione idVoto da partita.idVoti
+			Partita partita = ofy().load().type(Partita.class).id(voto.getLinkVotoPerPartita()).now();
+			partita.eliminaLinkVotoPerPartita(idVoto);
+			ofy().save().entity(partita).now();
+			//Rimozione voto dal Datastore
+			ofy().delete().type(VotoUomoPartita.class).id(idVoto).now();
+			
+			DefaultBean response = new DefaultBean();
+			response.setResult("Voto rimosso con successo!");
+			tearDown();
+			return response;
+		} catch (EccezioneMolteplicitaMinima e) {
+			DefaultBean response = new DefaultBean();
+			response.setResult("Il voto "+idVoto+"non ha memorizzato l'id della partita!");
+			tearDown();
+			return response;
+		}
 	}
 	
 	@BeforeMethod
