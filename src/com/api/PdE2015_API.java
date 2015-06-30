@@ -163,6 +163,7 @@ public class PdE2015_API
 		
 	}
 	
+	//TODO API Giocatore
 	@ApiMethod(
 			name = "giocatore.inserisciGiocatore",
 			path = "giocatore",
@@ -270,6 +271,8 @@ public class PdE2015_API
 		return response;
 		
 	}
+	
+	//TODO API Gruppo
 	
 	@ApiMethod(
 				name = "gruppo.inserisciGruppo",

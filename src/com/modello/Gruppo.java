@@ -5,8 +5,8 @@ import com.googlecode.objectify.annotation.*;
 
 
 @Entity
-public class Gruppo {
-	
+public class Gruppo
+{	
 	@Id public Long id;
 	
 	@Index private String nome;

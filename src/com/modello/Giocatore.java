@@ -7,28 +7,20 @@ import com.googlecode.objectify.annotation.*;
 @Entity
 public class Giocatore {
 	
-	@Id public Long id;
+	//@Id public Long id;
 	
+	/*@Index*/ @Id private String email;
 	@Index private String nome;
-	@Index private String email;
 	private String telefono;
 	private String ruoloPreferito;
 	private String fotoProfilo;
 	//private HashSet<TipoLinkDisponibile> eDisponibile;
 	//private HashSet<TipoLinkGioca> haGiocato;
 	//private HashSet<TipoLinkIscritto> eIscritto;
-	//private HashSet<TipoLinkDestinatario> eDestinatario;
+	private HashSet<Long> linkDestinatario;
 	
 	private Giocatore(){}
 	
-	/**
-	 * 
-	 * @param nome
-	 * @param email
-	 * @param telefono
-	 * @param ruoloPreferito
-	 * @param fotoProfilo
-	 */
 	public Giocatore(String nome, String email, String telefono,
 			String ruoloPreferito, String fotoProfilo) {
 		this.nome = nome;
@@ -39,77 +31,41 @@ public class Giocatore {
 		//this.eDisponibile = new HashSet<TipoLinkDisponibile>();
 		//this.haGiocato = new HashSet<TipoLinkGioca>();
 		//this.eIscritto = new HashSet<TipoLinkIscritto>();
-		//this.eDestinatario = new HashSet<TipoLinkDestinatario>();
+		this.linkDestinatario = new HashSet<Long>();
 	}
 	
-	/**
-	 * 
-	 * @return
-	 */
 	public String getEmail() {
 		return email;
 	}
 
-	/**
-	 * 
-	 * @param email
-	 */
 	public void setEmail(String email) {
 		this.email = email;
 	}
 
-	/**
-	 * 
-	 * @return
-	 */
 	public String getTelefono() {
 		return telefono;
 	}
 
-	/**
-	 * 
-	 * @param telefono
-	 */
 	public void setTelefono(String telefono) {
 		this.telefono = telefono;
 	}
 
-	/**
-	 * 
-	 * @return
-	 */
 	public String getRuoloPreferito() {
 		return ruoloPreferito;
 	}
 
-	/**
-	 * 
-	 * @param ruoloPreferito
-	 */
 	public void setRuoloPreferito(String ruoloPreferito) {
 		this.ruoloPreferito = ruoloPreferito;
 	}
 
-	/**
-	 * 
-	 * @return
-	 */
 	public String getFotoProfilo() {
 		return fotoProfilo;
 	}
 
-	/**
-	 * 
-	 * @param fotoProfilo
-	 */
 	public void setFotoProfilo(String fotoProfilo) {
 		this.fotoProfilo = fotoProfilo;
 	}
 
-	/**
-	 * 
-	 * @return
-	 */
 	public String getNome() {
 		return nome;
 	}
@@ -119,9 +75,6 @@ public class Giocatore {
 			this.nome = nome;
 	}
 
-	/**
-	 * 
-	 */
 	public String toString() {
 		return this.nome + " " + this.email + " " + this.telefono + " " +
 	           this.ruoloPreferito + " " + this.fotoProfilo;
@@ -225,26 +178,26 @@ public class Giocatore {
 			this.eIscritto.remove(m.getLink());
 		
 	}
-	
+*/
 	// ASSOCIAZIONE DESTINATARIO
 
-	public void inserisciLinkDestinatario(TipoLinkDestinatario l) {
-		if(l != null && l.getGiocatore().equals(this))
-			ManagerDestinatario.inserisci(l);
+	public void inserisciLinkDestinatario(Long idLink)
+	{
+		if(idLink != null ) this.linkDestinatario.add(idLink);
 	}
 
-	public void eliminaLinkDestinatario(TipoLinkDestinatario l) {
-		if(l != null && l.getGiocatore().equals(this))
-			ManagerDestinatario.elimina(l);;
+	public void eliminaLinkDestinatario(Long idLink)
+	{
+		if(idLink != null) this.linkDestinatario.remove(idLink);
 	}
 
-	public Set<TipoLinkDestinatario> getEDestinatario() {
-		return (HashSet<TipoLinkDestinatario>)eDestinatario.clone();
+	public Set<Long> getEDestinatario() {
+		return (HashSet<Long>)linkDestinatario.clone();
 	}
-
+/*
 	public void inserisciPerManagerDestinatario(ManagerDestinatario m) {
 		if(m!=null)
-			this.eDestinatario.add(m.getLink());
+			this.linkDestinatario.add(m.getLink());
 		
 	}
 
@@ -253,5 +206,5 @@ public class Giocatore {
 			this.eDestinatario.remove(m.getLink());
 		
 	}
-	*/
+*/	
 }
