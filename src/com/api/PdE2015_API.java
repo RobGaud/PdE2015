@@ -500,6 +500,8 @@ public class PdE2015_API
 		return response;
 	}
 	
+	
+	//TODO API Invito
 	@ApiMethod(
 			name = "invito.inserisciInvito",
 			path = "invito",
@@ -508,6 +510,7 @@ public class PdE2015_API
 	public DefaultBean inserisciInvito(InfoInvitoBean invitoBean)
 	{
 		//TODO controllo se il destinatario non fa già parte del gruppo
+		
 		if( invitoBean.getEmailDestinatario().equals(invitoBean.getEmailMittente()))
 		{
 			DefaultBean response = new DefaultBean();
@@ -545,6 +548,43 @@ public class PdE2015_API
 			return response;
 		}
 		//Controllo che il destinatario non sia già stato invitato nel gruppo
+		//Non deve quindi esistere, in destinatario.linkdestinatario, nessun id
+		//di oggetti Invito collegati al gruppo in questione
+		Iterator<Long> it = destinatario.getLinkDestinatario().iterator();
+		while(it.hasNext())
+		{
+			Long idInvito = it.next();
+			Invito i = ofy().load().type(Invito.class).id(idInvito).now();
+			if( i == null )
+			{
+				log.log(Level.SEVERE, "Il destinatario "+destinatario.getEmail()+
+						" ha memorizzato l'id di un Invito che non esiste!");
+				continue;
+			}
+			try {
+				if(i.getGruppo().equals(gruppo.getId()))
+				{
+					DefaultBean response = new DefaultBean();
+					response.setResult("Il destinatario è già stato invitato nel gruppo!");
+					tearDown();
+					return response;
+				}
+			} catch (EccezioneMolteplicitaMinima e) {
+				log.log(Level.SEVERE, "L'invito "+i.getId()+
+						" non ha memorizzato l'id di un gruppo!");
+				continue;
+			}
+		}
+		//Carico preventivamente l'invito sul Datastore per ottenere un id
+		Invito invito = new Invito(invitoBean.getEmailMittente(), invitoBean.getIdGruppo());
+		ofy().save().entity(invito).now();
+		destinatario.inserisciLinkDestinatario(invito.getId());
+		invito.inserisciLinkDestinatario(destinatario.getEmail());
+		ofy().save().entity(invito).now();
+		ofy().save().entity(destinatario).now();
+
+	/*	//Controllo che il destinatario non sia già stato invitato nel gruppo
+		
 		Iterator<Long> it = destinatario.getLinkDestinatario().iterator();
 		while(it.hasNext())
 		{
@@ -599,18 +639,19 @@ public class PdE2015_API
 			tearDown();
 			return response;
 		}
-		
+	*/	
 		DefaultBean response = new DefaultBean();
 		response.setResult("Invito inserito con successo!");
 		tearDown();
 		return response;
+	
 	}
 	
 	@ApiMethod(
-			name = "invito.eliminaInvito",
-			path = "invito/delete",
-			httpMethod = HttpMethod.POST
-          )
+				name = "invito.eliminaInvito",
+				path = "invito/delete",
+				httpMethod = HttpMethod.POST
+	          )
 	public DefaultBean eliminaInvito(@Named("emailDestinatario")String emailDestinatario,
 									 @Named("idInvito")Long idInvito)
 	{
@@ -633,7 +674,13 @@ public class PdE2015_API
 			tearDown();
 			return response;
 		}
+		//Rimozione idLink da destinatario.linkDestinatario
+		destinatario.eliminaLinkDestinatario(idInvito);
+		ofy().save().entity(destinatario).now();
+		//Rimozione invito dal Datastore
+		ofy().delete().type(Invito.class).id(idInvito).now();
 		
+	/*	
 		Long idLink;
 		try {
 			idLink = invito.getLinkDestinatario();
@@ -652,9 +699,81 @@ public class PdE2015_API
 			tearDown();
 			return response;
 		}
-		
+	*/	
 		DefaultBean response = new DefaultBean();
 		response.setResult("Invito rimosso con successo!");
+		tearDown();
+		return response;
+	}
+	
+	//TODO API VotoUomoPartita
+	@ApiMethod(
+				name = "voto.inserisciVoto",
+				path = "voto",
+				httpMethod = HttpMethod.PUT
+	          )
+	public DefaultBean inserisciVotoUomoPartita(InfoVotoUomoPartitaBean votoBean)
+	{
+		//Controllo che il votante esista nel Datastore
+		Giocatore votante = ofy().load().type(Giocatore.class).id(votoBean.getVotante()).now();
+		if( votante == null )
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Votante non esistente!");
+			tearDown();
+			return response;
+		}
+		//Controllo che il votato esista nel Datastore
+		Giocatore votato = ofy().load().type(Giocatore.class).id(votoBean.getVotato()).now();
+		if( votato == null )
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Votato non esistente!");
+			tearDown();
+			return response;
+		}
+		//Controllo che il votato esista nel Datastore
+		Partita partita = ofy().load().type(Partita.class).id(votoBean.getLinkVotoPerPartita()).now();
+		if( partita == null )
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Partita non esistente!");
+			tearDown();
+			return response;
+		}
+		//Controllo che non esista già un voto da parte dello stesso votante per la stessa partita
+		List<VotoUomoPartita> idVoti = ofy().load().type(VotoUomoPartita.class)
+									   .filter("linkVotoPerPartita", votoBean.getLinkVotoPerPartita()).list();
+		Iterator<VotoUomoPartita> it = idVoti.iterator();
+		while(it.hasNext())
+		{
+			VotoUomoPartita v = it.next();
+			try {
+				if( v.getVotanteUP().equals(votante.getEmail()) )
+				{
+					DefaultBean response = new DefaultBean();
+					response.setResult("Il votante ha già votato per questa partita!");
+					tearDown();
+					return response;
+				}
+			} catch (EccezioneMolteplicitaMinima e) {
+				log.log(Level.SEVERE, "Il voto "+v.getId()+
+						" non ha memorizzato l'id di un votante!");
+				continue;
+			}
+		}
+		//Carico il voto sul Datastore
+		VotoUomoPartita voto = new VotoUomoPartita(votoBean.getCommento());
+		voto.setVotatoUP(votoBean.getVotato());
+		voto.setVotanteUP(votoBean.getVotante());
+		voto.inserisciLinkVotoPerPartita(votoBean.getLinkVotoPerPartita());
+		ofy().save().entity(voto).now();
+		//Aggiorno la partita inserendo l'id del nuovo voto e la ricarico sul Datastore
+		partita.inserisciLinkPerPartita(voto.getId());
+		ofy().save().entity(partita).now();
+		
+		DefaultBean response = new DefaultBean();
+		response.setResult("Voto inserito con successo!");
 		tearDown();
 		return response;
 	}

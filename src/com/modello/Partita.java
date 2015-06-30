@@ -6,13 +6,13 @@ import com.googlecode.objectify.annotation.*;
 @Entity
 public class Partita {
 	
-	@Id public Long id;
+	@Id private Long id;
 	
 	private Date dataOraPartita;
 	private float quota;	// TODO quota è un attributo indipendente o dipendente dal Campo in cui si gioca?
 	
 	//private Campo campo;
-	//private HashSet<TipoLinkVotoPerPartita> elencoVoti;
+	private HashSet<Long> elencoVoti;
 	//private TipoLinkOrganizza gruppo;
 	//private Giocatore chiPropone;
 	//private LinkedList<TipoLinkDisponibile> elencoDisponibili;
@@ -80,35 +80,24 @@ public class Partita {
 		else
 			return this.campo;
 	}
-	
+*/
 	// ASSOCIAZIONE votoPerPartita
-	public void inserisciLinkPerPartita(TipoLinkVotoPerPartita t)
+	public void inserisciLinkPerPartita(Long idLink)
 	{
-		if( t != null && t.getPartita().equals(this) && !this.elencoVoti.contains(t))
-			ManagerVotoPerPartita.inserisci(t);
+		if( idLink != null && !this.elencoVoti.contains(idLink)) this.elencoVoti.add(idLink);
 	}
 	
-	public void eliminaLinkVotoPerPartita(TipoLinkVotoPerPartita t)
+	public void eliminaLinkVotoPerPartita(Long idLink)
 	{
-		if( t != null && t.getPartita().equals(this) )
-			ManagerVotoPerPartita.rimuovi(t);
+		if( idLink != null ) this.elencoVoti.remove(idLink);
 	}
 	
-	public void inserisciPerManagerVotoPerPartita( ManagerVotoPerPartita m)
+	public Set<Long> getLinkPerPartita()
 	{
-		if( m != null ) this.elencoVoti.add(m.getLink());
+		return (HashSet<Long>)this.elencoVoti.clone();
 	}
 	
-	public void rimuoviPerManagerVotoPerPartita( ManagerVotoPerPartita m)
-	{
-		if( m != null ) this.elencoVoti.remove(m.getLink());
-	}
-	
-	public Set<TipoLinkVotoPerPartita> getLinkVotoPerPartita()
-	{
-		return (HashSet<TipoLinkVotoPerPartita>)this.elencoVoti.clone();
-	}
-	
+/*	
 	// ASSOCIAZIONE organizza
 	public void inserisciLinkOrganizza( TipoLinkOrganizza t )
 	{

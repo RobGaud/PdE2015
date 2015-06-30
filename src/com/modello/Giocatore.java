@@ -15,6 +15,7 @@ public class Giocatore {
 	//private HashSet<TipoLinkGioca> haGiocato;
 	//private HashSet<TipoLinkIscritto> eIscritto;
 	private HashSet<Long> linkDestinatario;
+	//private HashSet<Long> inviti;
 	
 	private Giocatore()
 	{

@@ -10,7 +10,8 @@ public class Invito
 	@Id Long id;
 	
 	private String emailMittente;
-	@Index private Long idLinkDestinatario;
+	//@Index private Long idLinkDestinatario;
+	@Index private String emailDestinatario;
 	private Long idGruppo;
 	private Date dataInvio;
 	
@@ -44,7 +45,8 @@ public class Invito
 	}
 	
 	int quantiDestinatario() {
-		if( this.idLinkDestinatario == null )
+		if( this.emailDestinatario == null )
+		//if( this.idLinkDestinatario == null )
 			return 0;
 		else
 			return 1;
@@ -73,6 +75,24 @@ public class Invito
 		return dataInvio;
 	}
 	
+	public void inserisciLinkDestinatario(String emailDestinatario)
+	{
+		if(emailDestinatario != null) this.emailDestinatario = emailDestinatario;
+	}
+	
+	public void eliminaLinkDestinatario(String emailDestinatario)
+	{
+		if(emailDestinatario != null && emailDestinatario.equals(this.emailDestinatario))
+			this.emailDestinatario = null;
+	}
+	
+	public String getLinkDestinatario() throws EccezioneMolteplicitaMinima {
+		if(this.quantiDestinatario() < this.MIN_LINK_DESTINATARIO)
+			throw new EccezioneMolteplicitaMinima("Molteplicita min/max violata!!");
+		return this.emailDestinatario;
+	}
+	
+/*	
 	public void inserisciLinkDestinatario(Long idLink)
 	{
 		if(idLink != null) this.idLinkDestinatario = idLink;
@@ -89,16 +109,16 @@ public class Invito
 			throw new EccezioneMolteplicitaMinima("Molteplicita min/max violata!!");
 		return idLinkDestinatario;
 	}
-	
+*/	
 	public boolean equals(Object o) {
 		if(o==null || !o.getClass().equals(this.getClass()))
 			return false;
 		Invito i = (Invito)o;
-		return i.emailMittente.equals(this.emailMittente) && i.idLinkDestinatario.equals(this.idLinkDestinatario) &&
+		return i.emailMittente.equals(this.emailMittente) && i.emailDestinatario.equals(this.emailDestinatario) &&
 			   i.idGruppo.equals(this.idGruppo);
 	}
 	
 	public int hashCode() {
-		return emailMittente.hashCode() + idLinkDestinatario.hashCode() + idGruppo.hashCode();
+		return emailMittente.hashCode() + emailDestinatario.hashCode() + idGruppo.hashCode();
 	}
 }
