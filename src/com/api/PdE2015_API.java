@@ -179,7 +179,7 @@ public class PdE2015_API
 			tearDown();
 			return response;
 		}
-		
+		// TODO tutte le mail in minuscolo (altrimenti rischio problemi identificazione)
 		giocatore = new Giocatore(giocatoreBean.getNome(), giocatoreBean.getEmail(), giocatoreBean.getTelefono(),
 									giocatoreBean.getRuoloPreferito(), giocatoreBean.getFotoProfilo());
 		ofy().save().entity(giocatore).now();
@@ -279,11 +279,11 @@ public class PdE2015_API
 		// NB: Il gruppo viene identificato attraverso l'id
 		setUp();
 		if(gruppoBean.isAperto()){
-			GruppoAperto ga = new GruppoAperto(gruppoBean.getNome(), gruppoBean.getDataCreazione());
+			GruppoAperto ga = new GruppoAperto(gruppoBean.getNome());
 			ofy().save().entity(ga).now();
 		}
 		else {
-			GruppoChiuso gc = new GruppoChiuso(gruppoBean.getNome(), gruppoBean.getDataCreazione());
+			GruppoChiuso gc = new GruppoChiuso(gruppoBean.getNome());
 			ofy().save().entity(gc).now();
 		}
 		tearDown();
@@ -777,6 +777,361 @@ public class PdE2015_API
 		response.setResult("Voto inserito con successo!");
 		tearDown();
 		return response;
+	}
+	
+	// TODO API Iscritto
+	@ApiMethod(
+			name = "iscritto.inserisciLinkIscritto",
+			path = "iscritto",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean inserisciLinkIscritto(InfoIscrittoGestisceBean iscrittoBean) {
+		setUp();
+		//Controllo esistenza giocatore
+		Giocatore giocatore = ofy().load().type(Giocatore.class).id(iscrittoBean.getGiocatore()).now();
+		if( giocatore == null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Destinatario non esistente!");
+			tearDown();
+			return response;
+		}
+		//Controllo esistenza gruppo
+		Gruppo gruppo = ofy().load().type(Gruppo.class).id(iscrittoBean.getGruppo()).now();
+		if( gruppo == null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Gruppo non esistente!");
+			tearDown();
+			return response;
+		}
+		
+		// Controllo iscrizione unica
+		try {
+			Iterator<Long> it = gruppo.getGiocatoriIscritti().iterator();
+			
+			while(it.hasNext()) {
+				Long idLink = it.next();
+				TipoLinkIscritto link = ofy().load().type(TipoLinkIscritto.class).id(idLink).now();
+				if(link.getGiocatore().equals(iscrittoBean.getGiocatore())) {
+					DefaultBean response = new DefaultBean();
+					response.setResult("Giocatore già iscritto!");
+					tearDown();
+					return response;
+				}
+			}
+		}
+		catch(EccezioneMolteplicitaMinima e) {
+			log.log(Level.SEVERE, "Il Gruppo "+ gruppo.getId() +
+					"non rispetta la molteplicità minima!");
+		}
+		
+		// Creazione TipoLinkIscritto ed salvataggio/aggiornamento
+		try {
+			TipoLinkIscritto link = new TipoLinkIscritto(iscrittoBean.getGiocatore(), iscrittoBean.getGruppo());
+			ofy().save().entity(link).now();
+			giocatore.inserisciLinkIscritto(link.getId());
+			ofy().save().entity(giocatore).now();
+			gruppo.inserisciLinkIscritto(link.getId());
+			ofy().save().entity(gruppo).now();
+		}
+		catch(EccezionePrecondizioni e) {
+			log.log(Level.SEVERE, "Almeno uno tra iscrittoBean.getGruppo() e iscrittoBean.getGIocatore() ha restituito null");
+			DefaultBean response = new DefaultBean();
+			response.setResult("Errore imprevisto!");
+			tearDown();
+			return response;
+		}
+		
+		DefaultBean response = new DefaultBean();
+		response.setResult("TipoLinkIscritto inserito con successo!");
+		tearDown();
+		return response;
+	}
+	
+	@ApiMethod(
+			name = "iscritto.rimuoviLinkIscritto",
+			path = "iscritto/delete",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean rimuoviLinkIscritto(InfoIscrittoGestisceBean iscrittoBean) {
+		setUp();
+		//Controllo esistenza giocatore
+		Giocatore giocatore = ofy().load().type(Giocatore.class).id(iscrittoBean.getGiocatore()).now();
+		if( giocatore == null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Giocatore non esistente!");
+			tearDown();
+			return response;
+		}
+		//Controllo esistenza gruppo
+		Gruppo gruppo = ofy().load().type(Gruppo.class).id(iscrittoBean.getGruppo()).now();
+		if( gruppo == null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Gruppo non esistente!");
+			tearDown();
+			return response;
+		}
+		
+		// Controllo esistenza TipoLinkIscritto
+		boolean found = false;
+		TipoLinkIscritto link = null;
+		try {
+			Iterator<Long> it = gruppo.getGiocatoriIscritti().iterator();
+			
+			
+			while(it.hasNext()) {
+				Long idLink = it.next();
+				link = ofy().load().type(TipoLinkIscritto.class).id(idLink).now();
+				if(link.getGiocatore().equals(iscrittoBean.getGiocatore())) {
+					found = true;
+					break;
+				}
+			}
+		}
+		catch(EccezioneMolteplicitaMinima e) {
+			log.log(Level.SEVERE, "Il Gruppo "+ gruppo.getId() +
+					"non rispetta la molteplicità minima!");
+		}
+		
+		if(!found) {
+			DefaultBean response = new DefaultBean();
+			response.setResult("Giocatore non iscritto!");
+			tearDown();
+			return response;
+		}
+		
+		// Rimozione TipoLinkIscritto e salvataggio/aggiornamento
+		gruppo.rimuoviLinkIscritto(link.getId());
+		ofy().save().entity(gruppo).now();
+		giocatore.eliminaLinkIscritto(link.getId());
+		ofy().save().entity(giocatore).now();
+		ofy().delete().entity(link).now();
+		
+		DefaultBean response = new DefaultBean();
+		response.setResult("TipoLinkRimosso con successo!");
+		tearDown();
+		return response;
+		
+	}
+	// TODO API Gestito
+	@ApiMethod(
+			name = "gestito.inserisciLinkGestito",
+			path = "gestito",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean inserisciLinkGestito(InfoIscrittoGestisceBean gestisceBean) {
+		setUp();
+		//Controllo esistenza giocatore
+		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestisceBean.getGiocatore()).now();
+		if( giocatore == null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Giocatore non esistente!");
+			tearDown();
+			return response;
+		}
+		//Controllo esistenza gruppo
+		Gruppo gruppo = ofy().load().type(Gruppo.class).id(gestisceBean.getGruppo()).now();
+		if( gruppo == null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Gruppo non esistente!");
+			tearDown();
+			return response;
+		}
+		
+		// Controllo esistenza TipoLinkIscritto
+		boolean found = false;
+		TipoLinkIscritto link = null;
+		try {
+			Iterator<Long> it = gruppo.getGiocatoriIscritti().iterator();
+			
+			
+			while(it.hasNext()) {
+				Long idLink = it.next();
+				link = ofy().load().type(TipoLinkIscritto.class).id(idLink).now();
+				if(link.getGiocatore().equals(gestisceBean.getGiocatore())) {
+					found = true;
+					break;
+				}
+			}
+		}
+		catch(EccezioneMolteplicitaMinima e) {
+			log.log(Level.SEVERE, "Il Gruppo "+ gruppo.getId() +
+					"non rispetta la molteplicità minima!");
+		}
+		
+		if(!found) {
+			DefaultBean response = new DefaultBean();
+			response.setResult("Giocatore non iscritto!");
+			tearDown();
+			return response;
+		}
+		
+		// Creazione LinkGestisce
+		gruppo.inserisciLinkGestito(link.getId());
+		ofy().save().entity(gruppo).now();
+		
+		DefaultBean response = new DefaultBean();
+		response.setResult("LinkGestisce inserito con successo!");
+		tearDown();
+		return response;
+	}
+	
+	@ApiMethod(
+			name = "gestito.rimuoviLinkGestito",
+			path = "gestito/delete",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean rimuoviLinkGestito(InfoIscrittoGestisceBean gestisceBean) {
+		setUp();
+		//Controllo esistenza giocatore
+		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestisceBean.getGiocatore()).now();
+		if( giocatore == null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Giocatore non esistente!");
+			tearDown();
+			return response;
+		}
+		//Controllo esistenza gruppo
+		Gruppo gruppo = ofy().load().type(Gruppo.class).id(gestisceBean.getGruppo()).now();
+		if( gruppo == null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Gruppo non esistente!");
+			tearDown();
+			return response;
+		}
+		
+		// Controllo esistenza TipoLinkIscritto
+		boolean found = false;
+		TipoLinkIscritto link = null;
+		try {
+			Iterator<Long> it = gruppo.getGiocatoriIscritti().iterator();
+			
+			
+			while(it.hasNext()) {
+				Long idLink = it.next();
+				link = ofy().load().type(TipoLinkIscritto.class).id(idLink).now();
+				if(link.getGiocatore().equals(gestisceBean.getGiocatore())) {
+					found = true;
+					break;
+				}
+			}
+		}
+		catch(EccezioneMolteplicitaMinima e) {
+			log.log(Level.SEVERE, "Il Gruppo "+ gruppo.getId() +
+					"non rispetta la molteplicità minima!");
+		}
+		
+		if(!found) {
+			DefaultBean response = new DefaultBean();
+			response.setResult("Giocatore non iscritto!");
+			tearDown();
+			return response;
+		}
+		
+		// Rimozione LinkGestisce
+		gruppo.rimuoviLinkGestito(link.getId());
+		ofy().save().entity(gruppo).now();
+		
+		DefaultBean response = new DefaultBean();
+		response.setResult("LinkGestisce rimosso con successo!");
+		tearDown();
+		return response;
+		
+	}
+	// TODO API Conosce
+	@ApiMethod(
+			name = "conosce.inserisciLinkConosce",
+			path = "conosce",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean inserisciLinkConosce(InfoConosceBean conosceBean) {
+		setUp();
+		// Controllo esistenza gruppo
+		Gruppo gruppo = ofy().load().type(Gruppo.class).id(conosceBean.getGruppo()).now();
+		if( gruppo == null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Gruppo non esistente!");
+			tearDown();
+			return response;
+		}
+		
+		// Controllo esistenza Campo
+		Campo campo = ofy().load().type(Campo.class).id(conosceBean.getCampo()).now();
+		if( campo == null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Campo non esistente!");
+			tearDown();
+			return response;
+		}
+		
+		// Controllo campi duplicati
+		Iterator<Long> it = gruppo.getCampiPreferiti().iterator();
+		
+		while(it.hasNext()) {
+			Long idCampo = it.next();
+			if(idCampo.equals(conosceBean.getCampo())) {
+				DefaultBean response = new DefaultBean();
+				response.setResult("Campo già presente!");
+				tearDown();
+				return response;
+			}
+		}
+		
+		// Inserimento linkConosce e salvataggio/aggiornamento
+		gruppo.inserisciCampo(conosceBean.getCampo());
+		ofy().save().entity(gruppo).now();
+		
+		DefaultBean response = new DefaultBean();
+		response.setResult("LinkConosce inserito con successo!");
+		tearDown();
+		return response;
+	}
+	
+	@ApiMethod(
+			name = "conosce.rimuoviLinkConosce",
+			path = "conosce/delete",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean rimuoviLinkConosce(InfoConosceBean conosceBean) {
+		setUp();
+		// Controllo esistenza gruppo
+		Gruppo gruppo = ofy().load().type(Gruppo.class).id(conosceBean.getGruppo()).now();
+		if( gruppo == null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Gruppo non esistente!");
+			tearDown();
+			return response;
+		}
+		
+		// Controllo esistenza Campo
+		Campo campo = ofy().load().type(Campo.class).id(conosceBean.getCampo()).now();
+		if( campo == null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Campo non esistente!");
+			tearDown();
+			return response;
+		}
+		
+		// Rimozione LinkConosce
+		gruppo.rimuoviCampo(conosceBean.getCampo());
+		ofy().save().entity(gruppo).now();
+		
+		DefaultBean response = new DefaultBean();
+		response.setResult("LinkConosce rimosso con successo!");
+		tearDown();
+		return response;
+		
 	}
 	
 	@BeforeMethod

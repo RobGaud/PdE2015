@@ -13,13 +13,14 @@ public class Giocatore {
 	private String fotoProfilo;
 	//private HashSet<TipoLinkDisponibile> eDisponibile;
 	//private HashSet<TipoLinkGioca> haGiocato;
-	//private HashSet<TipoLinkIscritto> eIscritto;
+	private HashSet<Long> eIscritto;
 	private HashSet<Long> linkDestinatario;
 	//private HashSet<Long> inviti;
 	
 	private Giocatore()
 	{
 		this.linkDestinatario = new HashSet<Long>();
+		this.eIscritto = new HashSet<Long>();
 	}
 	
 	public Giocatore(String nome, String email, String telefono,
@@ -31,7 +32,7 @@ public class Giocatore {
 		this.fotoProfilo = fotoProfilo;
 		//this.eDisponibile = new HashSet<TipoLinkDisponibile>();
 		//this.haGiocato = new HashSet<TipoLinkGioca>();
-		//this.eIscritto = new HashSet<TipoLinkIscritto>();
+		this.eIscritto = new HashSet<Long>();
 		this.linkDestinatario = new HashSet<Long>();
 	}
 	
@@ -151,35 +152,22 @@ public class Giocatore {
 			this.haGiocato.remove(m.getLink());
 		
 	}
-	
+	*/
 	// ASSOCIAZIONE ISCRITTO
-
-	public void inserisciLinkIscritto(TipoLinkIscritto l) {
-		if(l != null && l.getGiocatore().equals(this))
-			ManagerIscritto.inserisci(l);
-	}
-
-	public void eliminaLinkIscritto(TipoLinkIscritto l) {
-		if(l != null && l.getGiocatore().equals(this))
-			ManagerIscritto.elimina(l);;
-	}
-
-	public Set<TipoLinkIscritto> getEIscritto() {
-		return (HashSet<TipoLinkIscritto>)eIscritto.clone();
+	public Set<Long> getEIscritto() {
+		return (HashSet<Long>)eIscritto.clone();
 	}
 	
-	public void inserisciPerManagerIscritto(ManagerIscritto m) {
-		if(m!=null)
-			this.eIscritto.add(m.getLink());
+	public void inserisciLinkIscritto(Long l) {
+		if(l != null) this.eIscritto.add(l);
 		
 	}
 
-	public void eliminaPerManagerIscritto(ManagerIscritto m) {
-		if(m!=null)
-			this.eIscritto.remove(m.getLink());
+	public void eliminaLinkIscritto(Long l) {
+		if(l != null && eIscritto.contains(l)) this.eIscritto.remove(l);
 		
 	}
-*/
+	
 	// ASSOCIAZIONE DESTINATARIO
 
 	public void inserisciLinkDestinatario(Long idLink)
