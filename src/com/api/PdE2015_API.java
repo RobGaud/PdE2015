@@ -841,7 +841,7 @@ public class PdE2015_API
 			tearDown();
 			return response;
 		}
-		
+		//Controllo che il giocatore abbia dato disponibilità per la partita
 		List<TipoLinkDisponibile> listLink = ofy().load().type(TipoLinkDisponibile.class)
 										   .filter("giocatore", gestioneBean.getEmailGiocatore())
 										   .filter("partita", gestioneBean.getIdPartita()).list();
@@ -868,6 +868,53 @@ public class PdE2015_API
 		return response;
 	}
 	
+	@ApiMethod(
+			name = "disponibile.modificaDisponibile",
+			path = "disponibile",
+			httpMethod = HttpMethod.PUT
+			)
+	public DefaultBean modificaDisponibile(InfoGestionePartiteBean gestioneBean)
+	{
+		setUp();
+		//Controllo che la partita esista nel Datastore
+		Partita partita = ofy().load().type(Partita.class).id(gestioneBean.getIdPartita()).now();
+		if(partita==null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Partita non esistente!");
+			tearDown();
+			return response;
+		}
+		//Controllo che il giocatore esista nel Datastore
+		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestioneBean.getEmailGiocatore()).now();
+		if(giocatore==null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Giocatore non esistente!");
+			tearDown();
+			return response;
+		}
+		//Controllo che il giocatore abbia dato disponibilità per la partita
+		List<TipoLinkDisponibile> listLink = ofy().load().type(TipoLinkDisponibile.class)
+											   .filter("giocatore", gestioneBean.getEmailGiocatore())
+											   .filter("partita", gestioneBean.getIdPartita()).list();
+		if( listLink.size() == 0 )
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Il giocatore non ha dato la sua disponibilità per la partita!");
+			tearDown();
+			return response;
+		}
+		//Aggiorno il link, e lo ricarico sul Datastore --- E FONDAMENTALE CHE NON CAMBI IL SUO ID
+		TipoLinkDisponibile link = listLink.get(0);
+		link.setnAmici(gestioneBean.getnAmici());
+		ofy().save().entity(link).now();
+		
+		DefaultBean response = new DefaultBean();
+		response.setResult("Link disponibile aggiornato con successo!");
+		tearDown();
+		return response;
+	}
 	//TODO API propone
 	@ApiMethod(
 				name = "propone.inserisciPropone",
