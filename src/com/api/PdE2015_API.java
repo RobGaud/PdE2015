@@ -966,7 +966,15 @@ public class PdE2015_API
 		
 		if(!found) {
 			DefaultBean response = new DefaultBean();
-			response.setResult("Giocatore non iscritto!");
+			response.setResult("Il gestore del gruppo deve farne parte!");
+			tearDown();
+			return response;
+		}
+		
+		// Controllo Unicità del gestore
+		if(gruppo.quantiGestito() == 1) {
+			DefaultBean response = new DefaultBean();
+			response.setResult("Gruppo già gestito da un giocatore!");
 			tearDown();
 			return response;
 		}
@@ -1074,6 +1082,7 @@ public class PdE2015_API
 		}
 		
 		// Controllo campi duplicati
+		/*
 		Iterator<Long> it = gruppo.getCampiPreferiti().iterator();
 		
 		while(it.hasNext()) {
@@ -1084,6 +1093,13 @@ public class PdE2015_API
 				tearDown();
 				return response;
 			}
+		}
+		*/
+		if(gruppo.getCampiPreferiti().contains(conosceBean.getCampo())) {
+			DefaultBean response = new DefaultBean();
+			response.setResult("Campo già presente!");
+			tearDown();
+			return response;
 		}
 		
 		// Inserimento linkConosce e salvataggio/aggiornamento
@@ -1132,6 +1148,178 @@ public class PdE2015_API
 		tearDown();
 		return response;
 		
+	}
+	
+	// TODO API Organizza
+	@ApiMethod(
+			name = "organizza.inserisciLinkOrganizza",
+			path = "organizza",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean inserisciLinkOrganizza(InfoOrganizzaBean organizzaBean) {
+		setUp();
+		// Controllo esistenza gruppo
+		Gruppo gruppo = ofy().load().type(Gruppo.class).id(organizzaBean.getGruppo()).now();
+		if( gruppo == null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Gruppo non esistente!");
+			tearDown();
+			return response;
+		}
+		
+		// Controllo esistenza partita
+		Partita partita = ofy().load().type(Partita.class).id(organizzaBean.getPartita()).now();
+		if( partita == null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Partita non esistente!");
+			tearDown();
+			return response;
+		}
+		
+		// Controllo link duplicati
+		// TODO Rivedere bene gli equals!!
+		if(gruppo.getPartiteOrganizzate().contains(organizzaBean.getPartita())) {
+			DefaultBean response = new DefaultBean();
+			response.setResult("Partita già organizzata!");
+			tearDown();
+			return response;
+		}
+		
+		// inserimento LinkOrganizza e salvataggio/aggiornamento
+		partita.inserisciLinkOrganizza(organizzaBean.getGruppo());
+		ofy().save().entity(partita).now();
+		gruppo.inserisciLinkOrganizza(organizzaBean.getPartita());
+		ofy().save().entity(gruppo).now();
+		
+		DefaultBean response = new DefaultBean();
+		response.setResult("LinkOrganizza inserito con successo!");
+		tearDown();
+		return response;
+	}
+	
+	@ApiMethod(
+			name = "organizza.rimuoviLinkOrganizza",
+			path = "organizza/delete",
+			httpMethod = HttpMethod.POST
+          )
+	public 	DefaultBean rimuoviLinkOrganizza(InfoOrganizzaBean organizzaBean) {
+		setUp();
+		// Controllo esistenza gruppo
+		Gruppo gruppo = ofy().load().type(Gruppo.class).id(organizzaBean.getGruppo()).now();
+		if( gruppo == null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Gruppo non esistente!");
+			tearDown();
+			return response;
+		}
+		
+		// Controllo esistenza partita
+		Partita partita = ofy().load().type(Partita.class).id(organizzaBean.getPartita()).now();
+		if( partita == null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Partita non esistente!");
+			tearDown();
+			return response;
+		}
+		
+		// rimozione LinkOrganizza e salvataggio/aggiornamento
+		partita.eliminaLinkOrganizza(organizzaBean.getGruppo());
+		ofy().save().entity(partita).now();
+		gruppo.rimuoviLinkOrganizza(organizzaBean.getPartita());
+		ofy().save().entity(gruppo).now();
+		
+		DefaultBean response = new DefaultBean();
+		response.setResult("LinkOrganizza rimosso con successo!");
+		tearDown();
+		return response;
+	}
+	
+	// TODO API Presso
+	@ApiMethod(
+			name = "presso.inserisciLinkPresso",
+			path = "presso",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean inserisciLinkPresso(InfoPressoBean pressoBean) {
+		setUp();
+		// Controllo esistenza Campo
+		Campo campo = ofy().load().type(Campo.class).id(pressoBean.getCampo()).now();
+		if( campo == null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Campo non esistente!");
+			tearDown();
+			return response;
+		}
+		
+		// Controllo esistenza partita
+		Partita partita = ofy().load().type(Partita.class).id(pressoBean.getPartita()).now();
+		if( partita == null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Partita non esistente!");
+			tearDown();
+			return response;
+		}
+		
+		// Controllo unicità Campo
+		// TODO vedere bene per la possibilità di cambiare campo
+		if(partita.quantiCampi() == 1) {
+			DefaultBean response = new DefaultBean();
+			response.setResult("Campo già impostato!");
+			tearDown();
+			return response;
+		}
+		
+		// inserimento LinkPresso e salvataggio/aggiornamento
+		partita.inserisciCampo(pressoBean.getCampo());
+		ofy().save().entity(partita).now();
+		
+		DefaultBean response = new DefaultBean();
+		response.setResult("LinkPresso inserito con successo!");
+		tearDown();
+		return response;
+	}
+	
+	@ApiMethod(
+			name = "presso.rimuoviLinkPresso",
+			path = "presso/delete",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean rimuoviLinkPresso(InfoPressoBean pressoBean) {
+		setUp();
+		// Controllo esistenza Campo
+		Campo campo = ofy().load().type(Campo.class).id(pressoBean.getCampo()).now();
+		if( campo == null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Campo non esistente!");
+			tearDown();
+			return response;
+		}
+		
+		// Controllo esistenza partita
+		Partita partita = ofy().load().type(Partita.class).id(pressoBean.getPartita()).now();
+		if( partita == null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Partita non esistente!");
+			tearDown();
+			return response;
+		}
+		
+		// rimozione LinkPresso e salvataggio/aggiornamento
+		partita.eliminaCampo(pressoBean.getCampo());
+		ofy().save().entity(partita).now();
+		
+		DefaultBean response = new DefaultBean();
+		response.setResult("LinkPresso rimosso con successo!");
+		tearDown();
+		return response;
 	}
 	
 	@BeforeMethod

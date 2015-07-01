@@ -1,9 +1,5 @@
 package com.bean;
 
-import java.util.Date;
-
-import com.googlecode.objectify.annotation.Index;
-
 public class InfoGruppoBean {
 	
 	private Long id;

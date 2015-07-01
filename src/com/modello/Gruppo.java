@@ -8,20 +8,12 @@ import com.googlecode.objectify.annotation.*;
 public class Gruppo
 {	
 	@Id private Long id;
-	
-	public Long getId() {
-		return id;
-	}
-
-	public void setId(Long id) {
-		this.id = id;
-	}
 
 	@Index private String nome;
 	private Date dataCreazione;
 	private LinkedList<Long> giocatoriIscritti;
 	private Long eGestito;
-	//private HashSet<TipoLinkOrganizza> partiteOrganizzate;
+	private HashSet<Long> partiteOrganizzate;
 	private HashSet<Long> campiPreferiti;
 	
 	public static final int MIN_LINK_ISCRITTO = 1;
@@ -30,6 +22,7 @@ public class Gruppo
 	protected Gruppo(){
 		this.dataCreazione = new Date();
 		this.giocatoriIscritti = new LinkedList<Long>();
+		this.partiteOrganizzate = new HashSet<Long>();
 		this.campiPreferiti = new HashSet<Long>();
 	}
 	
@@ -38,8 +31,16 @@ public class Gruppo
 		this.nome = n;
 		this.dataCreazione = new Date();
 		this.giocatoriIscritti = new LinkedList<Long>();
-		//this.partiteOrganizzate = new HashSet<TipoLinkOrganizza>();
+		this.partiteOrganizzate = new HashSet<Long>();
 		this.campiPreferiti = new HashSet<Long>();
+	}
+	
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
 	}
 	
 	public String getNome()
@@ -109,7 +110,7 @@ public class Gruppo
 	
 	// ASSOCIAZIONE gestisce
 	
-	int quantiGestito() {
+	public int quantiGestito() {
 		if(eGestito != null)
 			return 1;
 		return 0;
@@ -133,32 +134,24 @@ public class Gruppo
 		if(eGestito != null && eGestito.equals(this.eGestito)) this.eGestito = null;
 	}
 	
-	/*
 	// ASSOCIAZIONE organizza
-	public void inserisciLinkOrganizza(TipoLinkOrganizza t)
+	public void inserisciLinkOrganizza(Long l)
 	{
-		if( t != null && t.getGruppo().equals(this))
-			ManagerOrganizza.inserisci(t);
-	}
-	
-	public void rimuoviLinkOrganizza(TipoLinkOrganizza t)
-	{
-		if( t != null && t.getGruppo().equals(this))
-			ManagerOrganizza.rimuovi(t);
-	}
-	
-	public void inserisciPerManagerOrganizza(ManagerOrganizza m)
-	{
-		if(m != null) this.partiteOrganizzate.add(m.getLink());
+		if(l != null) this.partiteOrganizzate.add(l);
 
 	}
 	
-	public void rimuoviPerManagerOrganizza(ManagerOrganizza m)
+	public void rimuoviLinkOrganizza(Long l)
 	{
-		if(m != null) this.partiteOrganizzate.remove(m.getLink());
+		if(l != null) this.partiteOrganizzate.remove(l);
 
 	}
-	*/
+	
+	public Set<Long> getPartiteOrganizzate()
+	{
+		return (HashSet<Long>)this.partiteOrganizzate.clone();
+	}
+
 	// ASSOCIAZIONE CONOSCE
 	public void inserisciCampo(Long c)
 	{

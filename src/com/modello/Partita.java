@@ -11,14 +11,14 @@ public class Partita {
 	private Date dataOraPartita;
 	private float quota;	// TODO quota è un attributo indipendente o dipendente dal Campo in cui si gioca?
 	
-	//private Campo campo;
+	private Long campo;
 	private HashSet<Long> elencoVoti;
-	//private TipoLinkOrganizza gruppo;
+	private Long gruppo;
 	//private Giocatore chiPropone;
 	//private LinkedList<TipoLinkDisponibile> elencoDisponibili;
 	//private HashSet<TipoLinkGioca> elencoGioca;
 	
-	public static final int MIN_LINK_PRESSO = 1;
+	public static final int MIN_MAX_LINK_PRESSO = 1;
 	public static final int MIN_LINK_GIOCA = 1;
 	public static final int MIN_LINK_PROPONE = 1;
 	public static final int MIN_LINK_DISPONIBILE = 1;
@@ -56,17 +56,13 @@ public class Partita {
 			this.quota = quota;
 	}
 	
-	/*
 	// ASSOCIAZIONE presso
-	public void inserisciCampo( Campo c )
-	{
-		if( c != null )
-			this.campo = c;
+	public void inserisciCampo(Long c) {
+		if(c != null) this.campo = c;
 	}
 	
-	public void eliminaCampo()
-	{
-		this.campo = null;
+	public void eliminaCampo(Long c) {
+		if(c != null && c.equals(this.campo)) this.campo = null;
 	}
 	
 	public int quantiCampi()
@@ -77,14 +73,14 @@ public class Partita {
 			return 1;
 	}
 	
-	public Campo getCampo() throws EccezioneMolteplicitaMinima
+	public Long getCampo() throws EccezioneMolteplicitaMinima
 	{
-		if( this.quantiCampi() < MIN_LINK_PRESSO )
-			throw new EccezioneMolteplicitaMinima("Cardinalita minima violata!");
+		if( this.quantiCampi() != MIN_MAX_LINK_PRESSO )
+			throw new EccezioneMolteplicitaMinima("Cardinalita min/max violata!");
 		else
 			return this.campo;
 	}
-*/
+	
 	// ASSOCIAZIONE votoPerPartita
 	public void inserisciLinkPerPartita(Long idLink)
 	{
@@ -100,29 +96,16 @@ public class Partita {
 	{
 		return (HashSet<Long>)this.elencoVoti.clone();
 	}
-	
-/*	
+		
 	// ASSOCIAZIONE organizza
-	public void inserisciLinkOrganizza( TipoLinkOrganizza t )
+	public void inserisciLinkOrganizza(Long l)
 	{
-		if( t != null && t.getPartita().equals(this) )
-			ManagerOrganizza.inserisci(t);
-	}
-	
-	public void eliminaLinkOrganizza( TipoLinkOrganizza t )
-	{
-		if( t != null && t.getPartita().equals(this) )
-			ManagerOrganizza.rimuovi(t);
-	}
-	
-	public void inserisciPerManagerOrganizza(ManagerOrganizza m)
-	{
-		if( m != null ) this.gruppo = m.getLink();
+		if( l != null ) this.gruppo = l;
 	}
 
-	public void rimuoviPerManagerOrganizza(ManagerOrganizza m)
+	public void eliminaLinkOrganizza(Long l)
 	{
-		if( m != null ) this.gruppo = null;
+		if( l != null && this.gruppo.equals(l)) this.gruppo = null;
 	}
 	
 	public int quantiOrganizza()
@@ -133,7 +116,7 @@ public class Partita {
 			return 1;
 	}
 	
-	public TipoLinkOrganizza getLinkOrganizza() throws EccezioneMolteplicitaMinima
+	public Long getLinkOrganizza() throws EccezioneMolteplicitaMinima
 	{
 		if( this.quantiOrganizza() < MIN_LINK_ORGANIZZA )
 			throw new EccezioneMolteplicitaMinima("Cardinalità minima violata!");
@@ -141,6 +124,7 @@ public class Partita {
 			return this.gruppo;
 	}
 	
+/*
 	// ASSOCIAZIONE propone
 	public void inserisciPropone( Giocatore g )
 	{
