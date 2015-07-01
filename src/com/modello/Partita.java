@@ -15,7 +15,7 @@ public class Partita {
 	private HashSet<Long> elencoVoti;
 	//private TipoLinkOrganizza gruppo;
 	//private Giocatore chiPropone;
-	//private LinkedList<TipoLinkDisponibile> elencoDisponibili;
+	private LinkedList<String> elencoDisponibili;
 	//private HashSet<TipoLinkGioca> elencoGioca;
 	
 	public static final int MIN_LINK_PRESSO = 1;
@@ -26,6 +26,7 @@ public class Partita {
 	
 	protected Partita(){
 		this.elencoVoti = new HashSet<Long>();
+		this.elencoDisponibili = new LinkedList<String>();
 	}
 	
 	public Partita(Date d, float q)
@@ -33,6 +34,7 @@ public class Partita {
 		this.dataOraPartita = d;
 		this.quota = q;
 		this.elencoVoti = new HashSet<Long>();
+		this.elencoDisponibili = new LinkedList<String>();
 
 	}
 	
@@ -181,28 +183,16 @@ public class Partita {
 		//TODO vediamola sta cosa
 		return null;
 	}
-	
+*/	
 	// ASSOCIAZIONE disponibile
-	public void inserisciLinkDisponibile(TipoLinkDisponibile t)
+	public void inserisciLinkDisponibile(String emailGiocatore)
 	{
-		if( t != null && t.getPartita().equals(this) )
-			ManagerDisponibile.inserisci(t);
+		if( emailGiocatore != null ) this.elencoDisponibili.add(emailGiocatore);
 	}
 	
-	public void rimuoviLinkDisponibile(TipoLinkDisponibile t)
+	public void eliminaLinkDisponibile(String emailGiocatore)
 	{
-		if( t != null && t.getPartita().equals(this) )
-			ManagerDisponibile.elimina(t);
-	}
-	
-	public void inserisciPerManagerDisponibile( ManagerDisponibile m )
-	{
-		if( m != null ) this.elencoDisponibili.add(m.getLink());
-	}
-	
-	public void eliminaPerManagerDisponibile( ManagerDisponibile m )
-	{
-		if( m != null ) this.elencoDisponibili.remove(m.getLink());
+		if( emailGiocatore != null ) this.elencoDisponibili.remove(emailGiocatore);
 	}
 	
 	public int quantiDisponibili()
@@ -210,14 +200,14 @@ public class Partita {
 		return this.elencoDisponibili.size();
 	}
 	
-	public List<TipoLinkDisponibile> getLinkDisponibile() throws EccezioneMolteplicitaMinima
+	public List<String> getLinkDisponibile() throws EccezioneMolteplicitaMinima
 	{
 		if( this.quantiDisponibili() < MIN_LINK_DISPONIBILE )
 			throw new EccezioneMolteplicitaMinima("Cardinalità minima violata!");
 		else
-			return (LinkedList<TipoLinkDisponibile>)this.elencoDisponibili.clone();
+			return (LinkedList<String>)this.elencoDisponibili.clone();
 	}
-	
+/*	
 	// ASSOCIAZIONE gioca
 	public void inserisciLinkGioca(TipoLinkGioca t)
 	{

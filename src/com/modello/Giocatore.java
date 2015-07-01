@@ -11,15 +11,16 @@ public class Giocatore {
 	private String telefono;
 	private String ruoloPreferito;
 	private String fotoProfilo;
-	//private HashSet<TipoLinkDisponibile> eDisponibile;
+	
+	private HashSet<Long> elencoDisponibile; 
 	//private HashSet<TipoLinkGioca> haGiocato;
 	//private HashSet<TipoLinkIscritto> eIscritto;
 	private HashSet<Long> linkDestinatario;
-	//private HashSet<Long> inviti;
 	
 	private Giocatore()
 	{
 		this.linkDestinatario = new HashSet<Long>();
+		this.elencoDisponibile = new HashSet<Long>();
 	}
 	
 	public Giocatore(String nome, String email, String telefono,
@@ -29,10 +30,11 @@ public class Giocatore {
 		this.telefono = telefono;
 		this.ruoloPreferito = ruoloPreferito;
 		this.fotoProfilo = fotoProfilo;
-		//this.eDisponibile = new HashSet<TipoLinkDisponibile>();
 		//this.haGiocato = new HashSet<TipoLinkGioca>();
 		//this.eIscritto = new HashSet<TipoLinkIscritto>();
 		this.linkDestinatario = new HashSet<Long>();
+		this.elencoDisponibile = new HashSet<Long>();
+
 	}
 	
 	public String getEmail() {
@@ -81,33 +83,23 @@ public class Giocatore {
 	           this.ruoloPreferito + " " + this.fotoProfilo;
 	}
 	
-	/*
+	
 	// ASSOCIAZIONE DISPONIBILE
 	
-	public void inserisciLinkDisponibile(TipoLinkDisponibile l) {
-		if(l != null && l.getGiocatore().equals(this))
-			ManagerDisponibile.inserisci(l);
+	public void inserisciLinkDisponibile(Long idPartita)
+	{
+		if(idPartita != null) this.elencoDisponibile.add(idPartita);
 	}
 	
-	public void eliminaLinkDisponibile(TipoLinkDisponibile l) {
-		if(l != null && l.getGiocatore().equals(this))
-			ManagerDisponibile.elimina(l);;
+	public void eliminaLinkDisponibile(Long idPartita)
+	{
+		if(idPartita != null) this.elencoDisponibile.remove(idPartita);
 	}
 	
-	public Set<TipoLinkDisponibile> getEDisponibile() {
-		return (HashSet<TipoLinkDisponibile>)eDisponibile.clone();
+	public Set<Long> getElencoDisponibile() {
+		return (HashSet<Long>)this.elencoDisponibile.clone();
 	}
-
-	public void inserisciPerManagerDisponibile(ManagerDisponibile m) {
-		if(m!=null)
-			this.eDisponibile.add(m.getLink());
-	}
-
-	public void eliminaPerManagerDisponibile(ManagerDisponibile m) {
-		if(m!=null)
-			this.eDisponibile.remove(m.getLink());
-	}
-	
+/*	
 	// ASSOCIAZIONE GIOCA
 
 	public void inserisciLinkGioca(TipoLinkGioca l) {
