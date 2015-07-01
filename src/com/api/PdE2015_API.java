@@ -779,16 +779,32 @@ public class PdE2015_API
 			return response;
 		}
 		//Controllo che il giocatore non abbia già dato disponibilità per questa partita
-		if(giocatore.getElencoDisponibile().contains(gestioneBean.getIdPartita()))
-		{
+		try {
+			TipoLinkDisponibile link = new TipoLinkDisponibile(gestioneBean.getEmailGiocatore(),
+										   gestioneBean.getIdPartita(), gestioneBean.getnAmici());
+			List<TipoLinkDisponibile> linkList = ofy().load().type(TipoLinkDisponibile.class)
+												 .filter("giocatore", gestioneBean.getEmailGiocatore())
+												 .filter("partita", gestioneBean.getIdPartita()).list();
+			if(linkList.contains(link))
+			{
+				DefaultBean response = new DefaultBean();
+				response.setResult("Il giocatore ha già dato la sua disponibilità per questa partita!");
+				tearDown();
+				return response;
+			}
+			//Carico il link sul Datastore
+			ofy().save().entity(link).now();
+			
+			//Aggiorno giocatore e partita
+			giocatore.inserisciLinkDisponibile(link.getId());
+			partita.inserisciLinkDisponibile(link.getId());
+		
+		} catch (EccezionePrecondizioni e) {
 			DefaultBean response = new DefaultBean();
-			response.setResult("Il giocatore ha già dato la disponibilità per questa partita!");
+			response.setResult("Almeno uno dei campi di interesse è null!");
 			tearDown();
 			return response;
 		}
-		//Aggiorno giocatore e partita
-		giocatore.inserisciLinkDisponibile(gestioneBean.getIdPartita());
-		partita.inserisciLinkDisponibile(gestioneBean.getEmailGiocatore());
 		//Li carico nel datastore
 		ofy().save().entity(giocatore).now();
 		ofy().save().entity(partita).now();
@@ -825,10 +841,23 @@ public class PdE2015_API
 			tearDown();
 			return response;
 		}
-		//Aggiorno giocatore e partita
-		giocatore.eliminaLinkDisponibile(gestioneBean.getIdPartita());
-		partita.eliminaLinkDisponibile(gestioneBean.getEmailGiocatore());
 		
+		List<TipoLinkDisponibile> listLink = ofy().load().type(TipoLinkDisponibile.class)
+										   .filter("giocatore", gestioneBean.getEmailGiocatore())
+										   .filter("partita", gestioneBean.getIdPartita()).list();
+		if( listLink.size() == 0 )
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Il giocatore non ha dato la sua disponibilità per la partita!");
+			tearDown();
+			return response;
+		}
+		TipoLinkDisponibile link = listLink.get(0);
+		//Elimino il link dal Datastore
+		ofy().delete().entity(link).now();
+		//Aggiorno giocatore e partita
+		giocatore.eliminaLinkDisponibile(link.getId());
+		partita.eliminaLinkDisponibile(link.getId());
 		//Li carico nel datastore
 		ofy().save().entity(giocatore);
 		ofy().save().entity(partita);
@@ -845,7 +874,7 @@ public class PdE2015_API
 				path = "propone",
 				httpMethod = HttpMethod.POST
 				)
-	public DefaultBean inserisciPropone(InfoGestionePartiteBean gestioneBean)
+	public DefaultBean inserisciPropone(InfoGestionePartiteBean gestioneBean) throws EccezionePrecondizioni
 	{
 		setUp();
 		//Controllo che la partita esista nel Datastore
@@ -868,7 +897,18 @@ public class PdE2015_API
 		}
 		//Controllo che il giocatore figuri tra i disponibili per la partita
 		try{
-			if( !partita.getLinkDisponibile().contains(gestioneBean.getEmailGiocatore()) )
+			List<TipoLinkDisponibile> listLink = ofy().load().type(TipoLinkDisponibile.class)
+												   .filter("giocatore", gestioneBean.getEmailGiocatore())
+												   .filter("partita", gestioneBean.getIdPartita()).list();
+			if( listLink.size() == 0 )
+			{
+				DefaultBean response = new DefaultBean();
+				response.setResult("Il giocatore non ha dato la sua disponibilità per la partita!");
+				tearDown();
+				return response;
+			}
+			TipoLinkDisponibile link = listLink.get(0);
+			if( !partita.getLinkDisponibile().contains(link.getId()) )
 			{
 				DefaultBean response = new DefaultBean();
 				response.setResult("Chi propone una partita deve figurare automaticamente tra i disponibili!");
@@ -934,10 +974,7 @@ public class PdE2015_API
 			}
 		} catch (EccezioneMolteplicitaMinima e) {
 			log.log(Level.SEVERE, "La partita "+partita.getId()+" non ha un link propone!");
-		} catch (EccezioneSubset e) {
-			log.log(Level.SEVERE, "Il giocatore che ha proposto la partita "+partita.getId()+" non figura tra i disponibili!");
 		}
-		
 		//Aggiorno la partita e la ricarico sul Datastore
 		partita.eliminaPropone();
 		ofy().save().entity(partita).now();
@@ -947,6 +984,9 @@ public class PdE2015_API
 		tearDown();
 		return response;
 	}
+	
+	//API associazione Porta-Amici
+	
 	
 	@BeforeMethod
     private void setUp() {

@@ -15,7 +15,7 @@ public class Partita {
 	private HashSet<Long> elencoVoti;
 	//private TipoLinkOrganizza gruppo;
 	private String chiPropone;
-	private LinkedList<String> elencoDisponibili;
+	private LinkedList<Long> elencoDisponibili;
 	//private HashSet<TipoLinkGioca> elencoGioca;
 	
 	public static final int MIN_LINK_PRESSO = 1;
@@ -26,7 +26,7 @@ public class Partita {
 	
 	protected Partita(){
 		this.elencoVoti = new HashSet<Long>();
-		this.elencoDisponibili = new LinkedList<String>();
+		this.elencoDisponibili = new LinkedList<Long>();
 	}
 	
 	public Partita(Date d, float q)
@@ -34,7 +34,7 @@ public class Partita {
 		this.dataOraPartita = d;
 		this.quota = q;
 		this.elencoVoti = new HashSet<Long>();
-		this.elencoDisponibili = new LinkedList<String>();
+		this.elencoDisponibili = new LinkedList<Long>();
 
 	}
 	
@@ -160,28 +160,23 @@ public class Partita {
 			return 1;
 	}
 	
-	public String getPropone() throws EccezioneMolteplicitaMinima, EccezioneSubset
+	public String getPropone() throws EccezioneMolteplicitaMinima
 	{
 		if( this.quantiPropone() < MIN_LINK_PROPONE )
 			throw new EccezioneMolteplicitaMinima("Cardinalità minima violata!");
 		
-		//Verifico che chi ha proposto figuri tra i disponibili
-		List<String> disp = this.elencoDisponibili;
-		if( !disp.contains(this.chiPropone) )
-			throw new EccezioneSubset("Vincolo di subset violato!");
-		else
-			return this.chiPropone;
+		return this.chiPropone;
 	}
 	
 	// ASSOCIAZIONE disponibile
-	public void inserisciLinkDisponibile(String emailGiocatore)
+	public void inserisciLinkDisponibile(Long link)
 	{
-		if( emailGiocatore != null ) this.elencoDisponibili.add(emailGiocatore);
+		if( link != null ) this.elencoDisponibili.add(link);
 	}
 	
-	public void eliminaLinkDisponibile(String emailGiocatore)
+	public void eliminaLinkDisponibile(Long link)
 	{
-		if( emailGiocatore != null ) this.elencoDisponibili.remove(emailGiocatore);
+		if( link != null ) this.elencoDisponibili.remove(link);
 	}
 	
 	public int quantiDisponibili()
@@ -189,12 +184,12 @@ public class Partita {
 		return this.elencoDisponibili.size();
 	}
 	
-	public List<String> getLinkDisponibile() throws EccezioneMolteplicitaMinima
+	public List<Long> getLinkDisponibile() throws EccezioneMolteplicitaMinima
 	{
 		if( this.quantiDisponibili() < MIN_LINK_DISPONIBILE )
 			throw new EccezioneMolteplicitaMinima("Cardinalità minima violata!");
 		else
-			return (LinkedList<String>)this.elencoDisponibili.clone();
+			return (LinkedList<Long>)this.elencoDisponibili.clone();
 	}
 /*	
 	// ASSOCIAZIONE gioca

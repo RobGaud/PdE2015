@@ -86,14 +86,14 @@ public class Giocatore {
 	
 	// ASSOCIAZIONE DISPONIBILE
 	
-	public void inserisciLinkDisponibile(Long idPartita)
+	public void inserisciLinkDisponibile(Long link)
 	{
-		if(idPartita != null) this.elencoDisponibile.add(idPartita);
+		if( link != null ) this.elencoDisponibile.add(link);
 	}
 	
-	public void eliminaLinkDisponibile(Long idPartita)
+	public void eliminaLinkDisponibile(Long link)
 	{
-		if(idPartita != null) this.elencoDisponibile.remove(idPartita);
+		if(link != null ) this.elencoDisponibile.remove(link);
 	}
 	
 	public Set<Long> getElencoDisponibile() {

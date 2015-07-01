@@ -27,6 +27,7 @@ public class OfyService {
 		ObjectifyService.register(TipoLinkDestinatario.class);
 		ObjectifyService.register(VotoUomoPartita.class);
 		ObjectifyService.register(TipoLinkVotoPerPartita.class);
+		ObjectifyService.register(TipoLinkDisponibile.class);
 
 	}
 	 
