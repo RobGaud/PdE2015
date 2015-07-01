@@ -14,7 +14,7 @@ public class Partita {
 	//private Campo campo;
 	private HashSet<Long> elencoVoti;
 	//private TipoLinkOrganizza gruppo;
-	//private Giocatore chiPropone;
+	private String chiPropone;
 	private LinkedList<String> elencoDisponibili;
 	//private HashSet<TipoLinkGioca> elencoGioca;
 	
@@ -38,6 +38,14 @@ public class Partita {
 
 	}
 	
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
+
 	public Date getDataOra()
 	{
 		return this.dataOraPartita;
@@ -117,16 +125,6 @@ public class Partita {
 			ManagerOrganizza.rimuovi(t);
 	}
 	
-	public void inserisciPerManagerOrganizza(ManagerOrganizza m)
-	{
-		if( m != null ) this.gruppo = m.getLink();
-	}
-
-	public void rimuoviPerManagerOrganizza(ManagerOrganizza m)
-	{
-		if( m != null ) this.gruppo = null;
-	}
-	
 	public int quantiOrganizza()
 	{
 		if( this.gruppo == null )
@@ -142,11 +140,11 @@ public class Partita {
 		else
 			return this.gruppo;
 	}
-	
+*/	
 	// ASSOCIAZIONE propone
-	public void inserisciPropone( Giocatore g )
+	public void inserisciPropone( String emailGiocatore )
 	{
-		if( g != null ) this.chiPropone = g;
+		if( emailGiocatore != null ) this.chiPropone = emailGiocatore;
 	}
 	
 	public void eliminaPropone()
@@ -162,28 +160,19 @@ public class Partita {
 			return 1;
 	}
 	
-	public Giocatore getPropone() throws EccezioneMolteplicitaMinima, EccezioneSubset
+	public String getPropone() throws EccezioneMolteplicitaMinima, EccezioneSubset
 	{
 		if( this.quantiPropone() < MIN_LINK_PROPONE )
 			throw new EccezioneMolteplicitaMinima("Cardinalità minima violata!");
 		
-		List<TipoLinkDisponibile> disp = this.elencoDisponibili;
-		try
-		{
-			TipoLinkDisponibile t = new TipoLinkDisponibile(this.chiPropone, this, 0);
-			if( !disp.contains(t) )
-				throw new EccezioneSubset("Vincolo di subset violato!");
-			else
-				return this.chiPropone;
-		}
-		catch (EccezionePrecondizioni e)
-		{
-				e.printStackTrace();
-		}	
-		//TODO vediamola sta cosa
-		return null;
+		//Verifico che chi ha proposto figuri tra i disponibili
+		List<String> disp = this.elencoDisponibili;
+		if( !disp.contains(this.chiPropone) )
+			throw new EccezioneSubset("Vincolo di subset violato!");
+		else
+			return this.chiPropone;
 	}
-*/	
+	
 	// ASSOCIAZIONE disponibile
 	public void inserisciLinkDisponibile(String emailGiocatore)
 	{

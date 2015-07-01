@@ -750,10 +750,10 @@ public class PdE2015_API
 		}
 	}
 	
-	//TODO API gestione Partite
+	//TODO API associazione Disponibile
 	@ApiMethod(
-				name = "gestionepartite.inserisciDisponibile",
-				path = "gestionepartite",
+				name = "disponibile.inserisciDisponibile",
+				path = "disponibile",
 				httpMethod = HttpMethod.POST
 				)
 	public DefaultBean inserisciDisponibile(InfoGestionePartiteBean gestioneBean)
@@ -790,8 +790,8 @@ public class PdE2015_API
 		giocatore.inserisciLinkDisponibile(gestioneBean.getIdPartita());
 		partita.inserisciLinkDisponibile(gestioneBean.getEmailGiocatore());
 		//Li carico nel datastore
-		ofy().save().entity(giocatore);
-		ofy().save().entity(partita);
+		ofy().save().entity(giocatore).now();
+		ofy().save().entity(partita).now();
 	
 		DefaultBean response = new DefaultBean();
 		response.setResult("Disponibilità inserita con successo.");
@@ -800,9 +800,9 @@ public class PdE2015_API
 	}
 	
 	@ApiMethod(
-			name = "gestionepartite.eliminaDisponibile",
-			path = "gestionepartite",
-			httpMethod = HttpMethod.PUT
+			name = "disponibile.eliminaDisponibile",
+			path = "disponibile/delete",
+			httpMethod = HttpMethod.POST
 			)
 	public DefaultBean eliminaDisponibile(InfoGestionePartiteBean gestioneBean)
 	{
@@ -835,6 +835,115 @@ public class PdE2015_API
 		
 		DefaultBean response = new DefaultBean();
 		response.setResult("Disponibilità rimossa non successo.");
+		tearDown();
+		return response;
+	}
+	
+	//TODO API propone
+	@ApiMethod(
+				name = "propone.inserisciPropone",
+				path = "propone",
+				httpMethod = HttpMethod.POST
+				)
+	public DefaultBean inserisciPropone(InfoGestionePartiteBean gestioneBean)
+	{
+		setUp();
+		//Controllo che la partita esista nel Datastore
+		Partita partita = ofy().load().type(Partita.class).id(gestioneBean.getIdPartita()).now();
+		if(partita==null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Partita non esistente!");
+			tearDown();
+			return response;
+		}
+		//Controllo che il giocatore esista nel Datastore
+		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestioneBean.getEmailGiocatore()).now();
+		if(giocatore==null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Giocatore non esistente!");
+			tearDown();
+			return response;
+		}
+		//Controllo che il giocatore figuri tra i disponibili per la partita
+		try{
+			if( !partita.getLinkDisponibile().contains(gestioneBean.getEmailGiocatore()) )
+			{
+				DefaultBean response = new DefaultBean();
+				response.setResult("Chi propone una partita deve figurare automaticamente tra i disponibili!");
+				tearDown();
+				return response;
+			}
+		}catch(EccezioneMolteplicitaMinima e)
+		{
+			log.log(Level.SEVERE, "La partita "+partita.getId()+
+					" non ha nessun giocatore disponibile!");
+			DefaultBean response = new DefaultBean();
+			response.setResult("La partita deve avere almeno un giocatore disponibile!");
+			tearDown();
+			return response;
+		}
+		//Aggiorno partita e la ricarico sul Datastore
+		partita.inserisciPropone(gestioneBean.getEmailGiocatore());
+		ofy().save().entity(partita).now();
+		
+		DefaultBean response = new DefaultBean();
+		response.setResult("Link propone inserito con successo!");
+		tearDown();
+		return response;
+	}
+	
+	//Ha senso eliminare chi ha proposto una partita? Forse giusto se il giocatore organizza
+	//e poi disdice, e quindi toglie la disponibilità, e allora gli togliamo anche il ruolo
+	//di "proponitore"... boh, io l'ho fatta, poi se non serve la togliamo...
+	@ApiMethod(
+			name = "propone.eliminaPropone",
+			path = "propone/delete",
+			httpMethod = HttpMethod.POST
+			)
+	public DefaultBean eliminaPropone(InfoGestionePartiteBean gestioneBean)
+	{
+		setUp();
+		//Controllo che la partita esista nel Datastore
+		Partita partita = ofy().load().type(Partita.class).id(gestioneBean.getIdPartita()).now();
+		if(partita==null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Partita non esistente!");
+			tearDown();
+			return response;
+		}
+		//Controllo che il giocatore esista nel Datastore
+		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestioneBean.getEmailGiocatore()).now();
+		if(giocatore==null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Giocatore non esistente!");
+			tearDown();
+			return response;
+		}
+		//Controllo che il giocatore sia effettivamente chi ha proposto la partita
+		try {
+			if( !partita.getPropone().equals(gestioneBean.getEmailGiocatore()) )
+			{
+				DefaultBean response = new DefaultBean();
+				response.setResult("Il giocatore non è colui che ha proposto la partita!");
+				tearDown();
+				return response;
+			}
+		} catch (EccezioneMolteplicitaMinima e) {
+			log.log(Level.SEVERE, "La partita "+partita.getId()+" non ha un link propone!");
+		} catch (EccezioneSubset e) {
+			log.log(Level.SEVERE, "Il giocatore che ha proposto la partita "+partita.getId()+" non figura tra i disponibili!");
+		}
+		
+		//Aggiorno la partita e la ricarico sul Datastore
+		partita.eliminaPropone();
+		ofy().save().entity(partita).now();
+		
+		DefaultBean response = new DefaultBean();
+		response.setResult("Link propone rimosso con successo.");
 		tearDown();
 		return response;
 	}
