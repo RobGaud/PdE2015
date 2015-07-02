@@ -16,7 +16,7 @@ public class Partita {
 	//private TipoLinkOrganizza gruppo;
 	private String chiPropone;
 	private LinkedList<Long> elencoDisponibili;
-	//private HashSet<TipoLinkGioca> elencoGioca;
+	private HashSet<String> elencoGioca;
 	
 	public static final int MIN_LINK_PRESSO = 1;
 	public static final int MIN_LINK_GIOCA = 1;
@@ -27,6 +27,7 @@ public class Partita {
 	protected Partita(){
 		this.elencoVoti = new HashSet<Long>();
 		this.elencoDisponibili = new LinkedList<Long>();
+		this.elencoGioca = new HashSet<String>();
 	}
 	
 	public Partita(Date d, float q)
@@ -35,6 +36,7 @@ public class Partita {
 		this.quota = q;
 		this.elencoVoti = new HashSet<Long>();
 		this.elencoDisponibili = new LinkedList<Long>();
+		this.elencoGioca = new HashSet<String>();
 
 	}
 	
@@ -171,7 +173,7 @@ public class Partita {
 	// ASSOCIAZIONE disponibile
 	public void inserisciLinkDisponibile(Long link)
 	{
-		if( link != null ) this.elencoDisponibili.add(link);
+		if( link != null && !this.elencoDisponibili.contains(link) ) this.elencoDisponibili.add(link);
 	}
 	
 	public void eliminaLinkDisponibile(Long link)
@@ -191,28 +193,16 @@ public class Partita {
 		else
 			return (LinkedList<Long>)this.elencoDisponibili.clone();
 	}
-/*	
+	
 	// ASSOCIAZIONE gioca
-	public void inserisciLinkGioca(TipoLinkGioca t)
+	public void inserisciLinkGioca(String giocatore)
 	{
-		if( t != null && t.getPartita().equals(t) )
-			ManagerGioca.inserisci(t);
+		if( giocatore!=null && !this.elencoGioca.contains(giocatore) ) this.elencoGioca.add(giocatore);
 	}
 	
-	public void rimuoviLinkGioca(TipoLinkGioca t)
+	public void eliminaLinkGioca(String giocatore)
 	{
-		if( t != null && t.getPartita().equals(t) )
-			ManagerGioca.elimina(t);
-	}
-	
-	public void inserisciPerManagerGioca(ManagerGioca m)
-	{
-		if( m != null ) this.elencoGioca.add(m.getLink());
-	}
-	
-	public void eliminaPerManagerGioca(ManagerGioca m)
-	{
-		if( m != null ) this.elencoGioca.remove(m.getLink());
+		if( giocatore != null ) this.elencoGioca.remove(giocatore);
 	}
 	
 	public int quantiGioca()
@@ -220,30 +210,12 @@ public class Partita {
 		return this.elencoGioca.size();
 	}
 	
-	public List<TipoLinkGioca> getLinkGioca() throws EccezioneMolteplicitaMinima, EccezioneSubset
+	public Set<String> getLinkGioca() throws EccezioneMolteplicitaMinima /* EccezioneSubset */
 	{
 		if( this.quantiGioca() < MIN_LINK_GIOCA )
 			throw new EccezioneMolteplicitaMinima("Cardinalità minima violata!");
 		
-		List<TipoLinkDisponibile> s = this.elencoDisponibili;
-		Iterator<TipoLinkGioca> i = this.elencoGioca.iterator();
-		while( i.hasNext() )
-		{
-			TipoLinkGioca tg = i.next();
-			TipoLinkDisponibile t;
-			try {
-				t = new TipoLinkDisponibile(tg.getGiocatore(), tg.getPartita(), 0);
-				if( !s.contains(t) )
-					throw new EccezioneSubset("Vincolo di subset violato!");
-			}
-			catch (EccezionePrecondizioni e) {
-					e.printStackTrace();
-			}
-			// TODO Auto-generated catch block
-			
-		}
-		
-		return (LinkedList<TipoLinkGioca>)this.elencoGioca.clone();
+		//Controllo subset spostato sulle API
+		return (HashSet<String>)this.elencoGioca.clone();
 	}
-	*/
 }

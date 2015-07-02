@@ -509,8 +509,6 @@ public class PdE2015_API
           )
 	public DefaultBean inserisciInvito(InfoInvitoBean invitoBean)
 	{
-		//TODO controllo se il destinatario non fa già parte del gruppo
-		
 		if( invitoBean.getEmailDestinatario().equals(invitoBean.getEmailMittente()))
 		{
 			DefaultBean response = new DefaultBean();
@@ -547,6 +545,20 @@ public class PdE2015_API
 			tearDown();
 			return response;
 		}
+		//Controllo che il destinatario non faccia già parte del gruppo;
+		//devo quindi controllare che non esista un tipoLinkIscritto
+		//con questo gruppo e questo giocatore
+		List<TipoLinkIscritto> list = ofy().load().type(TipoLinkIscritto.class)
+									  .filter("gruppo", gruppo.getId())
+									  .filter("giocatore", destinatario.getEmail()).list();
+		if( list.size()>0)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Il destinatario fa già parte del gruppo!");
+			tearDown();
+			return response;
+		}
+		
 		//Controllo che il destinatario non sia già stato invitato nel gruppo
 		//Non deve quindi esistere, in destinatario.linkdestinatario, nessun id
 		//di oggetti Invito collegati al gruppo in questione
@@ -915,7 +927,8 @@ public class PdE2015_API
 		tearDown();
 		return response;
 	}
-	//TODO API propone
+	
+	//TODO API associazione Propone
 	@ApiMethod(
 				name = "propone.inserisciPropone",
 				path = "propone",
@@ -942,6 +955,16 @@ public class PdE2015_API
 			tearDown();
 			return response;
 		}
+		//TODO: vediamola bene sta cosa
+		//Controllo che la partita non abbia già un giocatore che l'ha proposta
+		if( partita.quantiPropone() == 1 )
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("La partita ha già memorizzato un giocatore che l'ha proposta!");
+			tearDown();
+			return response;
+		}
+		
 		//Controllo che il giocatore figuri tra i disponibili per la partita
 		try{
 			List<TipoLinkDisponibile> listLink = ofy().load().type(TipoLinkDisponibile.class)
@@ -1032,8 +1055,127 @@ public class PdE2015_API
 		return response;
 	}
 	
-	//API associazione Porta-Amici
+	//TODO API associazione Gioca
+	@ApiMethod(
+				name = "gioca.inserisciLinkGioca",
+				path = "gioca",
+				httpMethod = HttpMethod.POST
+				)
+	public DefaultBean inserisciLinkGioca(InfoGestionePartiteBean gestioneBean)
+	{
+		setUp();
+		//Controllo che la partita esista nel Datastore
+		Partita partita = ofy().load().type(Partita.class).id(gestioneBean.getIdPartita()).now();
+		if(partita==null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Partita non esistente!");
+			tearDown();
+			return response;
+		}
+		//Controllo che il giocatore esista nel Datastore
+		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestioneBean.getEmailGiocatore()).now();
+		if(giocatore==null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Giocatore non esistente!");
+			tearDown();
+			return response;
+		}
+		//Controllo che il giocatore figuri tra i disponibili per la partita
+		try{
+			List<TipoLinkDisponibile> listLink = ofy().load().type(TipoLinkDisponibile.class)
+												   .filter("giocatore", gestioneBean.getEmailGiocatore())
+												   .filter("partita", gestioneBean.getIdPartita()).list();
+			if( listLink.size() == 0 )
+			{
+				DefaultBean response = new DefaultBean();
+				response.setResult("Il giocatore non ha dato la sua disponibilità per la partita!");
+				tearDown();
+				return response;
+			}
+			TipoLinkDisponibile link = listLink.get(0);
+			if( !partita.getLinkDisponibile().contains(link.getId()) )
+			{
+				DefaultBean response = new DefaultBean();
+				response.setResult("Chi propone una partita deve figurare automaticamente tra i disponibili!");
+				tearDown();
+				return response;
+			}
+		}catch(EccezioneMolteplicitaMinima e)
+		{
+			log.log(Level.SEVERE, "La partita "+partita.getId()+
+					" non ha nessun giocatore disponibile!");
+			DefaultBean response = new DefaultBean();
+			response.setResult("La partita deve avere almeno un giocatore disponibile!");
+			tearDown();
+			return response;
+		}
+		//Controllo non esistenza link gioca - Non posso fare questo controllo:
+		//Al primo inserimento di un giocatore come linkGioca, partita.getLinkGioca()
+		//Lancerà sempre una EccezioneMolteplicitaMinima; dobbiamo spostare il test su Partita
+		
+		//Inserimento link gioca - aggiornamento partita e giocatore
+		partita.inserisciLinkGioca(giocatore.getEmail());
+		giocatore.inserisciLinkGioca(partita.getId());
+		ofy().save().entity(partita).now();
+		ofy().save().entity(giocatore).now();
+		
+		DefaultBean response = new DefaultBean();
+		response.setResult("LinkGioca inserito con successo.");
+		tearDown();
+		return response;
+	}
 	
+	@ApiMethod(
+				name = "gioca.eliminaLinkGioca",
+				path = "gioca/delete",
+				httpMethod = HttpMethod.POST
+				)
+	public DefaultBean eliminaLinkGioca(InfoGestionePartiteBean gestioneBean)
+	{
+		setUp();
+		//Controllo che la partita esista nel Datastore
+		Partita partita = ofy().load().type(Partita.class).id(gestioneBean.getIdPartita()).now();
+		if(partita==null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Partita non esistente!");
+			tearDown();
+			return response;
+		}
+		//Controllo che il giocatore esista nel Datastore
+		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestioneBean.getEmailGiocatore()).now();
+		if(giocatore==null)
+		{
+			DefaultBean response = new DefaultBean();
+			response.setResult("Giocatore non esistente!");
+			tearDown();
+			return response;
+		}
+		//Controllo che il giocatore giochi effettivamente la partita
+		try {
+			if( !partita.getLinkGioca().contains(gestioneBean.getEmailGiocatore()) )
+			{
+				DefaultBean response = new DefaultBean();
+				response.setResult("Il giocatore non gioca la partita!");
+				tearDown();
+				return response;
+			}
+		} catch (EccezioneMolteplicitaMinima e) {
+			log.log(Level.SEVERE, "La partita "+partita.getId()+" non ha nessun LinkGioca!");
+		}
+		//Aggiorno partita e giocatore e li ricarico sul Datastore
+		partita.eliminaLinkGioca(giocatore.getEmail());
+		giocatore.eliminaLinkGioca(partita.getId());
+		ofy().save().entity(partita).now();
+		ofy().save().entity(giocatore).now();
+		
+		DefaultBean response = new DefaultBean();
+		response.setResult("LinkGioca rimosso con successo.");
+		tearDown();
+		return response;
+	}
 	
 	@BeforeMethod
     private void setUp() {
