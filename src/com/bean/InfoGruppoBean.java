@@ -2,13 +2,10 @@ package com.bean;
 
 import java.util.Date;
 
-import com.googlecode.objectify.annotation.Index;
-
 public class InfoGruppoBean {
 	
 	private Long id;
 	private String nome;
-	private Date dataCreazione;
 	private boolean aperto;
 	
 	public InfoGruppoBean() {
@@ -31,15 +28,6 @@ public class InfoGruppoBean {
 	public void setNome(String nome) {
 		if(nome != null)
 			this.nome = nome;
-	}
-
-	public Date getDataCreazione() {
-		return dataCreazione;
-	}
-
-	public void setDataCreazione(Date dataCreazione) {
-		if(dataCreazione != null)
-			this.dataCreazione = dataCreazione;
 	}
 
 	public boolean isAperto() {

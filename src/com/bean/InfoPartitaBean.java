@@ -10,8 +10,7 @@ public class InfoPartitaBean {
 	private Long id;
 	private Date dataOraPartita;
 	private int tipo;
-	private float quota;
-	
+
 	public InfoPartitaBean() {
 		this.tipo = 0;
 	}
@@ -42,14 +41,4 @@ public class InfoPartitaBean {
 		if(tipo >=1 && tipo <= 3)
 			this.tipo = tipo;
 	}
-
-	public float getQuota() {
-		return quota;
-	}
-
-	public void setQuota(float quota) {
-		if(quota >= 0.0f)
-			this.quota = quota;
-	}
-
 }

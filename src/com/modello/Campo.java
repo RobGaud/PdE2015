@@ -15,7 +15,9 @@ public class Campo
 	private float prezzo;
 	private HashSet<String> giorniChiusura;
 	
-	private Campo(){}
+	private Campo(){
+		this.giorniChiusura = new HashSet<String>();
+	}
 	
 	/***
 	 * 
@@ -35,6 +37,14 @@ public class Campo
 		this.giorniChiusura = new HashSet<String>();
 	}
 	
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
+
 	public String getNome()
 	{
 		return this.nome;

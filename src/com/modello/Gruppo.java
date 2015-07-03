@@ -8,6 +8,32 @@ import com.googlecode.objectify.annotation.*;
 public class Gruppo
 {	
 	@Id private Long id;
+
+	@Index private String nome;
+	private Date dataCreazione;
+	private LinkedList<Long> giocatoriIscritti;
+	private Long eGestito;
+	private HashSet<Long> partiteOrganizzate;
+	private HashSet<Long> campiPreferiti;
+	
+	public static final int MIN_LINK_ISCRITTO = 1;
+	public static final int MIN_MAX_LINK_ISCRITTO = 1;
+	
+	protected Gruppo(){
+		this.dataCreazione = new Date();
+		this.giocatoriIscritti = new LinkedList<Long>();
+		this.partiteOrganizzate = new HashSet<Long>();
+		this.campiPreferiti = new HashSet<Long>();
+	}
+	
+	public Gruppo(String n)
+	{
+		this.nome = n;
+		this.dataCreazione = new Date();
+		this.giocatoriIscritti = new LinkedList<Long>();
+		this.partiteOrganizzate = new HashSet<Long>();
+		this.campiPreferiti = new HashSet<Long>();
+	}
 	
 	public Long getId() {
 		return id;
@@ -15,25 +41,6 @@ public class Gruppo
 
 	public void setId(Long id) {
 		this.id = id;
-	}
-
-	@Index private String nome;
-	private Date dataCreazione;
-	//private LinkedList<TipoLinkIscritto> giocatoriIscritti;
-	//private HashSet<TipoLinkOrganizza> partiteOrganizzate;
-	//private HashSet<Campo> campiPreferiti;
-	
-	public static final int MIN_LINK_ISCRITTO = 1;
-	
-	protected Gruppo(){}
-	
-	public Gruppo(String n, Date data)
-	{
-		this.nome = n;
-		this.dataCreazione = data;
-		//this.giocatoriIscritti = new LinkedList<TipoLinkIscritto>();
-		//this.partiteOrganizzate = new HashSet<TipoLinkOrganizza>();
-		//this.campiPreferiti = new HashSet<Campo>();
 	}
 	
 	public String getNome()
@@ -76,83 +83,88 @@ public class Gruppo
 		return this.nome.length() + this.dataCreazione.hashCode();
 	}
 	
-	/*
+	
 	// ASSOCIAZIONE iscritto
 	public int quantiIscritti()
 	{
 		return this.giocatoriIscritti.size();
 	}
 	
-	public List<TipoLinkIscritto> getGiocatoriIscritti() throws EccezioneMolteplicitaMinima
+	public List<Long> getGiocatoriIscritti() throws EccezioneMolteplicitaMinima
 	{
 		if(this.quantiIscritti() < MIN_LINK_ISCRITTO)
 			throw new EccezioneMolteplicitaMinima("Cardinalita minima violata!");
 		else
-			return (LinkedList<TipoLinkIscritto>)this.giocatoriIscritti.clone();
+			return (LinkedList<Long>)this.giocatoriIscritti.clone();
 	}
 	
-	public void inserisciLinkIscritto(TipoLinkIscritto t)
+	public void inserisciLinkIscritto(Long l)
 	{
-		if( t != null && t.getGruppo().equals(this))
-			ManagerIscritto.inserisci(t);
-	}
-	
-	public void rimuoviLinkIscritto(TipoLinkIscritto t)
-	{
-		if( t != null && t.getGruppo().equals(this))
-			ManagerIscritto.elimina(t);
-	}
-	
-	public void inserisciPerManagerIscritto(ManagerIscritto m)
-	{
-		if(m != null) this.giocatoriIscritti.add(m.getLink());
+		if(l != null) this.giocatoriIscritti.add(l);
 	}
 
-	public void eliminaPerManagerIscritto(ManagerIscritto m)
+	public void rimuoviLinkIscritto(Long l)
 	{
-		if(m != null) this.giocatoriIscritti.remove(m.getLink());
+		if(l != null && giocatoriIscritti.contains(l)) this.giocatoriIscritti.remove(l);
+	}
+	
+	// ASSOCIAZIONE gestisce
+	
+	public int quantiGestito() {
+		if(eGestito != null)
+			return 1;
+		return 0;
+	}
+	
+	public Long getLinkGestito() throws EccezioneMolteplicitaMinima, EccezioneSubset {
+		if(quantiGestito() != MIN_MAX_LINK_ISCRITTO)
+			throw new EccezioneMolteplicitaMinima("Violato vincolo di molteplicità min/max");
+		
+		if(!giocatoriIscritti.contains(eGestito))
+			throw new EccezioneSubset("Violato vincolo di subset!");
+	
+		return eGestito;
+	}
+
+	public void inserisciLinkGestito(Long eGestito) {
+		if(eGestito != null) this.eGestito = eGestito;
+	}
+	
+	public void rimuoviLinkGestito(Long eGestito) {
+		if(eGestito != null && eGestito.equals(this.eGestito)) this.eGestito = null;
 	}
 	
 	// ASSOCIAZIONE organizza
-	public void inserisciLinkOrganizza(TipoLinkOrganizza t)
+	public void inserisciLinkOrganizza(Long l)
 	{
-		if( t != null && t.getGruppo().equals(this))
-			ManagerOrganizza.inserisci(t);
-	}
-	
-	public void rimuoviLinkOrganizza(TipoLinkOrganizza t)
-	{
-		if( t != null && t.getGruppo().equals(this))
-			ManagerOrganizza.rimuovi(t);
-	}
-	
-	public void inserisciPerManagerOrganizza(ManagerOrganizza m)
-	{
-		if(m != null) this.partiteOrganizzate.add(m.getLink());
+		if(l != null) this.partiteOrganizzate.add(l);
 
 	}
 	
-	public void rimuoviPerManagerOrganizza(ManagerOrganizza m)
+	public void rimuoviLinkOrganizza(Long l)
 	{
-		if(m != null) this.partiteOrganizzate.remove(m.getLink());
+		if(l != null) this.partiteOrganizzate.remove(l);
 
 	}
 	
+	public Set<Long> getPartiteOrganizzate()
+	{
+		return (HashSet<Long>)this.partiteOrganizzate.clone();
+	}
+
 	// ASSOCIAZIONE CONOSCE
-	public void inserisciCampo(Campo c)
+	public void inserisciCampo(Long c)
 	{
-		if(c != null)
-			this.campiPreferiti.add(c);
+		if(c != null) this.campiPreferiti.add(c);
 	}
 	
-	public void rimuoviCampo(Campo c)
+	public void rimuoviCampo(Long c)
 	{
-		this.campiPreferiti.remove(c);
+		if(c != null && campiPreferiti.contains(c)) this.campiPreferiti.remove(c);
 	}
 	
-	public Set<Campo> getCampiPreferiti()
+	public Set<Long> getCampiPreferiti()
 	{
-		return (HashSet<Campo>)this.campiPreferiti.clone();
+		return (HashSet<Long>)this.campiPreferiti.clone();
 	}
-	*/
 }

@@ -1,6 +1,5 @@
 package com.bean;
 
-import com.googlecode.objectify.annotation.Id;
 
 public class InfoVotoUomoPartitaBean
 {

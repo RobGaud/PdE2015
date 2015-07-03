@@ -1,7 +1,5 @@
 package com.bean;
 
-import com.googlecode.objectify.annotation.Index;
-
 public class InfoGiocatoreBean {
 	
 	private String nome;
