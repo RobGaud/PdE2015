@@ -2,18 +2,32 @@ package com.bean;
 
 public class NDisponibiliBean
 {
-	private String report;
+	private String result;
+	private String httpCode;
+	
 	private int nDisponibili;
 	
 	public String getReport() {
-		return report;
+		return httpCode;
 	}
 
-	public void setReport(String report)
+	public String getResult() {
+		return result;
+	}
+
+	public void setResult(String result)
 	{
-		this.report = report;
+		this.result = result;
 	}
 
+	public String getHttpCode() {
+		return httpCode;
+	}
+
+	public void setHttpCode(String httpCode) {
+		this.httpCode = httpCode;
+	}
+	
 	public int getnDisponibili() {
 		return nDisponibili;
 	}
@@ -21,6 +35,4 @@ public class NDisponibiliBean
 	public void setnDisponibili(int nDisponibili) {
 		this.nDisponibili = nDisponibili;
 	}
-	
-	
 }

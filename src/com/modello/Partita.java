@@ -3,8 +3,12 @@ package com.modello;
 import java.util.*;
 import com.googlecode.objectify.annotation.*;
 
+
+
 @Entity
 public abstract class Partita {
+	
+	public static enum Stato {PROPOSTA, CONFERMATA, GIOCATA};
 	
 	@Id private Long id;
 	
@@ -18,6 +22,8 @@ public abstract class Partita {
 	private LinkedList<Long> elencoDisponibili;
 	private HashSet<String> elencoGioca;
 	
+	private Stato statoCorrente;
+	
 	public static final int MIN_MAX_LINK_PRESSO = 1;
 	public static final int MIN_LINK_GIOCA = 1;
 	public static final int MIN_LINK_PROPONE = 1;
@@ -29,6 +35,7 @@ public abstract class Partita {
 		this.elencoVoti = new HashSet<Long>();
 		this.elencoDisponibili = new LinkedList<Long>();
 		this.elencoGioca = new HashSet<String>();
+		this.statoCorrente = Stato.PROPOSTA;
 	}
 	
 	public Partita(Date d)
@@ -38,6 +45,7 @@ public abstract class Partita {
 		this.elencoVoti = new HashSet<Long>();
 		this.elencoDisponibili = new LinkedList<Long>();
 		this.elencoGioca = new HashSet<String>();
+		this.statoCorrente = Stato.PROPOSTA;
 
 	}
 	
@@ -214,5 +222,13 @@ public abstract class Partita {
 		
 		//Controllo subset spostato sulle API
 		return (HashSet<String>)this.elencoGioca.clone();
+	}
+
+	public Stato getStatoCorrente() {
+		return statoCorrente;
+	}
+
+	public void setStatoCorrente(Stato statoCorrente) {
+		this.statoCorrente = statoCorrente;
 	}
 }
