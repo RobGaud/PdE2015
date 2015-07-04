@@ -36,13 +36,13 @@ public class PdE2015_API
 	private static final String CREATED = "201 Created";
 	private static final String OK = "200 OK"; 
 	private static final String PRECONDITION_FAILED = "412 Precondition Failed";
-
-	Closeable session;
-	private static final Logger log = Logger.getLogger(PdE2015_API.class.getName());
 	private static final String CONFLICT = "409 Conflict";
 	private static final String UNAUTHORIZED = "401 Unauthorized";
 	private static final String INTERNAL_SERVER_ERROR = "500 Internal Server Error";
-	private static final String BAD_REQUEST = null;
+	private static final String BAD_REQUEST = "400 Bad Request";
+	
+	Closeable session;
+	private static final Logger log = Logger.getLogger(PdE2015_API.class.getName());
 	
 	
 	@ApiMethod(
@@ -59,6 +59,7 @@ public class PdE2015_API
 		if(l.size() > 0) {
 			DefaultBean response = new DefaultBean();
 			response.setResult("Campo già esistente!");
+			response.setHttpCode(PRECONDITION_FAILED);
 			tearDown();
 			return response;
 		}
@@ -82,7 +83,8 @@ public class PdE2015_API
 		ofy().save().entity(campo).now();
 		tearDown();
 		DefaultBean response = new DefaultBean();
-		response.setResult("Campo inserito con successo");
+		response.setResult("Campo inserito con successo.");
+		response.setHttpCode(CREATED);
 		return response;
 	}
 	
@@ -118,6 +120,7 @@ public class PdE2015_API
 		if(l.size() <= 0) {
 			DefaultBean response = new DefaultBean();
 			response.setResult("Campo non esistente!");
+			response.setHttpCode(PRECONDITION_FAILED);
 			tearDown();
 			return response;
 		}
@@ -141,6 +144,7 @@ public class PdE2015_API
 		
 		DefaultBean response = new DefaultBean();
 		response.setResult("Campo aggiornato con successo!");
+		response.setHttpCode(OK);
 		return response;
 	}
 	
@@ -157,6 +161,7 @@ public class PdE2015_API
 		if(l.size() <= 0) {
 			DefaultBean response = new DefaultBean();
 			response.setResult("Campo non esistente!");
+			response.setHttpCode(PRECONDITION_FAILED);
 			tearDown();
 			return response;
 		}
@@ -167,6 +172,7 @@ public class PdE2015_API
 		
 		DefaultBean response = new DefaultBean();
 		response.setResult("Campo eliminato con successo!");
+		response.setHttpCode(OK);
 		return response;
 		
 	}
