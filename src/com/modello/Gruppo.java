@@ -103,7 +103,7 @@ public class Gruppo
 		if(l != null) this.giocatoriIscritti.add(l);
 	}
 
-	public void rimuoviLinkIscritto(Long l)
+	public void eliminaLinkIscritto(Long l)
 	{
 		if(l != null && giocatoriIscritti.contains(l)) this.giocatoriIscritti.remove(l);
 	}
@@ -130,7 +130,7 @@ public class Gruppo
 		if(eGestito != null) this.eGestito = eGestito;
 	}
 	
-	public void rimuoviLinkGestito(Long eGestito) {
+	public void eliminaLinkGestito(Long eGestito) {
 		if(eGestito != null && eGestito.equals(this.eGestito)) this.eGestito = null;
 	}
 	
@@ -141,7 +141,7 @@ public class Gruppo
 
 	}
 	
-	public void rimuoviLinkOrganizza(Long l)
+	public void eliminaLinkOrganizza(Long l)
 	{
 		if(l != null) this.partiteOrganizzate.remove(l);
 
@@ -158,7 +158,7 @@ public class Gruppo
 		if(c != null) this.campiPreferiti.add(c);
 	}
 	
-	public void rimuoviCampo(Long c)
+	public void eliminaCampo(Long c)
 	{
 		if(c != null && campiPreferiti.contains(c)) this.campiPreferiti.remove(c);
 	}

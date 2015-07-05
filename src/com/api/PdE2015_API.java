@@ -487,6 +487,10 @@ public class PdE2015_API
 			//TODO che famo?
 			return sendResponse("Non si ha traccia del giocatore che ha proposto la partita!", INTERNAL_SERVER_ERROR);
 		}
+		
+		//Controllo scelta campo
+		if( partita.quantiCampi() == 0 ) return sendResponse("Non è stato scelto il campo per la partita!", PRECONDITION_FAILED);
+		
 		//Controllo numero disponibili
 		if( getNDisponibili(idPartita).getnDisponibili()<partita.getNPartecipanti())
 			return sendResponse("La partita non può essere confermata: numero di partecipanti insufficiente!", PRECONDITION_FAILED);
@@ -521,14 +525,40 @@ public class PdE2015_API
 			}
 			if( x < partita.getNPartecipanti() )
 			{
-				//TODO roll-back
+				//Se entro in questo ramo, c'è stato un errore di gestione dei link.
+				//Roll-back: rimuovo tutti i linkGioca inseriti.
+				it = partita.getLinkDisponibile().iterator();
+				while(it.hasNext() && x<partita.getNPartecipanti())
+				{
+					TipoLinkDisponibile link = ofy().load().type(TipoLinkDisponibile.class).id(it.next()).now();
+					//Controllo esistenza giocatore
+					Giocatore g = ofy().load().type(Giocatore.class).id(link.getGiocatore()).now();
+					if( g == null )
+					{
+						log.log(Level.SEVERE, "Il giocatore "+link.getGiocatore()+
+								", preso dal link "+link.getId()+", non esiste!");
+						continue;
+					}
+					InfoGestionePartiteBean giocaBean = new InfoGestionePartiteBean();
+					giocaBean.setEmailGiocatore(link.getGiocatore());
+					giocaBean.setIdPartita(link.getPartita());
+					DefaultBean result = eliminaLinkGioca(giocaBean);
+					if( !result.getHttpCode().equals(OK) )
+					{
+						log.log(Level.SEVERE, "Errore durante rimozione linkGioca alla partita "+partita.getId());
+						continue;
+					}
+					
+					x += 1 + link.getnAmici();
+				}
+				return sendResponse("Errore durante la conferma della partita!", INTERNAL_SERVER_ERROR);
 			}
 		} catch (EccezioneMolteplicitaMinima e) {
 			//NON ci dovremmo arrivare MAI!
 			return sendResponse("La partita non ha giocatori disponibili!", INTERNAL_SERVER_ERROR);
 		}
 		
-		return sendResponse("Partita confermata con successo!", OK);
+		return sendResponse("Partita confermata con successo.", OK);
    }
 	
 	//TODO API Invito
@@ -665,7 +695,7 @@ public class PdE2015_API
 			DefaultBean deleteResult = eliminaInvito(emailDestinatario, idInvito);
 			if( !deleteResult.getHttpCode().equals(OK) )
 			{
-				insertResult = rimuoviLinkIscritto(iscrittoBean);
+				insertResult = eliminaLinkIscritto(iscrittoBean);
 				if( !insertResult.getHttpCode().equals(OK) )
 				{
 					log.log(Level.SEVERE, "Rollback fallito durante rispondiInvito!");
@@ -1097,11 +1127,11 @@ public class PdE2015_API
 	}
 	
 	@ApiMethod(
-			name = "iscritto.rimuoviLinkIscritto",
+			name = "iscritto.eliminaLinkIscritto",
 			path = "iscritto/delete",
 			httpMethod = HttpMethod.POST
           )
-	public DefaultBean rimuoviLinkIscritto(InfoIscrittoGestisceBean iscrittoBean) {
+	public DefaultBean eliminaLinkIscritto(InfoIscrittoGestisceBean iscrittoBean) {
 		setUp();
 		//Controllo esistenza giocatore
 		Giocatore giocatore = ofy().load().type(Giocatore.class).id(iscrittoBean.getGiocatore()).now();
@@ -1134,7 +1164,7 @@ public class PdE2015_API
 		if(!found) return sendResponse("Giocatore non iscritto!", BAD_REQUEST);
 		
 		// Rimozione TipoLinkIscritto e salvataggio/aggiornamento
-		gruppo.rimuoviLinkIscritto(link.getId());
+		gruppo.eliminaLinkIscritto(link.getId());
 		ofy().save().entity(gruppo).now();
 		giocatore.eliminaLinkIscritto(link.getId());
 		ofy().save().entity(giocatore).now();
@@ -1192,11 +1222,11 @@ public class PdE2015_API
 	}
 	
 	@ApiMethod(
-			name = "gestito.rimuoviLinkGestito",
+			name = "gestito.eliminaLinkGestito",
 			path = "gestito/delete",
 			httpMethod = HttpMethod.POST
           )
-	public DefaultBean rimuoviLinkGestito(InfoIscrittoGestisceBean gestisceBean) {
+	public DefaultBean eliminaLinkGestito(InfoIscrittoGestisceBean gestisceBean) {
 		setUp();
 		//Controllo esistenza giocatore
 		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestisceBean.getGiocatore()).now();
@@ -1228,7 +1258,7 @@ public class PdE2015_API
 		if(!found) return sendResponse("Giocatore non iscritto!", INTERNAL_SERVER_ERROR);
 		
 		// Rimozione LinkGestisce
-		gruppo.rimuoviLinkGestito(link.getId());
+		gruppo.eliminaLinkGestito(link.getId());
 		ofy().save().entity(gruppo).now();
 		
 		return sendResponse("LinkGestisce rimosso con successo!", OK);
@@ -1274,11 +1304,11 @@ public class PdE2015_API
 	}
 	
 	@ApiMethod(
-			name = "conosce.rimuoviLinkConosce",
+			name = "conosce.eliminaLinkConosce",
 			path = "conosce/delete",
 			httpMethod = HttpMethod.POST
           )
-	public DefaultBean rimuoviLinkConosce(InfoConosceBean conosceBean) {
+	public DefaultBean eliminaLinkConosce(InfoConosceBean conosceBean) {
 		setUp();
 		// Controllo esistenza gruppo
 		Gruppo gruppo = ofy().load().type(Gruppo.class).id(conosceBean.getGruppo()).now();
@@ -1289,7 +1319,7 @@ public class PdE2015_API
 		if( campo == null) return sendResponse("Campo non esistente!", PRECONDITION_FAILED);
 		
 		// Rimozione LinkConosce
-		gruppo.rimuoviCampo(conosceBean.getCampo());
+		gruppo.eliminaCampo(conosceBean.getCampo());
 		ofy().save().entity(gruppo).now();
 		
 		return sendResponse("LinkConosce rimosso con successo!", OK);
@@ -1326,11 +1356,11 @@ public class PdE2015_API
 	}
 	
 	@ApiMethod(
-			name = "organizza.rimuoviLinkOrganizza",
+			name = "organizza.eliminaLinkOrganizza",
 			path = "organizza/delete",
 			httpMethod = HttpMethod.POST
           )
-	public 	DefaultBean rimuoviLinkOrganizza(InfoOrganizzaBean organizzaBean) {
+	public 	DefaultBean eliminaLinkOrganizza(InfoOrganizzaBean organizzaBean) {
 		setUp();
 		// Controllo esistenza gruppo
 		Gruppo gruppo = ofy().load().type(Gruppo.class).id(organizzaBean.getGruppo()).now();
@@ -1343,7 +1373,7 @@ public class PdE2015_API
 		// rimozione LinkOrganizza e salvataggio/aggiornamento
 		partita.eliminaLinkOrganizza(organizzaBean.getGruppo());
 		ofy().save().entity(partita).now();
-		gruppo.rimuoviLinkOrganizza(organizzaBean.getPartita());
+		gruppo.eliminaLinkOrganizza(organizzaBean.getPartita());
 		ofy().save().entity(gruppo).now();
 		
 		return sendResponse("LinkOrganizza rimosso con successo!", OK);
@@ -1380,11 +1410,11 @@ public class PdE2015_API
 	}
 	
 	@ApiMethod(
-			name = "presso.rimuoviLinkPresso",
+			name = "presso.eliminaLinkPresso",
 			path = "presso/delete",
 			httpMethod = HttpMethod.POST
           )
-	public DefaultBean rimuoviLinkPresso(InfoPressoBean pressoBean) {
+	public DefaultBean eliminaLinkPresso(InfoPressoBean pressoBean) {
 		setUp();
 		// Controllo esistenza Campo
 		Campo campo = ofy().load().type(Campo.class).id(pressoBean.getCampo()).now();
