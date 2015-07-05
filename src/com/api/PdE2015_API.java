@@ -56,13 +56,7 @@ public class PdE2015_API
 		List<Campo> l = ofy().load().type(Campo.class).filter("indirizzo", campoBean.getIndirizzo())
 													  .filter("citta", campoBean.getCitta()).list();
 		
-		if(l.size() > 0) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Campo già esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if(l.size() > 0) return sendResponse("Campo già esistente!", PRECONDITION_FAILED);
 			
 		Campo campo = new Campo(campoBean.getNome(), campoBean.getTelefono(), campoBean.getIndirizzo(), campoBean.getCitta(), campoBean.getPrezzo());
 		if (!campoBean.getGiorniChiusura().isEmpty()) {
@@ -81,11 +75,8 @@ public class PdE2015_API
 		// Use Objectify to save the campo and now() is used to make the call synchronously as we
 	    // will immediately get a new page using redirect and we want the data to be present.
 		ofy().save().entity(campo).now();
-		tearDown();
-		DefaultBean response = new DefaultBean();
-		response.setResult("Campo inserito con successo.");
-		response.setHttpCode(CREATED);
-		return response;
+		
+		return sendResponse("Campo inserito con successo.", CREATED);
 	}
 	
 	@ApiMethod(
@@ -117,13 +108,7 @@ public class PdE2015_API
 		List<Campo> l = ofy().load().type(Campo.class).filter("indirizzo", ic.getIndirizzo())
 				 									.filter("citta", ic.getCitta()).list();
 		
-		if(l.size() <= 0) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Campo non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if(l.size() <= 0) return sendResponse("Campo non esistente!", PRECONDITION_FAILED);
 		
 		Campo campo = l.get(0);
 		
@@ -140,12 +125,8 @@ public class PdE2015_API
 			campo.addGiornoChiusura(it.next());
 		
 		ofy().save().entity(campo).now();
-		tearDown();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("Campo aggiornato con successo!");
-		response.setHttpCode(OK);
-		return response;
+		return sendResponse("Campo aggiornato con successo!", OK);
 	}
 	
 	@ApiMethod(
@@ -158,23 +139,12 @@ public class PdE2015_API
 		List<Campo> l = ofy().load().type(Campo.class).filter("indirizzo", campoBean.getIndirizzo())
 				 									.filter("citta", campoBean.getCitta()).list();
 		
-		if(l.size() <= 0) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Campo non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if(l.size() <= 0) return sendResponse("Campo non esistente!", PRECONDITION_FAILED);
 		
 		Campo campo = l.get(0);
 		ofy().delete().entity(campo).now();
-		tearDown();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("Campo eliminato con successo!");
-		response.setHttpCode(OK);
-		return response;
-		
+		return sendResponse("Campo eliminato con successo!", OK);
 	}
 	
 	//TODO API Giocatore
@@ -187,23 +157,13 @@ public class PdE2015_API
 		setUp();
 		Giocatore giocatore = ofy().load().type(Giocatore.class).id(giocatoreBean.getEmail()).now();
 		
-		if(giocatore != null) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Giocatore già esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if(giocatore != null) return sendResponse("Giocatore già esistente!", PRECONDITION_FAILED);
 		
 		giocatore = new Giocatore(giocatoreBean.getNome(), giocatoreBean.getEmail(), giocatoreBean.getTelefono(),
 									giocatoreBean.getRuoloPreferito(), giocatoreBean.getFotoProfilo());
 		ofy().save().entity(giocatore).now();
-		tearDown();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("Giocatore inserito con successo!");
-		response.setHttpCode(CREATED);
-		return response;
+		return sendResponse("Giocatore inserito con successo!", CREATED);
 	}
 	
 	@ApiMethod(
@@ -234,13 +194,7 @@ public class PdE2015_API
 		setUp();
 		Giocatore g = ofy().load().type(Giocatore.class).id(ig.getEmail()).now();
 		
-		if(g == null) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Giocatore non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if(g == null) sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
 		
 		if(ig.getNome() != null)
 			g.setNome(ig.getNome());
@@ -253,12 +207,8 @@ public class PdE2015_API
 		
 		
 		ofy().save().entity(g).now();
-		tearDown();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("Giocatore aggiornato con successo!");
-		response.setHttpCode(OK);
-		return response;
+		return sendResponse("Giocatore aggiornato con successo!", OK);
 	}
 	
 	@ApiMethod(
@@ -270,22 +220,11 @@ public class PdE2015_API
 		setUp();
 		Giocatore giocatore = ofy().load().type(Giocatore.class).id(giocatoreBean.getEmail()).now();
 		
-		if(giocatore == null) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Giocatore non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if(giocatore == null) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
 		
 		ofy().delete().entity(giocatore).now();
-		tearDown();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("Giocatore eliminato con successo!");
-		response.setHttpCode(OK);
-		return response;
-		
+		return sendResponse("Giocatore eliminato con successo!", OK);
 	}
 	
 	//TODO API Gruppo
@@ -306,12 +245,8 @@ public class PdE2015_API
 			GruppoChiuso gc = new GruppoChiuso(gruppoBean.getNome());
 			ofy().save().entity(gc).now();
 		}
-		tearDown();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("Gruppo inserito con successo!");
-		response.setHttpCode(CREATED);
-		return response;
+		return sendResponse("Gruppo inserito con successo!", CREATED);
 	}
 	
 	@ApiMethod(
@@ -349,24 +284,14 @@ public class PdE2015_API
 		setUp();
 		Gruppo gruppo = ofy().load().type(Gruppo.class).id(gruppoBean.getId()).now();
 		
-		if(gruppo == null) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Gruppo non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if(gruppo == null) return sendResponse("Gruppo non esistente!", PRECONDITION_FAILED);
 		
 		if(gruppoBean.getNome() != null)
 			gruppo.setNome(gruppoBean.getNome());
 		
 		ofy().save().entity(gruppo).now();
-		tearDown();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("Gruppo aggiornato con successo!");
-		response.setHttpCode(OK);
-		return response;	
+		return sendResponse("Gruppo aggiornato con successo!", OK);
 	}
 	
 	@ApiMethod(
@@ -378,21 +303,11 @@ public class PdE2015_API
 		setUp();
 		Gruppo gruppo = ofy().load().type(Gruppo.class).id(gruppoBean.getId()).now();
 		
-		if(gruppo == null) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Gruppo non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if(gruppo == null) return sendResponse("Gruppo non esistente!", PRECONDITION_FAILED);
 		
 		ofy().delete().type(Gruppo.class).id(gruppoBean.getId()).now();
-		tearDown();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("Gruppo eliminato con successo!");
-		response.setHttpCode(OK);
-		return response;
+		return sendResponse("Gruppo eliminato con successo.", OK);
 	}
 	
 	
@@ -419,18 +334,11 @@ public class PdE2015_API
 				ofy().save().entity(pc_3).now();
 				break;
 			default:
-				tearDown();
-				DefaultBean response = new DefaultBean();
-				response.setResult("Tipo partita non previsto!");
-				response.setHttpCode(PRECONDITION_FAILED);
-				return response;	
+				log.log(Level.SEVERE, "E' stato tentato l'inserimento di una partita con un tipo non previsto!");
+				return sendResponse("Tipo partita non previsto!", PRECONDITION_FAILED);	
 		}
-		tearDown();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("Partita inserita con successo!");
-		response.setHttpCode(CREATED);
-		return response;
+		return sendResponse("Partita inserita con successo!", CREATED);
 	}
 	
 	@ApiMethod(
@@ -477,23 +385,14 @@ public class PdE2015_API
           )
 	public DefaultBean eliminaPartita(InfoPartitaBean partitaBean) {
 		setUp();
-		Partita partita = ofy().load().type(Partita.class).id(partitaBean.getId()).now();
 		
-		if(partita == null) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Partita non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		Partita partita = ofy().load().type(Partita.class).id(partitaBean.getId()).now();
+		if(partita == null)
+			return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
 		
 		ofy().delete().type(Partita.class).id(partitaBean.getId()).now();
-		tearDown();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("Partita eliminata con successo!");
-		response.setHttpCode(OK);
-		return response;
+		return sendResponse("Partita eliminata con successo!", OK);
 	}
 	
 	@ApiMethod(
@@ -505,24 +404,15 @@ public class PdE2015_API
 		setUp();
 		Partita partita = ofy().load().type(Partita.class).id(partitaBean.getId()).now();
 		
-		if(partita == null) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Partita non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if(partita == null)
+			return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
 		
 		if(partitaBean.getDataOraPartita() != null)
 			partita.setDataOraPartita(partitaBean.getDataOraPartita());
 
 		ofy().save().entity(partita).now();
-		tearDown();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("Partita aggiornata con successo!");
-		response.setHttpCode(OK);
-		return response;
+		return sendResponse("Partita aggiornata con successo!", OK);
 	}
 	
 	@ApiMethod(
@@ -580,51 +470,27 @@ public class PdE2015_API
 		//Controllo esistenza giocatore
 		//Controllo che il votante esista nel Datastore
 		Giocatore giocatore = ofy().load().type(Giocatore.class).id(emailGiocatore).now();
-		if( giocatore == null )
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Giocatore non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if( giocatore == null ) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo esistenza partita
 		Partita partita = ofy().load().type(Partita.class).id(idPartita).now();
-		if(partita == null) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Partita non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if(partita == null)
+			return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo giocatore come proponitore
 		try {
 			if(!partita.getPropone().equals(emailGiocatore))
-			{
-				DefaultBean response = new DefaultBean();
-				response.setResult("Solo chi propone la partita può confermarla!");
-				response.setHttpCode(UNAUTHORIZED);
-				tearDown();
-				return response;
-			}
+				return sendResponse("Solo chi propone la partita può confermarla!", UNAUTHORIZED);
+			
 		} catch (EccezioneMolteplicitaMinima e) {
 			log.log(Level.SEVERE, "La partita "+idPartita+" non ha un proponitore!");
 			//TODO che famo?
-			DefaultBean response = new DefaultBean();
-			response.setResult("Non si ha traccia del giocatore che ha proposto la partita!");
-			response.setHttpCode(INTERNAL_SERVER_ERROR);
-			tearDown();
-			return response;
+			return sendResponse("Non si ha traccia del giocatore che ha proposto la partita!", INTERNAL_SERVER_ERROR);
 		}
 		//Controllo numero disponibili
 		if( getNDisponibili(idPartita).getnDisponibili()<partita.getNPartecipanti())
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("La partita non può essere confermata: numero di partecipanti insufficiente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+			return sendResponse("La partita non può essere confermata: numero di partecipanti insufficiente!", PRECONDITION_FAILED);
+		
 		//Inserimento linkGioca con i giocatori che giocheranno la partita
 		int x = 0;
 		Iterator<Long> it;
@@ -659,18 +525,10 @@ public class PdE2015_API
 			}
 		} catch (EccezioneMolteplicitaMinima e) {
 			//NON ci dovremmo arrivare MAI!
-			DefaultBean response = new DefaultBean();
-			response.setResult("La partita non ha giocatori disponibili!");
-			response.setHttpCode(INTERNAL_SERVER_ERROR);
-			tearDown();
-			return response;
+			return sendResponse("La partita non ha giocatori disponibili!", INTERNAL_SERVER_ERROR);
 		}
-		DefaultBean response = new DefaultBean();
-		response.setResult("Partita confermata con successo!");
-		response.setHttpCode(OK);
-		tearDown();
-		return response;
 		
+		return sendResponse("Partita confermata con successo!", OK);
    }
 	
 	//TODO API Invito
@@ -682,45 +540,21 @@ public class PdE2015_API
 	public DefaultBean inserisciInvito(InfoInvitoBean invitoBean)
 	{
 		if( invitoBean.getEmailDestinatario().equals(invitoBean.getEmailMittente()))
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Mittente e destinatario coincidenti!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+			return sendResponse("Mittente e destinatario coincidenti!", PRECONDITION_FAILED);
 		
 		setUp();
 		//Controllo se il mittente esiste nel Datastore
 		Giocatore mittente = ofy().load().type(Giocatore.class).id(invitoBean.getEmailMittente()).now();
-		if( mittente == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Mittente non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if( mittente == null) return sendResponse("Mittente non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo se il destinatario esiste nel Datastore
 		Giocatore destinatario = ofy().load().type(Giocatore.class).id(invitoBean.getEmailDestinatario()).now();
-		if( destinatario == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Destinatario non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if( destinatario == null) return sendResponse("Destinatario non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo se il gruppo esiste nel Datastore
 		Gruppo gruppo = ofy().load().type(Gruppo.class).id(invitoBean.getIdGruppo()).now();
-		if( gruppo == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Gruppo non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if( gruppo == null) return sendResponse("Gruppo non esistente!", PRECONDITION_FAILED);
+		
 		//TODO controllare che il mittente faccia parte del gruppo, ovviamente.
 		//Controllo che il destinatario non faccia già parte del gruppo;
 		//devo quindi controllare che non esista un tipoLinkIscritto
@@ -728,14 +562,7 @@ public class PdE2015_API
 		List<TipoLinkIscritto> list = ofy().load().type(TipoLinkIscritto.class)
 									  .filter("gruppo", gruppo.getId())
 									  .filter("giocatore", destinatario.getEmail()).list();
-		if( list.size()>0)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Il destinatario fa già parte del gruppo!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if( list.size()>0) return sendResponse("Il destinatario fa già parte del gruppo!", PRECONDITION_FAILED);
 		
 		//Controllo che il destinatario non sia già stato invitato nel gruppo
 		//Non deve quindi esistere, in destinatario.linkdestinatario, nessun id
@@ -753,13 +580,7 @@ public class PdE2015_API
 			}
 			try {
 				if(i.getGruppo().equals(gruppo.getId()))
-				{
-					DefaultBean response = new DefaultBean();
-					response.setResult("Il destinatario è già stato invitato nel gruppo!");
-					response.setHttpCode(PRECONDITION_FAILED);
-					tearDown();
-					return response;
-				}
+					return sendResponse("Il destinatario è già stato invitato nel gruppo!", PRECONDITION_FAILED);
 			} catch (EccezioneMolteplicitaMinima e) {
 				log.log(Level.SEVERE, "L'invito "+i.getId()+
 						" non ha memorizzato l'id di un gruppo!");
@@ -769,17 +590,13 @@ public class PdE2015_API
 		//Carico preventivamente l'invito sul Datastore per ottenere un id
 		Invito invito = new Invito(invitoBean.getEmailMittente(), invitoBean.getIdGruppo());
 		ofy().save().entity(invito).now();
+		//Inserisco il link e ricarico le entità sul Datastore
 		destinatario.inserisciLinkDestinatario(invito.getId());
 		invito.inserisciLinkDestinatario(destinatario.getEmail());
 		ofy().save().entity(invito).now();
 		ofy().save().entity(destinatario).now();
 
-		DefaultBean response = new DefaultBean();
-		response.setResult("Invito inserito con successo!");
-		response.setHttpCode(CREATED);
-		tearDown();
-		return response;
-	
+		return sendResponse("Invito inserito con successo!", CREATED);
 	}
 	
 	@ApiMethod(
@@ -793,37 +610,19 @@ public class PdE2015_API
 		setUp();
 		//Controllo se l'invito esiste nel Datastore
 		Invito invito = ofy().load().type(Invito.class).id(idInvito).now();
-		if( invito == null )
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Invito non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if( invito == null ) return sendResponse("Invito non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo se il destinatario esiste nel Datastore
 		Giocatore destinatario= ofy().load().type(Giocatore.class).id(emailDestinatario).now();
-		if( destinatario == null )
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Destinatario non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-
-			tearDown();
-			return response;
-		}
+		if( destinatario == null ) return sendResponse("Destinatario non esistente!", PRECONDITION_FAILED);
+		
 		//Rimozione idLink da destinatario.linkDestinatario
 		destinatario.eliminaLinkDestinatario(idInvito);
 		ofy().save().entity(destinatario).now();
 		//Rimozione invito dal Datastore
 		ofy().delete().type(Invito.class).id(idInvito).now();
-			
-		DefaultBean response = new DefaultBean();
-		response.setResult("Invito rimosso con successo!");
-		response.setHttpCode(OK);
-
-		tearDown();
-		return response;
+		
+		return sendResponse("Invito rimosso con successo!", OK);
 	}
 	
 	@ApiMethod(
@@ -838,23 +637,11 @@ public class PdE2015_API
 		setUp();
 		//Controllo se l'invito esiste nel Datastore
 		Invito invito = ofy().load().type(Invito.class).id(idInvito).now();
-		if( invito == null )
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Invito non esistente!");
-			tearDown();
-			return response;
-		}
+		if( invito == null ) return sendResponse("Invito non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo se il destinatario esiste nel Datastore
 		Giocatore destinatario= ofy().load().type(Giocatore.class).id(emailDestinatario).now();
-		if( destinatario == null )
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Destinatario non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if( destinatario == null ) return sendResponse("Destinatario non esistente!", PRECONDITION_FAILED);
 		
 		//Se destinatario accetta l'invito
 		if( risposta )
@@ -866,11 +653,7 @@ public class PdE2015_API
 				iscrittoBean.setGruppo(invito.getGruppo());
 			} catch (EccezioneMolteplicitaMinima e) {
 				log.log(Level.SEVERE, "L'invito "+invito.getId()+" non ha memorizzato l'id di un gruppo!");
-				DefaultBean response = new DefaultBean();
-				response.setResult("L'invito non ha memorizzato l'id di un gruppo!");
-				response.setHttpCode(PRECONDITION_FAILED);
-				tearDown();
-				return response;
+				return sendResponse("L'invito non ha memorizzato l'id di un gruppo!", PRECONDITION_FAILED);
 			}
 			DefaultBean insertResult = this.inserisciLinkIscritto(iscrittoBean);
 			if( !insertResult.getHttpCode().equals(CREATED) )
@@ -890,29 +673,17 @@ public class PdE2015_API
 				tearDown();
 				return deleteResult;
 			}
-			DefaultBean response = new DefaultBean();
-			response.setResult("Risposta andata a buon fine!");
-			response.setHttpCode(OK);
-			tearDown();
-			return response;
+			return sendResponse("Risposta andata a buon fine!", OK);
 		}
 		else	// L'invito è stato rifiutato
 		{
 			DefaultBean deleteResult = eliminaInvito(emailDestinatario, idInvito);
 			if( !deleteResult.getHttpCode().equals(OK) )
 			{
-				tearDown();
 				log.log(Level.SEVERE, "Errore durante la rimozione dell'invito durante rispondiInvito!");
-				DefaultBean response = new DefaultBean();
-				response.setHttpCode(PRECONDITION_FAILED);
-				response.setResult("Errore durante la risposta!");
-				return response;
+				return sendResponse("Errore durante la risposta!", PRECONDITION_FAILED);
 			}
-			DefaultBean response = new DefaultBean();
-			response.setResult("Risposta andata a buon fine!");
-			response.setHttpCode(OK);
-			tearDown();
-			return response;
+			return sendResponse("Risposta inviata con successo.", OK);
 		}
 	}
 	
@@ -927,34 +698,16 @@ public class PdE2015_API
 		setUp();
 		//Controllo che il votante esista nel Datastore
 		Giocatore votante = ofy().load().type(Giocatore.class).id(votoBean.getVotante()).now();
-		if( votante == null )
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Votante non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if( votante == null ) return sendResponse("Votante non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo che il votato esista nel Datastore
 		Giocatore votato = ofy().load().type(Giocatore.class).id(votoBean.getVotato()).now();
-		if( votato == null )
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Votato non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if( votato == null ) return sendResponse("Votato non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo che il votato esista nel Datastore
 		Partita partita = ofy().load().type(Partita.class).id(votoBean.getLinkVotoPerPartita()).now();
-		if( partita == null )
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Partita non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if( partita == null ) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo che non esista già un voto da parte dello stesso votante per la stessa partita
 		Set<Long> idVoti = partita.getLinkPerPartita();
 		Iterator<Long> it = idVoti.iterator();
@@ -964,13 +717,8 @@ public class PdE2015_API
 			try {
 				log.log(Level.WARNING, "v.getVotante()="+v.getVotanteUP()+", votante.getEmail()="+votante.getEmail());
 				if( v.getVotanteUP().equals(votante.getEmail()) )
-				{
-					DefaultBean response = new DefaultBean();
-					response.setResult("Il votante ha già votato per questa partita!");
-					response.setHttpCode(PRECONDITION_FAILED);
-					tearDown();
-					return response;
-				}
+					return sendResponse("Il votante ha già votato per questa partita!", PRECONDITION_FAILED);
+				
 			} catch (EccezioneMolteplicitaMinima e) {
 				log.log(Level.SEVERE, "Il voto "+v.getId()+
 						" non ha memorizzato l'id di un votante!");
@@ -987,11 +735,7 @@ public class PdE2015_API
 		partita.inserisciLinkPerPartita(voto.getId());
 		ofy().save().entity(partita).now();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("Voto inserito con successo!");
-		response.setHttpCode(CREATED);
-		tearDown();
-		return response;
+		return sendResponse("Voto inserito con successo!", CREATED);
 	}
 	
 	@ApiMethod(
@@ -1005,24 +749,12 @@ public class PdE2015_API
 		setUp();
 		//Controllo se il voto esiste nel Datastore
 		VotoUomoPartita voto = ofy().load().type(VotoUomoPartita.class).id(idVoto).now();
-		if( voto == null )
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Voto non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if( voto == null ) return sendResponse("Voto non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo se il votante esiste nel Datastore
 		Giocatore votante= ofy().load().type(Giocatore.class).id(emailVotante).now();
-		if( votante == null )
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Votante non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if( votante == null ) return sendResponse("Votante non esistente!", PRECONDITION_FAILED);
+
 		
 		try {
 			//Rimozione idVoto da partita.idVoti
@@ -1032,17 +764,11 @@ public class PdE2015_API
 			//Rimozione voto dal Datastore
 			ofy().delete().type(VotoUomoPartita.class).id(idVoto).now();
 			
-			DefaultBean response = new DefaultBean();
-			response.setResult("Voto rimosso con successo!");
-			response.setHttpCode(OK);
-			tearDown();
-			return response;
-		} catch (EccezioneMolteplicitaMinima e) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Il voto "+idVoto+"non ha memorizzato l'id della partita!");
-			response.setHttpCode(INTERNAL_SERVER_ERROR);
-			tearDown();
-			return response;
+			return sendResponse("Voto rimosso con successo!", OK);
+			
+		} catch (EccezioneMolteplicitaMinima e)
+		{
+			return sendResponse("Il voto "+idVoto+"non ha memorizzato l'id della partita!", INTERNAL_SERVER_ERROR);
 		}
 	}
 	
@@ -1058,24 +784,12 @@ public class PdE2015_API
 		setUp();
 		//Controllo che la partita esista nel Datastore
 		Partita partita = ofy().load().type(Partita.class).id(gestioneBean.getIdPartita()).now();
-		if(partita==null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Partita non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if(partita==null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo che il giocatore esista nel Datastore
 		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestioneBean.getEmailGiocatore()).now();
-		if(giocatore==null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Giocatore non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if(giocatore==null) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo che il giocatore non abbia già dato disponibilità per questa partita
 		try {
 			TipoLinkDisponibile link = new TipoLinkDisponibile(gestioneBean.getEmailGiocatore(),
@@ -1084,13 +798,8 @@ public class PdE2015_API
 												 .filter("giocatore", gestioneBean.getEmailGiocatore())
 												 .filter("partita", gestioneBean.getIdPartita()).list();
 			if(linkList.contains(link))
-			{
-				DefaultBean response = new DefaultBean();
-				response.setResult("Il giocatore ha già dato la sua disponibilità per questa partita!");
-				response.setHttpCode(PRECONDITION_FAILED);
-				tearDown();
-				return response;
-			}
+				return sendResponse("Il giocatore ha già dato la sua disponibilità per questa partita!", PRECONDITION_FAILED);
+			
 			//Carico il link sul Datastore
 			ofy().save().entity(link).now();
 			
@@ -1099,21 +808,13 @@ public class PdE2015_API
 			partita.inserisciLinkDisponibile(link.getId());
 		
 		} catch (EccezionePrecondizioni e) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Almeno uno dei campi di interesse è null!");
-			response.setHttpCode(BAD_REQUEST);
-			tearDown();
-			return response;
+			return sendResponse("Almeno uno dei campi di interesse è null!", BAD_REQUEST);
 		}
 		//Li carico nel datastore
 		ofy().save().entity(giocatore).now();
 		ofy().save().entity(partita).now();
 	
-		DefaultBean response = new DefaultBean();
-		response.setResult("Disponibilità inserita con successo.");
-		response.setHttpCode(CREATED);
-		tearDown();
-		return response;
+		return sendResponse("Disponibilità inserita con successo.", CREATED);
 	}
 	
 	@ApiMethod(
@@ -1126,36 +827,18 @@ public class PdE2015_API
 		setUp();
 		//Controllo che la partita esista nel Datastore
 		Partita partita = ofy().load().type(Partita.class).id(gestioneBean.getIdPartita()).now();
-		if(partita==null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Partita non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if(partita==null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo che il giocatore esista nel Datastore
 		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestioneBean.getEmailGiocatore()).now();
-		if(giocatore==null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Giocatore non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if(giocatore==null) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo che il giocatore abbia dato disponibilità per la partita
 		List<TipoLinkDisponibile> listLink = ofy().load().type(TipoLinkDisponibile.class)
 										   .filter("giocatore", gestioneBean.getEmailGiocatore())
 										   .filter("partita", gestioneBean.getIdPartita()).list();
-		if( listLink.size() == 0 )
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Il giocatore non ha dato la sua disponibilità per la partita!");
-			response.setHttpCode(INTERNAL_SERVER_ERROR);
-			tearDown();
-			return response;
-		}
+		if( listLink.size() == 0 ) return sendResponse("Il giocatore non ha dato la sua disponibilità per la partita!", INTERNAL_SERVER_ERROR);
+		
 		TipoLinkDisponibile link = listLink.get(0);
 		//Elimino il link dal Datastore
 		ofy().delete().entity(link).now();
@@ -1166,11 +849,7 @@ public class PdE2015_API
 		ofy().save().entity(giocatore);
 		ofy().save().entity(partita);
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("Disponibilità rimossa non successo.");
-		response.setHttpCode(OK);
-		tearDown();
-		return response;
+		return sendResponse("Disponibilità rimossa non successo.", OK);
 	}
 	
 	@ApiMethod(
@@ -1183,46 +862,25 @@ public class PdE2015_API
 		setUp();
 		//Controllo che la partita esista nel Datastore
 		Partita partita = ofy().load().type(Partita.class).id(gestioneBean.getIdPartita()).now();
-		if(partita==null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Partita non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if(partita==null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo che il giocatore esista nel Datastore
 		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestioneBean.getEmailGiocatore()).now();
-		if(giocatore==null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Giocatore non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if(giocatore==null) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo che il giocatore abbia dato disponibilità per la partita
 		List<TipoLinkDisponibile> listLink = ofy().load().type(TipoLinkDisponibile.class)
 											   .filter("giocatore", gestioneBean.getEmailGiocatore())
 											   .filter("partita", gestioneBean.getIdPartita()).list();
 		if( listLink.size() == 0 )
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Il giocatore non ha dato la sua disponibilità per la partita!");
-			response.setHttpCode(INTERNAL_SERVER_ERROR);
-			tearDown();
-			return response;
-		}
+			return sendResponse("Il giocatore non ha dato la sua disponibilità per la partita!", INTERNAL_SERVER_ERROR);
+		
 		//Aggiorno il link, e lo ricarico sul Datastore --- E' FONDAMENTALE CHE NON CAMBI IL SUO ID
 		TipoLinkDisponibile link = listLink.get(0);
 		link.setnAmici(gestioneBean.getnAmici());
 		ofy().save().entity(link).now();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("Link disponibile aggiornato con successo!");
-		response.setHttpCode(OK);
-		tearDown();
-		return response;
+		return sendResponse("Link disponibile aggiornato con successo!", OK);
 	}
 	
 	//TODO API associazione Propone
@@ -1236,34 +894,16 @@ public class PdE2015_API
 		setUp();
 		//Controllo che la partita esista nel Datastore
 		Partita partita = ofy().load().type(Partita.class).id(gestioneBean.getIdPartita()).now();
-		if(partita==null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Partita non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if(partita==null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo che il giocatore esista nel Datastore
 		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestioneBean.getEmailGiocatore()).now();
-		if(giocatore==null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Giocatore non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if(giocatore==null) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
 		//TODO: vediamola bene sta cosa
 		//Controllo che la partita non abbia già un giocatore che l'ha proposta
 		if( partita.quantiPropone() == 1 )
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("La partita ha già memorizzato un giocatore che l'ha proposta!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+			return sendResponse("La partita ha già memorizzato un giocatore che l'ha proposta!", PRECONDITION_FAILED);
 		
 		//Controllo che il giocatore figuri tra i disponibili per la partita
 		try{
@@ -1271,41 +911,23 @@ public class PdE2015_API
 												   .filter("giocatore", gestioneBean.getEmailGiocatore())
 												   .filter("partita", gestioneBean.getIdPartita()).list();
 			if( listLink.size() == 0 )
-			{
-				DefaultBean response = new DefaultBean();
-				response.setResult("Il giocatore non ha dato la sua disponibilità per la partita!");
-				response.setHttpCode(PRECONDITION_FAILED);
-				tearDown();
-				return response;
-			}
+				return sendResponse("Il giocatore non ha dato la sua disponibilità per la partita!", PRECONDITION_FAILED);
+			
 			TipoLinkDisponibile link = listLink.get(0);
 			if( !partita.getLinkDisponibile().contains(link.getId()) )
-			{
-				DefaultBean response = new DefaultBean();
-				response.setResult("Chi propone una partita deve figurare automaticamente tra i disponibili!");
-				response.setHttpCode(PRECONDITION_FAILED);
-				tearDown();
-				return response;
-			}
+				return sendResponse("Chi propone una partita deve figurare automaticamente tra i disponibili!", PRECONDITION_FAILED);
+			
 		}catch(EccezioneMolteplicitaMinima e)
 		{
 			log.log(Level.SEVERE, "La partita "+partita.getId()+
 					" non ha nessun giocatore disponibile!");
-			DefaultBean response = new DefaultBean();
-			response.setResult("La partita deve avere almeno un giocatore disponibile!");
-			response.setHttpCode(INTERNAL_SERVER_ERROR);
-			tearDown();
-			return response;
+			return sendResponse("La partita deve avere almeno un giocatore disponibile!", INTERNAL_SERVER_ERROR);
 		}
 		//Aggiorno partita e la ricarico sul Datastore
 		partita.inserisciPropone(gestioneBean.getEmailGiocatore());
 		ofy().save().entity(partita).now();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("Link propone inserito con successo!");
-		response.setHttpCode(CREATED);
-		tearDown();
-		return response;
+		return sendResponse("Link propone inserito con successo!", CREATED);
 	}
 	
 	//Ha senso eliminare chi ha proposto una partita? Forse giusto se il giocatore organizza
@@ -1321,34 +943,16 @@ public class PdE2015_API
 		setUp();
 		//Controllo che la partita esista nel Datastore
 		Partita partita = ofy().load().type(Partita.class).id(gestioneBean.getIdPartita()).now();
-		if(partita==null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Partita non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if(partita==null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo che il giocatore esista nel Datastore
 		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestioneBean.getEmailGiocatore()).now();
-		if(giocatore==null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Giocatore non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if(giocatore==null) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo che il giocatore sia effettivamente chi ha proposto la partita
 		try {
 			if( !partita.getPropone().equals(gestioneBean.getEmailGiocatore()) )
-			{
-				DefaultBean response = new DefaultBean();
-				response.setResult("Il giocatore non è colui che ha proposto la partita!");
-				response.setHttpCode(CONFLICT);
-				tearDown();
-				return response;
-			}
+				return sendResponse("Il giocatore non è colui che ha proposto la partita!", CONFLICT);
 		} catch (EccezioneMolteplicitaMinima e) {
 			log.log(Level.SEVERE, "La partita "+partita.getId()+" non ha un link propone!");
 		}
@@ -1356,11 +960,7 @@ public class PdE2015_API
 		partita.eliminaPropone();
 		ofy().save().entity(partita).now();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("Link propone rimosso con successo.");
-		response.setHttpCode(OK);
-		tearDown();
-		return response;
+		return sendResponse("Link propone rimosso con successo.", OK);
 	}
 	
 	//TODO API associazione Gioca
@@ -1374,55 +974,30 @@ public class PdE2015_API
 		setUp();
 		//Controllo che la partita esista nel Datastore
 		Partita partita = ofy().load().type(Partita.class).id(gestioneBean.getIdPartita()).now();
-		if(partita==null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Partita non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if(partita==null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo che il giocatore esista nel Datastore
 		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestioneBean.getEmailGiocatore()).now();
-		if(giocatore==null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Giocatore non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if(giocatore==null) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo che il giocatore figuri tra i disponibili per la partita
 		try{
 			List<TipoLinkDisponibile> listLink = ofy().load().type(TipoLinkDisponibile.class)
 												   .filter("giocatore", gestioneBean.getEmailGiocatore())
 												   .filter("partita", gestioneBean.getIdPartita()).list();
+			
 			if( listLink.size() == 0 )
-			{
-				DefaultBean response = new DefaultBean();
-				response.setResult("Il giocatore non ha dato la sua disponibilità per la partita!");
-				response.setHttpCode(INTERNAL_SERVER_ERROR);
-				tearDown();
-				return response;
-			}
+				return sendResponse("Il giocatore non ha dato la sua disponibilità per la partita!", INTERNAL_SERVER_ERROR);
+			
 			TipoLinkDisponibile link = listLink.get(0);
 			if( !partita.getLinkDisponibile().contains(link.getId()) )
-			{
-				DefaultBean response = new DefaultBean();
-				response.setResult("Chi propone una partita deve figurare automaticamente tra i disponibili!");
-				response.setHttpCode(INTERNAL_SERVER_ERROR);
-				tearDown();
-				return response;
-			}
+				return sendResponse("Chi propone una partita deve figurare automaticamente tra i disponibili!", INTERNAL_SERVER_ERROR);
+			
 		}catch(EccezioneMolteplicitaMinima e)
 		{
 			log.log(Level.SEVERE, "La partita "+partita.getId()+
 					" non ha nessun giocatore disponibile!");
-			DefaultBean response = new DefaultBean();
-			response.setResult("La partita deve avere almeno un giocatore disponibile!");
-			response.setHttpCode(INTERNAL_SERVER_ERROR);
-			tearDown();
-			return response;
+			return sendResponse("La partita deve avere almeno un giocatore disponibile!", INTERNAL_SERVER_ERROR);
 		}
 		//Controllo non esistenza link gioca - Non posso fare questo controllo:
 		//Al primo inserimento di un giocatore come linkGioca, partita.getLinkGioca()
@@ -1434,11 +1009,7 @@ public class PdE2015_API
 		ofy().save().entity(partita).now();
 		ofy().save().entity(giocatore).now();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("LinkGioca inserito con successo.");
-		response.setHttpCode(CREATED);
-		tearDown();
-		return response;
+		return sendResponse("LinkGioca inserito con successo.", CREATED);
 	}
 	
 	@ApiMethod(
@@ -1451,34 +1022,16 @@ public class PdE2015_API
 		setUp();
 		//Controllo che la partita esista nel Datastore
 		Partita partita = ofy().load().type(Partita.class).id(gestioneBean.getIdPartita()).now();
-		if(partita==null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Partita non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if(partita==null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo che il giocatore esista nel Datastore
 		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestioneBean.getEmailGiocatore()).now();
-		if(giocatore==null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Giocatore non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if(giocatore==null) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo che il giocatore giochi effettivamente la partita
 		try {
 			if( !partita.getLinkGioca().contains(gestioneBean.getEmailGiocatore()) )
-			{
-				DefaultBean response = new DefaultBean();
-				response.setResult("Il giocatore non gioca la partita!");
-				response.setHttpCode(INTERNAL_SERVER_ERROR);
-				tearDown();
-				return response;
-			}
+				return sendResponse("Il giocatore non gioca la partita!", INTERNAL_SERVER_ERROR);
 		} catch (EccezioneMolteplicitaMinima e) {
 			log.log(Level.SEVERE, "La partita "+partita.getId()+" non ha nessun LinkGioca!");
 		}
@@ -1488,11 +1041,7 @@ public class PdE2015_API
 		ofy().save().entity(partita).now();
 		ofy().save().entity(giocatore).now();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("LinkGioca rimosso con successo.");
-		response.setHttpCode(OK);
-		tearDown();
-		return response;
+		return sendResponse("LinkGioca rimosso con successo.", OK);
 	}
 	
 	// TODO API Iscritto
@@ -1505,24 +1054,11 @@ public class PdE2015_API
 		setUp();
 		//Controllo esistenza giocatore
 		Giocatore giocatore = ofy().load().type(Giocatore.class).id(iscrittoBean.getGiocatore()).now();
-		if( giocatore == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Destinatario non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if( giocatore == null) return sendResponse("Destinatario non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo esistenza gruppo
 		Gruppo gruppo = ofy().load().type(Gruppo.class).id(iscrittoBean.getGruppo()).now();
-		if( gruppo == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Gruppo non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if( gruppo == null) return sendResponse("Gruppo non esistente!", PRECONDITION_FAILED);
 		
 		// Controllo iscrizione unica
 		if( gruppo.quantiIscritti() != 0 )
@@ -1533,13 +1069,8 @@ public class PdE2015_API
 				while(it.hasNext()) {
 					Long idLink = it.next();
 					TipoLinkIscritto link = ofy().load().type(TipoLinkIscritto.class).id(idLink).now();
-					if(link.getGiocatore().equals(iscrittoBean.getGiocatore())) {
-						DefaultBean response = new DefaultBean();
-						response.setResult("Giocatore già iscritto!");
-						response.setHttpCode(CONFLICT);
-						tearDown();
-						return response;
-					}
+					if(link.getGiocatore().equals(iscrittoBean.getGiocatore()))
+						return sendResponse("Giocatore già iscritto!", CONFLICT);
 				}
 			}
 			catch(EccezioneMolteplicitaMinima e) {
@@ -1559,18 +1090,10 @@ public class PdE2015_API
 		}
 		catch(EccezionePrecondizioni e) {
 			log.log(Level.SEVERE, "Almeno uno tra iscrittoBean.getGruppo() e iscrittoBean.getGIocatore() ha restituito null");
-			DefaultBean response = new DefaultBean();
-			response.setResult("Errore imprevisto!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
+			return sendResponse("Errore imprevisto!", PRECONDITION_FAILED);
 		}
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("TipoLinkIscritto inserito con successo!");
-		response.setHttpCode(CREATED);
-		tearDown();
-		return response;
+		return sendResponse("TipoLinkIscritto inserito con successo!", CREATED);
 	}
 	
 	@ApiMethod(
@@ -1582,24 +1105,11 @@ public class PdE2015_API
 		setUp();
 		//Controllo esistenza giocatore
 		Giocatore giocatore = ofy().load().type(Giocatore.class).id(iscrittoBean.getGiocatore()).now();
-		if( giocatore == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Giocatore non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if( giocatore == null) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo esistenza gruppo
 		Gruppo gruppo = ofy().load().type(Gruppo.class).id(iscrittoBean.getGruppo()).now();
-		if( gruppo == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Gruppo non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if( gruppo == null) return sendResponse("Gruppo non esistente!", PRECONDITION_FAILED);
 		
 		// Controllo esistenza TipoLinkIscritto
 		boolean found = false;
@@ -1621,13 +1131,7 @@ public class PdE2015_API
 					"non rispetta la molteplicità minima!");
 		}
 		
-		if(!found) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Giocatore non iscritto!");
-			response.setHttpCode(BAD_REQUEST);
-			tearDown();
-			return response;
-		}
+		if(!found) return sendResponse("Giocatore non iscritto!", BAD_REQUEST);
 		
 		// Rimozione TipoLinkIscritto e salvataggio/aggiornamento
 		gruppo.rimuoviLinkIscritto(link.getId());
@@ -1636,11 +1140,7 @@ public class PdE2015_API
 		ofy().save().entity(giocatore).now();
 		ofy().delete().entity(link).now();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("TipoLinkRimosso con successo!");
-		response.setHttpCode(OK);
-		tearDown();
-		return response;	
+		return sendResponse("TipoLinkRimosso con successo!", OK);	
 	}
 	
 	// TODO API Gestito
@@ -1653,24 +1153,11 @@ public class PdE2015_API
 		setUp();
 		//Controllo esistenza giocatore
 		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestisceBean.getGiocatore()).now();
-		if( giocatore == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Giocatore non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if( giocatore == null) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo esistenza gruppo
 		Gruppo gruppo = ofy().load().type(Gruppo.class).id(gestisceBean.getGruppo()).now();
-		if( gruppo == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Gruppo non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if( gruppo == null) return sendResponse("Gruppo non esistente!", PRECONDITION_FAILED);
 		
 		// Controllo esistenza TipoLinkIscritto
 		boolean found = false;
@@ -1692,31 +1179,16 @@ public class PdE2015_API
 					"non rispetta la molteplicità minima!");
 		}
 		
-		if(!found) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Il gestore del gruppo deve farne parte!");
-			tearDown();
-			return response;
-		}
+		if(!found) return sendResponse("Il gestore del gruppo deve farne parte!", PRECONDITION_FAILED);
 		
 		// Controllo Unicità del gestore
-		if(gruppo.quantiGestito() == 1) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Gruppo già gestito da un giocatore!");
-			response.setHttpCode(CONFLICT);
-			tearDown();
-			return response;
-		}
+		if(gruppo.quantiGestito() == 1) return sendResponse("Gruppo già gestito da un giocatore!", CONFLICT);
 		
 		// Creazione LinkGestisce
 		gruppo.inserisciLinkGestito(link.getId());
 		ofy().save().entity(gruppo).now();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("LinkGestisce inserito con successo!");
-		response.setHttpCode(CREATED);
-		tearDown();
-		return response;
+		return sendResponse("LinkGestisce inserito con successo!", CREATED);
 	}
 	
 	@ApiMethod(
@@ -1728,24 +1200,11 @@ public class PdE2015_API
 		setUp();
 		//Controllo esistenza giocatore
 		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestisceBean.getGiocatore()).now();
-		if( giocatore == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Giocatore non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if( giocatore == null) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo esistenza gruppo
 		Gruppo gruppo = ofy().load().type(Gruppo.class).id(gestisceBean.getGruppo()).now();
-		if( gruppo == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Gruppo non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if( gruppo == null) return sendResponse("Gruppo non esistente!", PRECONDITION_FAILED);
 		
 		// Controllo esistenza TipoLinkIscritto
 		boolean found = false;
@@ -1766,24 +1225,13 @@ public class PdE2015_API
 			log.log(Level.SEVERE, "Il Gruppo "+gruppo.getId()+" non rispetta la molteplicità minima!");
 		}
 		
-		if(!found) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Giocatore non iscritto!");
-			response.setHttpCode(INTERNAL_SERVER_ERROR);
-			tearDown();
-			return response;
-		}
+		if(!found) return sendResponse("Giocatore non iscritto!", INTERNAL_SERVER_ERROR);
 		
 		// Rimozione LinkGestisce
 		gruppo.rimuoviLinkGestito(link.getId());
 		ofy().save().entity(gruppo).now();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("LinkGestisce rimosso con successo!");
-		response.setHttpCode(OK);
-		tearDown();
-		return response;
-		
+		return sendResponse("LinkGestisce rimosso con successo!", OK);
 	}
 	// TODO API Conosce
 	@ApiMethod(
@@ -1795,25 +1243,11 @@ public class PdE2015_API
 		setUp();
 		// Controllo esistenza gruppo
 		Gruppo gruppo = ofy().load().type(Gruppo.class).id(conosceBean.getGruppo()).now();
-		if( gruppo == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Gruppo non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if( gruppo == null) return sendResponse("Gruppo non esistente!", PRECONDITION_FAILED);
 		
 		// Controllo esistenza Campo
 		Campo campo = ofy().load().type(Campo.class).id(conosceBean.getCampo()).now();
-		if( campo == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Campo non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if( campo == null) return sendResponse("Campo non esistente!", PRECONDITION_FAILED);
 		
 		// Controllo campi duplicati
 		/*
@@ -1829,23 +1263,14 @@ public class PdE2015_API
 			}
 		}
 		*/
-		if(gruppo.getCampiPreferiti().contains(conosceBean.getCampo())) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Campo già presente!");
-			response.setHttpCode(CONFLICT);
-			tearDown();
-			return response;
-		}
+		if(gruppo.getCampiPreferiti().contains(conosceBean.getCampo()))
+			return sendResponse("Campo già presente!", CONFLICT);
 		
 		// Inserimento linkConosce e salvataggio/aggiornamento
 		gruppo.inserisciCampo(conosceBean.getCampo());
 		ofy().save().entity(gruppo).now();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("LinkConosce inserito con successo!");
-		response.setHttpCode(CREATED);
-		tearDown();
-		return response;
+		return sendResponse("LinkConosce inserito con successo!", CREATED);
 	}
 	
 	@ApiMethod(
@@ -1857,36 +1282,17 @@ public class PdE2015_API
 		setUp();
 		// Controllo esistenza gruppo
 		Gruppo gruppo = ofy().load().type(Gruppo.class).id(conosceBean.getGruppo()).now();
-		if( gruppo == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Gruppo non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if( gruppo == null) return sendResponse("Gruppo non esistente!", PRECONDITION_FAILED);
 		
 		// Controllo esistenza Campo
 		Campo campo = ofy().load().type(Campo.class).id(conosceBean.getCampo()).now();
-		if( campo == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Campo non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if( campo == null) return sendResponse("Campo non esistente!", PRECONDITION_FAILED);
 		
 		// Rimozione LinkConosce
 		gruppo.rimuoviCampo(conosceBean.getCampo());
 		ofy().save().entity(gruppo).now();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("LinkConosce rimosso con successo!");
-		response.setHttpCode(OK);
-		tearDown();
-		return response;
-		
+		return sendResponse("LinkConosce rimosso con successo!", OK);
 	}
 	
 	// TODO API Organizza
@@ -1899,35 +1305,16 @@ public class PdE2015_API
 		setUp();
 		// Controllo esistenza gruppo
 		Gruppo gruppo = ofy().load().type(Gruppo.class).id(organizzaBean.getGruppo()).now();
-		if( gruppo == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Gruppo non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if( gruppo == null) return sendResponse("Gruppo non esistente!", PRECONDITION_FAILED);
 		
 		// Controllo esistenza partita
 		Partita partita = ofy().load().type(Partita.class).id(organizzaBean.getPartita()).now();
-		if( partita == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Partita non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if( partita == null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
 		
 		// Controllo link duplicati
 		// TODO Rivedere bene gli equals!!
-		if(gruppo.getPartiteOrganizzate().contains(organizzaBean.getPartita())) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Partita già organizzata!");
-			response.setHttpCode(CONFLICT);
-			tearDown();
-			return response;
-		}
+		if(gruppo.getPartiteOrganizzate().contains(organizzaBean.getPartita())) 
+			return sendResponse("Partita già organizzata!", CONFLICT);
 		
 		// inserimento LinkOrganizza e salvataggio/aggiornamento
 		partita.inserisciLinkOrganizza(organizzaBean.getGruppo());
@@ -1935,11 +1322,7 @@ public class PdE2015_API
 		gruppo.inserisciLinkOrganizza(organizzaBean.getPartita());
 		ofy().save().entity(gruppo).now();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("LinkOrganizza inserito con successo!");
-		response.setHttpCode(CREATED);
-		tearDown();
-		return response;
+		return sendResponse("LinkOrganizza inserito con successo!", CREATED);
 	}
 	
 	@ApiMethod(
@@ -1951,25 +1334,11 @@ public class PdE2015_API
 		setUp();
 		// Controllo esistenza gruppo
 		Gruppo gruppo = ofy().load().type(Gruppo.class).id(organizzaBean.getGruppo()).now();
-		if( gruppo == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Gruppo non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if( gruppo == null) return sendResponse("Gruppo non esistente!", PRECONDITION_FAILED);
 		
 		// Controllo esistenza partita
 		Partita partita = ofy().load().type(Partita.class).id(organizzaBean.getPartita()).now();
-		if( partita == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Partita non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		if( partita == null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
 		
 		// rimozione LinkOrganizza e salvataggio/aggiornamento
 		partita.eliminaLinkOrganizza(organizzaBean.getGruppo());
@@ -1977,11 +1346,7 @@ public class PdE2015_API
 		gruppo.rimuoviLinkOrganizza(organizzaBean.getPartita());
 		ofy().save().entity(gruppo).now();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("LinkOrganizza rimosso con successo!");
-		response.setHttpCode(OK);
-		tearDown();
-		return response;
+		return sendResponse("LinkOrganizza rimosso con successo!", OK);
 	}
 	
 	// TODO API Presso
@@ -1994,46 +1359,24 @@ public class PdE2015_API
 		setUp();
 		// Controllo esistenza Campo
 		Campo campo = ofy().load().type(Campo.class).id(pressoBean.getCampo()).now();
-		if( campo == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Campo non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		
+		if( campo == null) return sendResponse("Campo non esistente!", PRECONDITION_FAILED);
 		
 		// Controllo esistenza partita
 		Partita partita = ofy().load().type(Partita.class).id(pressoBean.getPartita()).now();
-		if( partita == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Partita non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		
+		if( partita == null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
 		
 		// Controllo unicità Campo
 		// TODO vedere bene per la possibilità di cambiare campo
-		if(partita.quantiCampi() == 1) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Campo già impostato!");
-			response.setHttpCode(CONFLICT);
-			tearDown();
-			return response;
-		}
+		if(partita.quantiCampi() == 1) return sendResponse("Campo già impostato!", CONFLICT);
 		
 		// inserimento LinkPresso e salvataggio/aggiornamento
 		partita.inserisciCampo(pressoBean.getCampo());
 		partita.setQuota(campo.getPrezzo()/partita.getNPartecipanti());
 		ofy().save().entity(partita).now();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("LinkPresso inserito con successo!");
-		response.setHttpCode(CREATED);
-		tearDown();
-		return response;
+		return sendResponse("LinkPresso inserito con successo!", CREATED);
 	}
 	
 	@ApiMethod(
@@ -2045,35 +1388,19 @@ public class PdE2015_API
 		setUp();
 		// Controllo esistenza Campo
 		Campo campo = ofy().load().type(Campo.class).id(pressoBean.getCampo()).now();
-		if( campo == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Campo non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		
+		if( campo == null) return sendResponse("Campo non esistente!", PRECONDITION_FAILED);
 		
 		// Controllo esistenza partita
 		Partita partita = ofy().load().type(Partita.class).id(pressoBean.getPartita()).now();
-		if( partita == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Partita non esistente!");
-			response.setHttpCode(PRECONDITION_FAILED);
-			tearDown();
-			return response;
-		}
+		
+		if( partita == null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
 		
 		// rimozione LinkPresso e salvataggio/aggiornamento
 		partita.eliminaCampo(pressoBean.getCampo());
 		ofy().save().entity(partita).now();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("LinkPresso rimosso con successo!");
-		response.setHttpCode(OK);
-		tearDown();
-		return response;
+		return sendResponse("LinkPresso rimosso con successo!", OK);
 	}
 	
 	@BeforeMethod
@@ -2085,5 +1412,13 @@ public class PdE2015_API
     private void tearDown() {
         session.close();
     }
-
+    
+    private DefaultBean sendResponse(String mex, String code)
+    {
+    	DefaultBean response = new DefaultBean();
+		response.setResult(mex);
+		response.setHttpCode(code);
+		tearDown();
+		return response;
+    }
 }
