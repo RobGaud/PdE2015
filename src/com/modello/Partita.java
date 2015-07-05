@@ -13,14 +13,14 @@ public abstract class Partita {
 	@Id private Long id;
 	
 	private Date dataOraPartita;
-	private float quota;	// TODO quota è un attributo indipendente o dipendente dal Campo in cui si gioca?
+	private float quota;
 	
 	private Long campo;
-	private HashSet<Long> elencoVoti;
-	private Long gruppo;
-	private String chiPropone;
-	private LinkedList<Long> elencoDisponibili;
-	private HashSet<String> elencoGioca;
+	private HashSet<Long> elencoVoti; 			//Id dei TipoLinkVotoPerPartita
+	private Long gruppo;						//Id del gruppo
+	private String chiPropone;					//Email del proponitore
+	private LinkedList<Long> elencoDisponibili;	//Id dei TipoLinkDisponibile
+	private HashSet<String> elencoGioca;		//Email di chi gioca
 	
 	private Stato statoCorrente;
 	

@@ -468,7 +468,6 @@ public class PdE2015_API
    {
 		setUp();
 		//Controllo esistenza giocatore
-		//Controllo che il votante esista nel Datastore
 		Giocatore giocatore = ofy().load().type(Giocatore.class).id(emailGiocatore).now();
 		if( giocatore == null ) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
 		
@@ -494,6 +493,9 @@ public class PdE2015_API
 		//Controllo numero disponibili
 		if( getNDisponibili(idPartita).getnDisponibili()<partita.getNPartecipanti())
 			return sendResponse("La partita non può essere confermata: numero di partecipanti insufficiente!", PRECONDITION_FAILED);
+		
+		//Cambio stato partita
+		partita.setStatoCorrente(Partita.Stato.CONFERMATA);
 		
 		//Inserimento linkGioca con i giocatori che giocheranno la partita
 		int x = 0;
@@ -559,7 +561,97 @@ public class PdE2015_API
 		}
 		
 		return sendResponse("Partita confermata con successo.", OK);
-   }
+   	}
+	
+	@ApiMethod(
+			name = "partita.annullaPartita",
+			path = "partita/cancel",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean annullaPartita(@Named("emailGiocatore")String emailGiocatore,
+			   						  @Named("idPartita")Long idPartita)
+	{
+		setUp();
+		//Controllo esistenza giocatore
+		Giocatore giocatore = ofy().load().type(Giocatore.class).id(emailGiocatore).now();
+		if( giocatore == null ) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo esistenza partita
+		Partita partita = ofy().load().type(Partita.class).id(idPartita).now();
+		if(partita == null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo stato partita
+		if( partita.getStatoCorrente()!=Partita.Stato.PROPOSTA)
+			return sendResponse("La partita non può essere annullata, poiché confermata o già giocata!", BAD_REQUEST);
+		//Controllo giocatore come proponitore
+		try {
+			if(!partita.getPropone().equals(emailGiocatore))
+				return sendResponse("Solo chi propone la partita può confermarla!", UNAUTHORIZED);
+			
+		} catch (EccezioneMolteplicitaMinima e) {
+			log.log(Level.SEVERE, "La partita "+idPartita+" non ha un proponitore!");
+			//TODO che famo?
+			return sendResponse("Non si ha traccia del giocatore che ha proposto la partita!", INTERNAL_SERVER_ERROR);
+		}
+		
+		//Rimozione linkPresso alla partita
+		if( partita.quantiCampi()!=0 )
+		{
+			try {
+				InfoPressoBean pressoBean = new InfoPressoBean();
+				pressoBean.setCampo(partita.getCampo());
+				pressoBean.setPartita(idPartita);
+				eliminaLinkPresso(pressoBean);
+			} catch (EccezioneMolteplicitaMinima e) {
+				log.log(Level.SEVERE, "La partita non ha memorizzato un campo, eppure quantiCampi() restituisce 1!");
+			}
+		}
+		//Rimozione linkOrganizza alla partita
+		if( partita.quantiOrganizza()!=0 )
+		{
+			try{
+				InfoOrganizzaBean organizzaBean = new InfoOrganizzaBean();
+				organizzaBean.setGruppo(partita.getLinkOrganizza());
+				organizzaBean.setPartita(idPartita);
+				eliminaLinkOrganizza(organizzaBean);
+			} catch(EccezioneMolteplicitaMinima e)
+			{
+				log.log(Level.SEVERE, "La partita non ha un linkOrganizza, ma quantiOrganizza restituisce 1!");
+			}
+		}
+		//Rimozione linkDisponibile alla partita
+		if( partita.quantiDisponibili()!=0 )
+		{
+			try{
+				Iterator<Long> it = partita.getLinkDisponibile().iterator();
+				while( it.hasNext() )
+				{
+					TipoLinkDisponibile link = ofy().load().type(TipoLinkDisponibile.class).id(it.next()).now();
+					InfoGestionePartiteBean disponibileBean = new InfoGestionePartiteBean();
+					disponibileBean.setEmailGiocatore(link.getGiocatore());
+					disponibileBean.setIdPartita(idPartita);
+					eliminaLinkDisponibile(disponibileBean);
+				}
+			} catch(EccezioneMolteplicitaMinima e)
+			{
+				log.log(Level.SEVERE, "La partita non ha nessun linkDisponibile, ma quantiOrganizza() non restituisce 0!");
+			}
+		}
+		//Rimozione linkPropone alla partita
+		if( partita.quantiPropone()!=0 )
+		{
+			InfoGestionePartiteBean proponeBean = new InfoGestionePartiteBean();
+			proponeBean.setEmailGiocatore(emailGiocatore);
+			proponeBean.setIdPartita(idPartita);
+			eliminaLinkPropone(proponeBean);
+		}
+		//Rimozione partita
+		InfoPartitaBean partitaBean = new InfoPartitaBean();
+		partitaBean.setId(idPartita);
+		eliminaPartita(partitaBean);
+		//Invio conferma rimozione avvenuta
+		return sendResponse("Partita annullata con successo.", OK);
+	}
 	
 	//TODO API Invito
 	@ApiMethod(
@@ -852,7 +944,7 @@ public class PdE2015_API
 			path = "disponibile/delete",
 			httpMethod = HttpMethod.POST
 			)
-	public DefaultBean eliminaDisponibile(InfoGestionePartiteBean gestioneBean)
+	public DefaultBean eliminaLinkDisponibile(InfoGestionePartiteBean gestioneBean)
 	{
 		setUp();
 		//Controllo che la partita esista nel Datastore
@@ -919,7 +1011,7 @@ public class PdE2015_API
 				path = "propone",
 				httpMethod = HttpMethod.POST
 				)
-	public DefaultBean inserisciPropone(InfoGestionePartiteBean gestioneBean) throws EccezionePrecondizioni
+	public DefaultBean inserisciLinkPropone(InfoGestionePartiteBean gestioneBean) throws EccezionePrecondizioni
 	{
 		setUp();
 		//Controllo che la partita esista nel Datastore
@@ -968,7 +1060,7 @@ public class PdE2015_API
 			path = "propone/delete",
 			httpMethod = HttpMethod.POST
 			)
-	public DefaultBean eliminaPropone(InfoGestionePartiteBean gestioneBean)
+	public DefaultBean eliminaLinkPropone(InfoGestionePartiteBean gestioneBean)
 	{
 		setUp();
 		//Controllo che la partita esista nel Datastore
@@ -1428,6 +1520,7 @@ public class PdE2015_API
 		
 		// rimozione LinkPresso e salvataggio/aggiornamento
 		partita.eliminaCampo(pressoBean.getCampo());
+		partita.setQuota(Partita.SENTINELLA);
 		ofy().save().entity(partita).now();
 		
 		return sendResponse("LinkPresso rimosso con successo!", OK);
