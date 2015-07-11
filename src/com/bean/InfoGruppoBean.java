@@ -6,12 +6,21 @@ public class InfoGruppoBean {
 	
 	private Long id;
 	private String nome;
+	private String citta;
 	private boolean aperto;
 	
 	public InfoGruppoBean() {
 		this.aperto = false;
 	}
 	
+	public String getCitta() {
+		return citta;
+	}
+
+	public void setCitta(String citta) {
+		this.citta = citta;
+	}
+
 	public Long getId() {
 		return id;
 	}

@@ -17,15 +17,15 @@ public abstract class Partita {
 	
 	private Long campo;
 	private HashSet<Long> elencoVoti; 			//Id dei TipoLinkVotoPerPartita
-	private Long gruppo;						//Id del gruppo
+	@Index private Long gruppo;					//Id del gruppo
 	private String chiPropone;					//Email del proponitore
 	private LinkedList<Long> elencoDisponibili;	//Id dei TipoLinkDisponibile
 	private HashSet<String> elencoGioca;		//Email di chi gioca
 	
-	private Stato statoCorrente;
+	@Index private Stato statoCorrente;
 	
 	public static final int MIN_MAX_LINK_PRESSO = 1;
-	public static final int MIN_LINK_GIOCA = 1;
+	public static final int MIN_LINK_GIOCA = 0;
 	public static final int MIN_LINK_PROPONE = 1;
 	public static final int MIN_LINK_DISPONIBILE = 1;
 	public static final int MIN_LINK_ORGANIZZA = 1;

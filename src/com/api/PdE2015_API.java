@@ -3,11 +3,17 @@ package com.api;
 import com.google.api.server.spi.config.Api;
 import com.google.api.server.spi.config.ApiMethod;
 import com.google.api.server.spi.config.ApiMethod.*;
+import com.google.gwt.dev.ModuleTabPanel.Session;
 import com.googlecode.objectify.ObjectifyService;
 import com.googlecode.objectify.util.Closeable;
+import com.attivita.SessioneUtente;
+import com.attivita.SessioneUtente.StatoSessione;
 
 import static com.persistence.OfyService.ofy;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -16,9 +22,12 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
 import com.modello.*;
+import com.modello.Partita.Stato;
+import com.attivita.SessioneUtente.StatoSessione;
 import com.bean.*;
 
-import javax.inject.Named;
+import javax.annotation.Nullable;
+import javax.inject.*;
 
 //enum tipoPartita {CALCIO, CALCIOTTO, CALCETTO};
 
@@ -40,6 +49,7 @@ public class PdE2015_API
 	private static final String UNAUTHORIZED = "401 Unauthorized";
 	private static final String INTERNAL_SERVER_ERROR = "500 Internal Server Error";
 	private static final String BAD_REQUEST = "400 Bad Request";
+	private static final String NOT_FOUND = "404 Not Found";
 	
 	Closeable session;
 	private static final Logger log = Logger.getLogger(PdE2015_API.class.getName());
@@ -238,11 +248,11 @@ public class PdE2015_API
 		// NB: Il gruppo viene identificato attraverso l'id
 		setUp();
 		if(gruppoBean.isAperto()){
-			GruppoAperto ga = new GruppoAperto(gruppoBean.getNome());
+			GruppoAperto ga = new GruppoAperto(gruppoBean.getNome(), gruppoBean.getCitta());
 			ofy().save().entity(ga).now();
 		}
 		else {
-			GruppoChiuso gc = new GruppoChiuso(gruppoBean.getNome());
+			GruppoChiuso gc = new GruppoChiuso(gruppoBean.getNome(), gruppoBean.getCitta());
 			ofy().save().entity(gc).now();
 		}
 		
@@ -254,18 +264,25 @@ public class PdE2015_API
 				path = "gruppo",
 				httpMethod = HttpMethod.GET
 	          )
-	public ListaGruppiBean listaGruppi(@Named("aperto") boolean aperto) {
+	public ListaGruppiBean listaGruppi(@Named("aperto") boolean aperto, @Named("citta") String citta) {
 		ListaGruppiBean lg = new ListaGruppiBean();
 		setUp();
-		if(aperto) {
-			List<GruppoAperto> l = ofy().load().type(GruppoAperto.class).list();
+		if(aperto)
+		{
+			List<GruppoAperto> l;
+			if( citta.equals("") ) 
+				l = ofy().load().type(GruppoAperto.class).list();
+			else l = ofy().load().type(GruppoAperto.class).filter("citta", citta).list();
 			Iterator<GruppoAperto> it =  l.iterator();
 			
 			while(it.hasNext())
 				lg.addGruppo(it.next());
 		}
 		else {
-			List<GruppoChiuso> l = ofy().load().type(GruppoChiuso.class).list();
+			List<GruppoChiuso> l;
+			if( citta.equals("") ) 
+				l = ofy().load().type(GruppoChiuso.class).list();
+			else l = ofy().load().type(GruppoChiuso.class).filter("citta", citta).list();
 			Iterator<GruppoChiuso> it =  l.iterator();
 			
 			while(it.hasNext())
@@ -341,36 +358,57 @@ public class PdE2015_API
 		return sendResponse("Partita inserita con successo!", CREATED);
 	}
 	
+	
+	
 	@ApiMethod(
-				name = "partita.listaPartite",
-				path = "partita",
+				name = "partita.listaPartiteProposte",
+				path = "partita/proposte",
 				httpMethod = HttpMethod.GET
 	          )
-	public ListaPartiteBean listaPartite(@Named("tipo")int tipo) {
+	public ListaPartiteBean listaPartiteProposte(@Named("idGruppo")Long idGruppo, @Named("tipo")int tipo) {
 		setUp();
 		ListaPartiteBean lg = new ListaPartiteBean();
 		switch(tipo) {
 			case 1:
-				List<PartitaCalcetto> l1 = ofy().load().type(PartitaCalcetto.class).list();
+				List<PartitaCalcetto> l1 = ofy().load().type(PartitaCalcetto.class)
+											.filter("gruppo", idGruppo).filter("statoCorrente", Partita.Stato.PROPOSTA).list();
+				//filtraPartite(l1);
 				Iterator<PartitaCalcetto> it1 =  l1.iterator();
 				log.log(Level.WARNING,"CALCETTO");
 				while(it1.hasNext())
 					lg.addPartita(it1.next());
 				break;
 			case 2:
-				List<PartitaCalciotto> l2 = ofy().load().type(PartitaCalciotto.class).list();
+				List<PartitaCalciotto> l2 = ofy().load().type(PartitaCalciotto.class)/*.filter("gruppo", idGruppo)*/
+											.filter("statoCorrente", Partita.Stato.PROPOSTA).list();
+				//filtraPartite(l2);
+				if( l2.size() == 0 ) log.log(Level.WARNING, "Questo gruppo non sta organizzando nessuna partita di calciotto!");
 				Iterator<PartitaCalciotto> it2 =  l2.iterator();
 				log.log(Level.WARNING,"CALCIOTTO");
 				while(it2.hasNext())
-					lg.addPartita(it2.next());
+				{
+					Partita p = it2.next();
+					log.log(Level.WARNING, "Inserendo partita: "+p.getId());
+					lg.addPartita(p);
+				}
 				break;
 			case 3:
-				List<PartitaCalcio> l3 = ofy().load().type(PartitaCalcio.class).list();
+				List<PartitaCalcio> l3 = ofy().load().type(PartitaCalcio.class).filter("gruppo", idGruppo)
+											.filter("statoCorrente", Partita.Stato.PROPOSTA).list();
+				//Aggiorno la lista rimuovendo le partite terminate
+				//filtraPartite(l3);
 				Iterator<PartitaCalcio> it3 =  l3.iterator();
 				log.log(Level.WARNING,"CALCIO");
 				while(it3.hasNext())
 					lg.addPartita(it3.next());
 				break;
+			default:
+				List<Partita> l = ofy().load().type(Partita.class).filter("gruppo", idGruppo)
+					.filter("statoCorrente", Partita.Stato.PROPOSTA).list();
+				//filtraPartite(l);
+				Iterator<Partita> it = l.iterator();
+				while(it.hasNext())
+					lg.addPartita(it.next());
 		}
 		
 		tearDown();
@@ -1526,6 +1564,279 @@ public class PdE2015_API
 		return sendResponse("LinkPresso rimosso con successo!", OK);
 	}
 	
+	//TODO API Sessione
+	
+	@ApiMethod(
+			name = "sessione.inserisciSessione",
+			path = "sessione",
+			httpMethod = HttpMethod.POST
+          )
+	public PayloadBean inserisciSessione()
+	{
+		setUp();
+		
+		SessioneUtente s = new SessioneUtente();
+		ofy().save().entity(s).now();
+		PayloadBean res = new PayloadBean();
+		res.setIdSessione(s.getId());
+		return res;
+	}
+	
+	@ApiMethod(
+			name = "sessione.eliminaSessione",
+			path = "sessione/delete",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean eliminaSessione(@Named("idSessione")Long idSessione)
+	{
+		setUp();
+		//Controllo esistenza Sessione
+		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( s == null)
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponse("Sessione non presente!", NOT_FOUND);
+		}
+		
+		ofy().delete().entity(s).now();
+		return sendResponse("Sessione rimossa con successo.", OK);
+	}
+	
+	@ApiMethod(
+			name = "sessione.aggiornaStato",
+			path = "sessione",
+			httpMethod = HttpMethod.PUT
+          )
+	public DefaultBean aggiornaStatoSessione(PayloadBean payload)
+	{
+		setUp();
+		//Controllo esistenza Sessione
+		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(payload.getIdSessione()).now();
+		if( s == null)
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponse("Sessione non presente!", NOT_FOUND);
+		}
+		s.aggiornaStato(payload.getNuovoStato());
+		ofy().save().entity(s).now();
+		return sendResponse("Stato sessione aggiornato con successo!", OK);
+	}
+	
+	@ApiMethod(
+			name = "sessione.listaStati",
+			path = "sessione/list",
+			httpMethod = HttpMethod.POST
+          )
+	public ListaStatiBean listaStati(PayloadBean payload)
+	{
+		//TODO cambia parametro bean in named nullable
+		setUp();
+		ListaStatiBean listaBean = new ListaStatiBean();
+		
+		Long idSessione = payload.getIdSessione();
+		if( idSessione == null ) log.log(Level.SEVERE, "L'id della sessione nel bean è null!");
+		SessioneUtente sessione = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( sessione == null )
+		{
+			log.log(Level.SEVERE, "IdSessione non registrato!");
+			listaBean.setHttpCode(NOT_FOUND);
+			return listaBean;
+		}
+		
+		switch( sessione.getStatoCorrente() )
+		{
+			case LOGIN_E_REGISTRAZIONE:
+				listaBean.addStatoSessione(StatoSessione.LOGIN);
+				listaBean.addStatoSessione(StatoSessione.REGISTRAZIONE);
+				break;
+			case LOGIN:
+				listaBean.addStatoSessione(StatoSessione.LOGIN);
+				listaBean.addStatoSessione(StatoSessione.PRINCIPALE);
+				break;
+			case REGISTRAZIONE:
+				listaBean.addStatoSessione(StatoSessione.REGISTRAZIONE);
+				listaBean.addStatoSessione(StatoSessione.PRINCIPALE);
+				break;
+			case PRINCIPALE:
+				listaBean.addStatoSessione(StatoSessione.PROFILO);
+				listaBean.addStatoSessione(StatoSessione.RICERCA_GRUPPO);
+				listaBean.addStatoSessione(StatoSessione.GRUPPO);
+				listaBean.addStatoSessione(StatoSessione.CREA_GRUPPO);
+				break;
+			case GRUPPO:
+				Giocatore utente = ofy().load().type(Giocatore.class).id(sessione.getEmailUtente()).now();
+				// Se l'utente è membro del gruppo da visualizzare...
+				if( utente.getEIscritto().contains(payload.getIdGruppo()) )
+				{
+					listaBean.addStatoSessione(StatoSessione.ISCRITTI_GRUPPO);
+					listaBean.addStatoSessione(StatoSessione.INVITO);
+					listaBean.addStatoSessione(StatoSessione.STORICO);
+					listaBean.addStatoSessione(StatoSessione.CREA_PARTITA);
+					listaBean.addStatoSessione(StatoSessione.PARTITE_PROPOSTE);
+				}
+				//Altrimenti, se il gruppo è aperto...
+				else
+				{
+					GruppoAperto ga = ofy().load().type(GruppoAperto.class).id(payload.getIdGruppo()).now();
+					if( ga != null )
+						listaBean.addStatoSessione(StatoSessione.GRUPPO); //Iscrizione GruppoAPerto
+				}
+				break;
+			case PROFILO:
+				//Se l'utente sta visualizzando il proprio profilo...
+				if( payload.getProfiloDaVisitare().equals(sessione.getEmailUtente()) )
+				{
+					listaBean.addStatoSessione(StatoSessione.MODIFICA_PROFILO);
+					listaBean.addStatoSessione(StatoSessione.LOGIN_E_REGISTRAZIONE);	//Logout
+				}
+				break;
+			case MODIFICA_PROFILO:
+				listaBean.addStatoSessione(StatoSessione.PROFILO);
+				listaBean.addStatoSessione(StatoSessione.MODIFICA_PROFILO);
+				break;
+			case RICERCA_GRUPPO:
+				listaBean.addStatoSessione(StatoSessione.GRUPPO);
+				listaBean.addStatoSessione(StatoSessione.RICERCA_GRUPPO);
+				break;
+			case INVITO:
+				listaBean.addStatoSessione(StatoSessione.GRUPPO);
+				listaBean.addStatoSessione(StatoSessione.PROFILO);
+				break;
+			case ISCRITTI_GRUPPO:
+				listaBean.addStatoSessione(StatoSessione.GRUPPO);
+				listaBean.addStatoSessione(StatoSessione.PROFILO);
+				break;
+			case STORICO:
+				listaBean.addStatoSessione(StatoSessione.PARTITA);
+				break;
+			case PARTITE_PROPOSTE:
+				listaBean.addStatoSessione(StatoSessione.PARTITA);
+				break;
+			case CREA_PARTITA:
+				listaBean.addStatoSessione(StatoSessione.PARTITA);
+				listaBean.addStatoSessione(StatoSessione.RICERCA_CAMPO);
+				listaBean.addStatoSessione(StatoSessione.CREA_PARTITA);
+				break;
+			case PARTITA:
+				Partita partita = ofy().load().type(Partita.class).id(payload.getIdPartita()).now();
+				if( partita != null )
+				{
+					Stato statoPartita = partita.getStatoCorrente();
+					switch(statoPartita)
+					{
+						case PROPOSTA:
+							listaBean.addStatoSessione(StatoSessione.RICERCA_CAMPO);
+							listaBean.addStatoSessione(StatoSessione.DISPONIBILE_PER_PARTITA);
+							break;
+						case GIOCATA:
+							listaBean.addStatoSessione(StatoSessione.VOTO);
+							break;
+						default:
+							break;
+					}
+				}
+				else
+					log.log(Level.SEVERE, "Nel payload c'è l'id di una partita non presente!");
+				
+				break;
+			case VOTO:
+				listaBean.addStatoSessione(StatoSessione.PARTITA);
+				break;
+			case RICERCA_CAMPO:
+				listaBean.addStatoSessione(StatoSessione.CAMPO);
+				listaBean.addStatoSessione(StatoSessione.CREA_CAMPO);
+				listaBean.addStatoSessione(sessione.getStatoSessionePrecedente());
+				break;
+			case DISPONIBILE_PER_PARTITA:
+				listaBean.addStatoSessione(StatoSessione.PARTITA);
+				break;
+			case CAMPO:
+				break;
+			case CREA_CAMPO:
+				listaBean.addStatoSessione(StatoSessione.CAMPO);
+				listaBean.addStatoSessione(StatoSessione.CREA_CAMPO);
+				break;
+			case CREA_GRUPPO:
+				listaBean.addStatoSessione(StatoSessione.CREA_GRUPPO);
+				listaBean.addStatoSessione(StatoSessione.GRUPPO);
+				break;
+			case EXIT:
+				listaBean.addStatoSessione(StatoSessione.PRINCIPALE);
+		}
+		return listaBean;
+	}
+	
+	//TODO API alto livello
+	@ApiMethod(
+			name = "api.login",
+			path = "api/login",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean login(@Named("emailUtente")String emailUtente,
+							 @Named("idSessione")Long idSessione)
+	{
+		setUp();
+		//Controllo esistenza Giocatore
+		Giocatore g = ofy().load().type(Giocatore.class).id(emailUtente).now();
+		if( g == null)
+		{
+			log.log(Level.SEVERE, "Giocatore non registrato!");
+			return sendResponse("Giocatore non registrato!", NOT_FOUND);
+		}
+		//Controllo esistenza Sessione
+		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( s == null )
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponse("Sessione non esistente!", NOT_FOUND);
+		}
+		//Controllo stato sessione
+		if( s.getStatoCorrente() != StatoSessione.LOGIN )
+		{
+			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato LOGIN!");
+			return sendResponse("Impossibile effettuare il login in questo punto!", BAD_REQUEST);
+		}	
+		s.setEmailUtente(emailUtente);
+		s.aggiornaStato(StatoSessione.PRINCIPALE);
+		ofy().save().entity(s).now();
+		return sendResponse("Login effettuato con successo!", OK);
+	}
+	
+	@ApiMethod(
+			name = "api.registrazione",
+			path = "api/regitstrazione",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean registrazione(InfoGiocatoreBean giocatoreBean,
+									 @Named("idSessione")Long idSessione)
+	{
+		//Inserimento nuovo Giocatore
+		DefaultBean result_inserisci = inserisciGiocatore(giocatoreBean);
+		if( !result_inserisci.getHttpCode().equals(CREATED) )
+		{
+				log.log(Level.SEVERE, "registrazione: errore durante inserimento giocatore!");
+				return result_inserisci;
+		}
+		setUp();
+		//Controllo esistenza Sessione
+		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( s == null )
+		{
+			log.log(Level.SEVERE, "registrazione: Sessione "+idSessione+" non esistente!");
+			return sendResponse("Sessione non presente!", NOT_FOUND);
+		}
+		//Controllo stato Sessione
+		if( s.getStatoCorrente() != StatoSessione.REGISTRAZIONE)
+		{
+			log.log(Level.SEVERE, "La sessione "+idSessione+"non è nello stato REGISTRAZIONE!");
+			return sendResponse("Impossibile effettuare la registrazione in questo punto!", BAD_REQUEST);
+		}	
+		s.setEmailUtente(giocatoreBean.getEmail());
+		s.aggiornaStato(StatoSessione.PRINCIPALE);
+		ofy().save().entity(s).now();
+		return sendResponse("Registrazione effettuata con successo!", OK);
+	}
+	
 	@BeforeMethod
     private void setUp() {
         session = ObjectifyService.begin();
@@ -1544,4 +1855,52 @@ public class PdE2015_API
 		tearDown();
 		return response;
     }
+    
+    // Metodo privato che data una lista, rimuove le partite Terminate
+    private void filtraPartite(List<? extends Partita> listaPartite)
+    {
+    	if( listaPartite == null ) return;
+    	
+    	Iterator<? extends Partita> it = listaPartite.iterator();
+    	while(it.hasNext())
+    	{
+    		Partita p = it.next();
+    		if(p.getStatoCorrente() == Partita.Stato.CONFERMATA)
+    		{
+    			p.setStatoCorrente(Partita.Stato.GIOCATA);
+    			ofy().save().entity(p).now();
+    			it.remove();
+    			
+    		}
+    		else
+    		{
+	    		Calendar match_date = DateToCalendar(p.getDataOra());
+	    		Calendar now = Calendar.getInstance();
+	    		//TODO poi vediamo
+	    		match_date.add(Calendar.HOUR, 2);
+	    		if( now.after(match_date) )
+	    		{
+	    			p.setStatoCorrente(Partita.Stato.GIOCATA);
+	    			ofy().save().entity(p).now();
+	    			it.remove();
+	    		}
+    		}
+    	}
+    }
+    
+    private static Calendar DateToCalendar(Date date ) 
+    { 
+     Calendar cal = null;
+     try {   
+      DateFormat formatter = new SimpleDateFormat("yyyyMMddhhmmss");
+      date = (Date)formatter.parse(date.toString()); 
+      cal=Calendar.getInstance();
+      cal.setTime(date);
+      }
+      catch (ParseException e)
+      {
+          System.out.println("Exception :"+e);  
+      }  
+      return cal;
+     }
 }

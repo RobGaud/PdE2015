@@ -15,6 +15,7 @@ public class Gruppo
 	private Long eGestito;
 	private HashSet<Long> partiteOrganizzate;
 	private HashSet<Long> campiPreferiti;
+	@Index private String citta;
 	
 	public static final int MIN_LINK_ISCRITTO = 1;
 	public static final int MIN_MAX_LINK_ISCRITTO = 1;
@@ -26,15 +27,24 @@ public class Gruppo
 		this.campiPreferiti = new HashSet<Long>();
 	}
 	
-	public Gruppo(String n)
+	public Gruppo(String n, String c)
 	{
 		this.nome = n;
+		this.citta = c;
 		this.dataCreazione = new Date();
 		this.giocatoriIscritti = new LinkedList<Long>();
 		this.partiteOrganizzate = new HashSet<Long>();
 		this.campiPreferiti = new HashSet<Long>();
 	}
 	
+	public String getCitta() {
+		return citta;
+	}
+
+	public void setCitta(String citta) {
+		this.citta = citta;
+	}
+
 	public Long getId() {
 		return id;
 	}
