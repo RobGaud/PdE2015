@@ -22,7 +22,7 @@ public class Giocatore {
 	 *		di disponibilità e di giocata dopo la fine della partita.
 	 */
 	private HashSet<Long> partiteDaGiocare;
-	//private HashSet<TipoLinkIscritto> eIscritto;
+	private HashSet<Long> eIscritto;
 	private HashSet<Long> linkDestinatario;
 	
 	private Giocatore()
@@ -30,17 +30,19 @@ public class Giocatore {
 		this.linkDestinatario = new HashSet<Long>();
 		this.elencoDisponibile = new HashSet<Long>();
 		this.partiteDaGiocare = new HashSet<Long>();
+		this.eIscritto = new HashSet<Long>();
+
 	}
 	
 	public Giocatore(String nome, String email, String telefono,
 			String ruoloPreferito, String fotoProfilo) {
 		this.nome = nome;
-		this.email = email;
+		this.email = email.toLowerCase();
 		this.telefono = telefono;
 		this.ruoloPreferito = ruoloPreferito;
 		this.fotoProfilo = fotoProfilo;
 		this.partiteDaGiocare = new HashSet<Long>();
-		//this.eIscritto = new HashSet<TipoLinkIscritto>();
+		this.eIscritto = new HashSet<Long>();
 		this.linkDestinatario = new HashSet<Long>();
 		this.elencoDisponibile = new HashSet<Long>();
 
@@ -51,7 +53,7 @@ public class Giocatore {
 	}
 
 	public void setEmail(String email) {
-		this.email = email;
+		this.email = email.toLowerCase();
 	}
 
 	public String getTelefono() {
@@ -124,35 +126,23 @@ public class Giocatore {
 		//Nota: controllo subset spostato sulle API
 		return (HashSet<Long>)this.partiteDaGiocare.clone();
 	}
-/*	
+
 	// ASSOCIAZIONE ISCRITTO
 
-	public void inserisciLinkIscritto(TipoLinkIscritto l) {
-		if(l != null && l.getGiocatore().equals(this))
-			ManagerIscritto.inserisci(l);
-	}
-
-	public void eliminaLinkIscritto(TipoLinkIscritto l) {
-		if(l != null && l.getGiocatore().equals(this))
-			ManagerIscritto.elimina(l);;
-	}
-
-	public Set<TipoLinkIscritto> getEIscritto() {
-		return (HashSet<TipoLinkIscritto>)eIscritto.clone();
+	public Set<Long> getEIscritto() {
+		return (HashSet<Long>)eIscritto.clone();
 	}
 	
-	public void inserisciPerManagerIscritto(ManagerIscritto m) {
-		if(m!=null)
-			this.eIscritto.add(m.getLink());
+	public void inserisciLinkIscritto(Long l) {
+		if(l != null) this.eIscritto.add(l);
 		
 	}
 
-	public void eliminaPerManagerIscritto(ManagerIscritto m) {
-		if(m!=null)
-			this.eIscritto.remove(m.getLink());
+	public void eliminaLinkIscritto(Long l) {
+		if(l != null && eIscritto.contains(l)) this.eIscritto.remove(l);
 		
 	}
-*/
+
 	// ASSOCIAZIONE DESTINATARIO
 
 	public void inserisciLinkDestinatario(Long idLink)

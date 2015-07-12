@@ -3,40 +3,49 @@ package com.modello;
 import java.util.*;
 import com.googlecode.objectify.annotation.*;
 
+
+
 @Entity
-public class Partita {
+public abstract class Partita {
+	
+	public static enum Stato {PROPOSTA, CONFERMATA, GIOCATA};
 	
 	@Id private Long id;
 	
 	private Date dataOraPartita;
-	private float quota;	// TODO quota è un attributo indipendente o dipendente dal Campo in cui si gioca?
+	private float quota;
 	
-	//private Campo campo;
-	private HashSet<Long> elencoVoti;
-	//private TipoLinkOrganizza gruppo;
-	private String chiPropone;
-	private LinkedList<Long> elencoDisponibili;
-	private HashSet<String> elencoGioca;
+	private Long campo;
+	private HashSet<Long> elencoVoti; 			//Id dei TipoLinkVotoPerPartita
+	@Index private Long gruppo;					//Id del gruppo
+	private String chiPropone;					//Email del proponitore
+	private LinkedList<Long> elencoDisponibili;	//Id dei TipoLinkDisponibile
+	private HashSet<String> elencoGioca;		//Email di chi gioca
 	
-	public static final int MIN_LINK_PRESSO = 1;
-	public static final int MIN_LINK_GIOCA = 1;
+	@Index private Stato statoCorrente;
+	
+	public static final int MIN_MAX_LINK_PRESSO = 1;
+	public static final int MIN_LINK_GIOCA = 0;
 	public static final int MIN_LINK_PROPONE = 1;
 	public static final int MIN_LINK_DISPONIBILE = 1;
 	public static final int MIN_LINK_ORGANIZZA = 1;
+	public static final float SENTINELLA = -1.0f;
 	
 	protected Partita(){
 		this.elencoVoti = new HashSet<Long>();
 		this.elencoDisponibili = new LinkedList<Long>();
 		this.elencoGioca = new HashSet<String>();
+		this.statoCorrente = Stato.PROPOSTA;
 	}
 	
-	public Partita(Date d, float q)
+	public Partita(Date d)
 	{
 		this.dataOraPartita = d;
-		this.quota = q;
+		this.quota = SENTINELLA;
 		this.elencoVoti = new HashSet<Long>();
 		this.elencoDisponibili = new LinkedList<Long>();
 		this.elencoGioca = new HashSet<String>();
+		this.statoCorrente = Stato.PROPOSTA;
 
 	}
 	
@@ -57,10 +66,10 @@ public class Partita {
 		this.dataOraPartita = dataOraPartita;
 	}
 
+	//OVERRIDE in sottoclassi
 	public float getQuota()
 	{
 		return this.quota;
-		// TODO quota come operazione e non attributo?
 	}
 
 	public void setQuota(float quota) {
@@ -68,17 +77,15 @@ public class Partita {
 			this.quota = quota;
 	}
 	
-	/*
+	public abstract int getNPartecipanti();
+
 	// ASSOCIAZIONE presso
-	public void inserisciCampo( Campo c )
-	{
-		if( c != null )
-			this.campo = c;
+	public void inserisciCampo(Long c) {
+		if(c != null) this.campo = c;
 	}
 	
-	public void eliminaCampo()
-	{
-		this.campo = null;
+	public void eliminaCampo(Long c) {
+		if(c != null && c.equals(this.campo)) this.campo = null;
 	}
 	
 	public int quantiCampi()
@@ -89,14 +96,14 @@ public class Partita {
 			return 1;
 	}
 	
-	public Campo getCampo() throws EccezioneMolteplicitaMinima
+	public Long getCampo() throws EccezioneMolteplicitaMinima
 	{
-		if( this.quantiCampi() < MIN_LINK_PRESSO )
-			throw new EccezioneMolteplicitaMinima("Cardinalita minima violata!");
+		if( this.quantiCampi() != MIN_MAX_LINK_PRESSO )
+			throw new EccezioneMolteplicitaMinima("Cardinalita min/max violata!");
 		else
 			return this.campo;
 	}
-*/
+
 	// ASSOCIAZIONE votoPerPartita
 	public void inserisciLinkPerPartita(Long idLink)
 	{
@@ -113,18 +120,16 @@ public class Partita {
 		return (HashSet<Long>)this.elencoVoti.clone();
 	}
 	
-/*	
+
 	// ASSOCIAZIONE organizza
-	public void inserisciLinkOrganizza( TipoLinkOrganizza t )
+	public void inserisciLinkOrganizza(Long l)
 	{
-		if( t != null && t.getPartita().equals(this) )
-			ManagerOrganizza.inserisci(t);
+		if( l != null ) this.gruppo = l;
 	}
-	
-	public void eliminaLinkOrganizza( TipoLinkOrganizza t )
+
+	public void eliminaLinkOrganizza(Long l)
 	{
-		if( t != null && t.getPartita().equals(this) )
-			ManagerOrganizza.rimuovi(t);
+		if( l != null && this.gruppo.equals(l)) this.gruppo = null;
 	}
 	
 	public int quantiOrganizza()
@@ -135,14 +140,14 @@ public class Partita {
 			return 1;
 	}
 	
-	public TipoLinkOrganizza getLinkOrganizza() throws EccezioneMolteplicitaMinima
+	public Long getLinkOrganizza() throws EccezioneMolteplicitaMinima
 	{
 		if( this.quantiOrganizza() < MIN_LINK_ORGANIZZA )
 			throw new EccezioneMolteplicitaMinima("Cardinalità minima violata!");
 		else
 			return this.gruppo;
 	}
-*/	
+	
 	// ASSOCIAZIONE propone
 	public void inserisciPropone( String emailGiocatore )
 	{
@@ -217,5 +222,13 @@ public class Partita {
 		
 		//Controllo subset spostato sulle API
 		return (HashSet<String>)this.elencoGioca.clone();
+	}
+
+	public Stato getStatoCorrente() {
+		return statoCorrente;
+	}
+
+	public void setStatoCorrente(Stato statoCorrente) {
+		this.statoCorrente = statoCorrente;
 	}
 }

@@ -1,11 +1,16 @@
 package com.bean;
 
-public class DefaultBean
+public class NDisponibiliBean
 {
 	private String result;
 	private String httpCode;
-	private Long idCreated;
 	
+	private int nDisponibili;
+	
+	public String getReport() {
+		return httpCode;
+	}
+
 	public String getResult() {
 		return result;
 	}
@@ -22,13 +27,12 @@ public class DefaultBean
 	public void setHttpCode(String httpCode) {
 		this.httpCode = httpCode;
 	}
-
-	public Long getIdCreated() {
-		return idCreated;
-	}
-
-	public void setIdCreated(Long idCreated) {
-		this.idCreated = idCreated;
-	}
 	
+	public int getnDisponibili() {
+		return nDisponibili;
+	}
+
+	public void setnDisponibili(int nDisponibili) {
+		this.nDisponibili = nDisponibili;
+	}
 }

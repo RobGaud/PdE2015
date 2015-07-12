@@ -8,8 +8,8 @@ public class GruppoAperto extends Gruppo {
 	
 	private GruppoAperto(){}
 	
-	public GruppoAperto(String n, Date data) {
-		super(n, data);
+	public GruppoAperto(String n, String c) {
+		super(n, c);
 		// TODO Auto-generated constructor stub
 	}
 	
