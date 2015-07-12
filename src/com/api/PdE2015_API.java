@@ -1859,6 +1859,12 @@ public class PdE2015_API
 								   @Named("idGruppo")Long idGruppo)
 	{
 		setUp();
+		//Controllo esistenza gruppo
+		Gruppo gruppo = ofy().load().type(Gruppo.class).id(idGruppo).now();
+		if( gruppo == null )
+		{
+			return sendResponse("Gruppo non esistente", NOT_FOUND);
+		}
 		//Controllo esistenza sessione
 		SessioneUtente sessione = ofy().load().type(SessioneUtente.class).id(idSessione).now();
 		if( sessione == null )
