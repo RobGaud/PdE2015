@@ -891,6 +891,28 @@
       "response" : {
         "body" : "autoTemplate(backendResponse)"
       }
+    },
+    "pdE2015.api.creaGruppo" : {
+      "path" : "api/creagruppo",
+      "httpMethod" : "POST",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.creaGruppo",
+      "request" : {
+        "parameters" : {
+          "idSessione" : {
+            "type" : "int64",
+            "required" : true
+          }
+        },
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
     }
   },
   "descriptor" : {
@@ -1741,6 +1763,14 @@
         },
         "response" : {
           "$ref" : "ListaStatiBean"
+        }
+      },
+      "com.api.PdE2015_API.creaGruppo" : {
+        "request" : {
+          "$ref" : "InfoGruppoBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
         }
       }
     }

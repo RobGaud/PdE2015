@@ -1885,52 +1885,128 @@ public class PdE2015_API
 			return sendResponse("Errore durante la gestione della sessione!", INTERNAL_SERVER_ERROR);
 		}
 		//Inserisco la partita
-		DefaultBean resultInsert = inserisciPartita(partitaBean);
-		if( !resultInsert.getHttpCode().equals(CREATED) )
+		DefaultBean partialResult = inserisciPartita(partitaBean);
+		if( !partialResult.getHttpCode().equals(CREATED) )
 		{
 			log.log(Level.SEVERE, "creaPartita: errore durante l'inserimento di una partita dalla sessione "+idSessione+"!");
-			return resultInsert;
+			tearDown();
+			return partialResult;
 		}
-		Long idPartita = resultInsert.getIdCreated();
+		Long idPartita = partialResult.getIdCreated();
 		//Inserisco link disponibile
 		InfoGestionePartiteBean gestioneBean = new InfoGestionePartiteBean();
 		gestioneBean.setEmailGiocatore(sessione.getEmailUtente());
 		gestioneBean.setIdPartita(idPartita);
-		resultInsert = inserisciLinkDisponibile(gestioneBean);
-		if( !resultInsert.getHttpCode().equals(CREATED) )
+		partialResult = inserisciLinkDisponibile(gestioneBean);
+		if( !partialResult.getHttpCode().equals(CREATED) )
 		{
 			log.log(Level.SEVERE, "creaPartita: errore durante l'inserimento del linkDisponibile per la partita "+idPartita+"!");
-			return resultInsert;
+			tearDown();
+			return partialResult;
 		}
 		//Inserisco link propone
-		resultInsert = inserisciLinkPropone(gestioneBean);
-		if( !resultInsert.getHttpCode().equals(CREATED) )
+		partialResult = inserisciLinkPropone(gestioneBean);
+		if( !partialResult.getHttpCode().equals(CREATED) )
 		{
 			log.log(Level.SEVERE, "creaPartita: errore durante l'inserimento del linkPropone per la partita "+idPartita+"!");
-			return resultInsert;
+			tearDown();
+			return partialResult;
 		}
 		//Inserisco link organizza
 		InfoOrganizzaBean organizzaBean = new InfoOrganizzaBean();
 		organizzaBean.setGruppo(idGruppo);
 		organizzaBean.setPartita(idPartita);
-		resultInsert = inserisciLinkOrganizza(organizzaBean);
-		if( !resultInsert.getHttpCode().equals(CREATED) )
+		partialResult = inserisciLinkOrganizza(organizzaBean);
+		if( !partialResult.getHttpCode().equals(CREATED) )
 		{
 			log.log(Level.SEVERE, "creaPartita: errore durante l'inserimento del linkOrganizza per la partita "+idPartita+"!");
-			return resultInsert;
+			tearDown();
+			return partialResult;
 		}
 		//Aggiorno stato sessione
 		PayloadBean payload = new PayloadBean();
 		payload.setIdSessione(idSessione);
 		payload.setNuovoStato(StatoSessione.PARTITA);
-		resultInsert = aggiornaStatoSessione(payload);
-		if( !resultInsert.getHttpCode().equals(OK) )
+		partialResult = aggiornaStatoSessione(payload);
+		if( !partialResult.getHttpCode().equals(OK) )
 		{
 			log.log(Level.SEVERE, "creaPartita: errore durante il cambio di stato della sessione "+idSessione+"+!");
-			return sendResponse("Errore durante il cambio stato della sessione!", INTERNAL_SERVER_ERROR);
+			tearDown();
+			return partialResult;
 		}
 		return sendResponse("Partita creata con successo!", CREATED);
-		
+	}
+	
+	@ApiMethod(
+			name = "api.creaGruppo",
+			path = "api/creagruppo",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean creaGruppo(InfoGruppoBean gruppoBean,
+								   @Named("idSessione")Long idSessione)
+	{
+		setUp();
+		//Controllo esistenza sessione
+		SessioneUtente sessione = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( sessione == null )
+		{
+			log.log(Level.SEVERE, "creaGruppo: la sessione "+idSessione+" non è presente nel Datastore!");
+			return sendResponse("Sessione non presente!", NOT_FOUND);
+		}
+		//Controllo stato giusto
+		if( sessione.getStatoCorrente() != StatoSessione.CREA_GRUPPO )
+		{
+			log.log(Level.SEVERE, "creaGruppo: la sessione "+idSessione+" non è nello stato CREA_GRUPPO!");
+			return sendResponse("Impossibile creare un gruppo in questo punto!", BAD_REQUEST);
+		}
+		//Controllo presenza mail utente in sessione
+		if( sessione.getEmailUtente() == null )
+		{
+			log.log(Level.SEVERE, "creaGruppo: la sessione "+idSessione+" non ha memorizzato la mail dell'utente a cui è associata!");
+			return sendResponse("Errore durante la gestione della sessione!", INTERNAL_SERVER_ERROR);
+		}
+		//Inserisco gruppo
+		DefaultBean partialResult = inserisciGruppo(gruppoBean);
+		if( !partialResult.getHttpCode().equals(CREATED) )
+		{
+			log.log(Level.SEVERE, "creaGruppo: errore durante la creazione della partita!");
+			tearDown();
+			return partialResult;
+		}
+		Long idGruppo = partialResult.getIdCreated();
+		//Inserisco link iscritto
+		InfoIscrittoGestisceBean iscrittoBean = new InfoIscrittoGestisceBean();
+		iscrittoBean.setGiocatore(sessione.getEmailUtente());
+		iscrittoBean.setGruppo(idGruppo);
+		partialResult = inserisciLinkIscritto(iscrittoBean);
+		if( !partialResult.getHttpCode().equals(CREATED) )
+		{
+			log.log(Level.SEVERE, "creaGruppo: errore durante l'inserimento "
+								 +"del primo link iscritto nel gruppo "+idGruppo+"!");
+			tearDown();
+			return partialResult;
+		}
+		//Inserisco link gestisce
+		partialResult = inserisciLinkGestito(iscrittoBean);
+		if( !partialResult.getHttpCode().equals(CREATED) )
+		{
+			log.log(Level.SEVERE, "creaGruppo: errore durante l'inserimento "
+								 +"del link gestisce nel gruppo "+idGruppo+"!");
+			tearDown();
+			return partialResult;
+		}
+		//Aggiorno stato sessione
+		PayloadBean payload = new PayloadBean();
+		payload.setIdSessione(idSessione);
+		payload.setNuovoStato(StatoSessione.GRUPPO);
+		partialResult = aggiornaStatoSessione(payload);
+		if( !partialResult.getHttpCode().equals(OK) )
+		{
+			log.log(Level.SEVERE, "creaGruppo: errore durante il cambio di stato della sessione "+idSessione+"+!");
+			tearDown();
+			return partialResult;
+		}
+		return sendResponse("Gruppo creato con successo!", CREATED);
 	}
 	
 	@BeforeMethod
