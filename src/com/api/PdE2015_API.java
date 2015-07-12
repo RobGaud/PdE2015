@@ -1913,7 +1913,16 @@ public class PdE2015_API
 			log.log(Level.SEVERE, "creaPartita: errore durante l'inserimento del linkOrganizza per la partita "+idPartita+"!");
 			return resultInsert;
 		}
-		
+		//Aggiorno stato sessione
+		PayloadBean payload = new PayloadBean();
+		payload.setIdSessione(idSessione);
+		payload.setNuovoStato(StatoSessione.PARTITA);
+		resultInsert = aggiornaStatoSessione(payload);
+		if( !resultInsert.getHttpCode().equals(OK) )
+		{
+			log.log(Level.SEVERE, "creaPartita: errore durante il cambio di stato della sessione "+idSessione+"+!");
+			return sendResponse("Errore durante il cambio stato della sessione!", INTERNAL_SERVER_ERROR);
+		}
 		return sendResponse("Partita creata con successo!", CREATED);
 		
 	}
