@@ -16,7 +16,7 @@ public abstract class Partita {
 	private float quota;
 	
 	private Long campo;
-	private HashSet<Long> elencoVoti; 			//Id dei TipoLinkVotoPerPartita
+	private HashSet<Long> elencoVoti; 			//Id dei VotoPerPartita
 	@Index private Long gruppo;					//Id del gruppo
 	private String chiPropone;					//Email del proponitore
 	private LinkedList<Long> elencoDisponibili;	//Id dei TipoLinkDisponibile
@@ -115,7 +115,7 @@ public abstract class Partita {
 		if( idLink != null ) this.elencoVoti.remove(idLink);
 	}
 	
-	public Set<Long> getLinkPerPartita()
+	public Set<Long> getLinkVotoPerPartita()
 	{
 		return (HashSet<Long>)this.elencoVoti.clone();
 	}

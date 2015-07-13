@@ -609,95 +609,9 @@ public class PdE2015_API
 		return sendResponse("Partita confermata con successo.", OK);
    	}
 	
-	@ApiMethod(
-			name = "partita.annullaPartita",
-			path = "partita/cancel",
-			httpMethod = HttpMethod.POST
-          )
-	public DefaultBean annullaPartita(@Named("emailGiocatore")String emailGiocatore,
-			   						  @Named("idPartita")Long idPartita)
-	{
-		setUp();
-		//Controllo esistenza giocatore
-		Giocatore giocatore = ofy().load().type(Giocatore.class).id(emailGiocatore).now();
-		if( giocatore == null ) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
-		
-		//Controllo esistenza partita
-		Partita partita = ofy().load().type(Partita.class).id(idPartita).now();
-		if(partita == null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
-		
-		//Controllo stato partita
-		if( partita.getStatoCorrente()!=Partita.Stato.PROPOSTA)
-			return sendResponse("La partita non può essere annullata, poiché confermata o già giocata!", BAD_REQUEST);
-		//Controllo giocatore come proponitore
-		try {
-			if(!partita.getPropone().equals(emailGiocatore))
-				return sendResponse("Solo chi propone la partita può confermarla!", UNAUTHORIZED);
-			
-		} catch (EccezioneMolteplicitaMinima e) {
-			log.log(Level.SEVERE, "La partita "+idPartita+" non ha un proponitore!");
-			//TODO che famo?
-			return sendResponse("Non si ha traccia del giocatore che ha proposto la partita!", INTERNAL_SERVER_ERROR);
-		}
-		
-		//Rimozione linkPresso alla partita
-		if( partita.quantiCampi()!=0 )
-		{
-			try {
-				InfoPressoBean pressoBean = new InfoPressoBean();
-				pressoBean.setCampo(partita.getCampo());
-				pressoBean.setPartita(idPartita);
-				eliminaLinkPresso(pressoBean);
-			} catch (EccezioneMolteplicitaMinima e) {
-				log.log(Level.SEVERE, "La partita non ha memorizzato un campo, eppure quantiCampi() restituisce 1!");
-			}
-		}
-		//Rimozione linkOrganizza alla partita
-		if( partita.quantiOrganizza()!=0 )
-		{
-			try{
-				InfoOrganizzaBean organizzaBean = new InfoOrganizzaBean();
-				organizzaBean.setGruppo(partita.getLinkOrganizza());
-				organizzaBean.setPartita(idPartita);
-				eliminaLinkOrganizza(organizzaBean);
-			} catch(EccezioneMolteplicitaMinima e)
-			{
-				log.log(Level.SEVERE, "La partita non ha un linkOrganizza, ma quantiOrganizza restituisce 1!");
-			}
-		}
-		//Rimozione linkDisponibile alla partita
-		if( partita.quantiDisponibili()!=0 )
-		{
-			try{
-				Iterator<Long> it = partita.getLinkDisponibile().iterator();
-				while( it.hasNext() )
-				{
-					TipoLinkDisponibile link = ofy().load().type(TipoLinkDisponibile.class).id(it.next()).now();
-					InfoGestionePartiteBean disponibileBean = new InfoGestionePartiteBean();
-					disponibileBean.setEmailGiocatore(link.getGiocatore());
-					disponibileBean.setIdPartita(idPartita);
-					eliminaLinkDisponibile(disponibileBean);
-				}
-			} catch(EccezioneMolteplicitaMinima e)
-			{
-				log.log(Level.SEVERE, "La partita non ha nessun linkDisponibile, ma quantiOrganizza() non restituisce 0!");
-			}
-		}
-		//Rimozione linkPropone alla partita
-		if( partita.quantiPropone()!=0 )
-		{
-			InfoGestionePartiteBean proponeBean = new InfoGestionePartiteBean();
-			proponeBean.setEmailGiocatore(emailGiocatore);
-			proponeBean.setIdPartita(idPartita);
-			eliminaLinkPropone(proponeBean);
-		}
-		//Rimozione partita
-		InfoPartitaBean partitaBean = new InfoPartitaBean();
-		partitaBean.setId(idPartita);
-		eliminaPartita(partitaBean);
-		//Invio conferma rimozione avvenuta
-		return sendResponse("Partita annullata con successo.", OK);
-	}
+	
+	
+	
 	
 	//TODO API Invito
 	@ApiMethod(
@@ -877,7 +791,7 @@ public class PdE2015_API
 		if( partita == null ) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
 		
 		//Controllo che non esista già un voto da parte dello stesso votante per la stessa partita
-		Set<Long> idVoti = partita.getLinkPerPartita();
+		Set<Long> idVoti = partita.getLinkVotoPerPartita();
 		Iterator<Long> it = idVoti.iterator();
 		while(it.hasNext())
 		{
@@ -1774,6 +1688,10 @@ public class PdE2015_API
 				break;
 			case EXIT:
 				listaBean.addStatoSessione(StatoSessione.PRINCIPALE);
+				break;
+			case ESCI_GRUPPO:
+				listaBean.addStatoSessione(StatoSessione.PRINCIPALE);
+				break;
 		}
 		return listaBean;
 	}
@@ -1938,6 +1856,219 @@ public class PdE2015_API
 	}
 	
 	@ApiMethod(
+			name = "api.annullaPartita",
+			path = "api/annullapartita",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean annullaPartita(InfoGestionePartiteBean annullaBean,
+			   						  @Named("idSessione")Long idSessione)
+	{
+		setUp();
+		//Controllo esistenza Sessione
+		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( s == null)
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponse("Sessione non presente!", NOT_FOUND);
+		}
+		//Controllo stato giusto
+		if( s.getStatoCorrente() != StatoSessione.ANNULLA_PARTITA )
+		{
+			log.log(Level.SEVERE, "annullaPartita: la sessione "+idSessione+" non è nello stato ANNULLA_PARTITA!");
+			return sendResponse("Impossibile annullare una partita in questo punto!", BAD_REQUEST);
+		}
+		//Controllo esistenza giocatore
+		Giocatore giocatore = ofy().load().type(Giocatore.class).id(annullaBean.getEmailGiocatore()).now();
+		if( giocatore == null ) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo esistenza partita
+		Partita partita = ofy().load().type(Partita.class).id(annullaBean.getIdPartita()).now();
+		if(partita == null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo stato partita
+		if( partita.getStatoCorrente()!=Partita.Stato.PROPOSTA)
+			return sendResponse("La partita non può essere annullata, poiché confermata o già giocata!", BAD_REQUEST);
+		//Controllo giocatore come proponitore
+		try {
+			if(!partita.getPropone().equals(annullaBean.getEmailGiocatore()))
+				return sendResponse("Solo chi propone la partita può confermarla!", UNAUTHORIZED);
+			
+		} catch (EccezioneMolteplicitaMinima e) {
+			log.log(Level.SEVERE, "annullaPartita: la partita "+annullaBean.getIdPartita()+" non ha un proponitore!");
+			//TODO che famo?
+			return sendResponse("Non si ha traccia del giocatore che ha proposto la partita!", INTERNAL_SERVER_ERROR);
+		}
+		
+		DefaultBean partialResult;
+		//Rimozione linkPresso alla partita
+		if( partita.quantiCampi()!=0 )
+		{
+			try {
+				InfoPressoBean pressoBean = new InfoPressoBean();
+				pressoBean.setCampo(partita.getCampo());
+				pressoBean.setPartita(annullaBean.getIdPartita());
+				partialResult = eliminaLinkPresso(pressoBean);
+				if( !partialResult.getHttpCode().equals(OK) )
+				{
+					log.log(Level.SEVERE, "annullaPartita: errore durante l'eliminazione del linkPresso dalla partita "
+											+pressoBean.getPartita()+"!");
+					tearDown();
+					return partialResult;
+				}
+			} catch (EccezioneMolteplicitaMinima e) {
+				log.log(Level.SEVERE, "annullaPartita: la partita non ha memorizzato un campo, eppure quantiCampi() restituisce 1!");
+			}
+		}
+		//Rimozione linkOrganizza alla partita
+		if( partita.quantiOrganizza()!=0 )
+		{
+			try{
+				InfoOrganizzaBean organizzaBean = new InfoOrganizzaBean();
+				organizzaBean.setGruppo(partita.getLinkOrganizza());
+				organizzaBean.setPartita(annullaBean.getIdPartita());
+				partialResult = eliminaLinkOrganizza(organizzaBean);
+				if( !partialResult.getHttpCode().equals(OK) )
+				{
+					log.log(Level.SEVERE, "annullaPartita: errore durante l'eliminazione del linkOrganizza dalla partita "
+											+organizzaBean.getPartita()+"!");
+					tearDown();
+					return partialResult;
+				}
+			} catch(EccezioneMolteplicitaMinima e)
+			{
+				log.log(Level.SEVERE, "La partita non ha un linkOrganizza, ma quantiOrganizza restituisce 1!");
+			}
+		}
+		//Rimozione linkDisponibile alla partita
+		if( partita.quantiDisponibili()!=0 )
+		{
+			try{
+				Iterator<Long> it = partita.getLinkDisponibile().iterator();
+				while( it.hasNext() )
+				{
+					TipoLinkDisponibile link = ofy().load().type(TipoLinkDisponibile.class).id(it.next()).now();
+					InfoGestionePartiteBean disponibileBean = new InfoGestionePartiteBean();
+					disponibileBean.setEmailGiocatore(link.getGiocatore());
+					disponibileBean.setIdPartita(annullaBean.getIdPartita());
+					partialResult = eliminaLinkDisponibile(disponibileBean);
+					if( !partialResult.getHttpCode().equals(OK) )
+					{
+						log.log(Level.SEVERE, "annullaPartita: errore durante l'eliminazione del linkDisponibile "
+											 +"dalla partita "+disponibileBean.getIdPartita()+"!");
+						tearDown();
+						return partialResult;
+					}
+				}
+			} catch(EccezioneMolteplicitaMinima e)
+			{
+				log.log(Level.SEVERE, "La partita non ha nessun linkDisponibile, ma quantiOrganizza() non restituisce 0!");
+			}
+		}
+		//Rimozione linkPropone alla partita
+		if( partita.quantiPropone()!=0 )
+		{
+			InfoGestionePartiteBean proponeBean = new InfoGestionePartiteBean();
+			proponeBean.setEmailGiocatore(annullaBean.getEmailGiocatore());
+			proponeBean.setIdPartita(annullaBean.getIdPartita());
+			partialResult = eliminaLinkPropone(proponeBean);
+			if( !partialResult.getHttpCode().equals(OK) )
+			{
+				log.log(Level.SEVERE, "annullaPartita: errore durante l'eliminazione del linkPropone "
+									 +"dalla partita "+proponeBean.getIdPartita()+"!");
+				tearDown();
+				return partialResult;
+			}
+		}
+		//Rimozione partita
+		InfoPartitaBean partitaBean = new InfoPartitaBean();
+		partitaBean.setId(annullaBean.getIdPartita());
+		partialResult = eliminaPartita(partitaBean);
+		if( !partialResult.getHttpCode().equals(OK) )
+		{
+			log.log(Level.SEVERE, "annullaPartita: errore durante l'eliminazione "
+								 +"della partita "+partitaBean.getId()+"!");
+			tearDown();
+			return partialResult;
+		}
+		
+		//Aggiorno stato sessione
+		PayloadBean payload = new PayloadBean();
+		payload.setIdSessione(idSessione);
+		payload.setNuovoStato(StatoSessione.PARTITA);
+		partialResult = aggiornaStatoSessione(payload);
+		if( !partialResult.getHttpCode().equals(OK) )
+		{
+			log.log(Level.SEVERE, "creaPartita: errore durante il cambio di stato della sessione "+idSessione+"+!");
+			tearDown();
+			return partialResult;
+		}
+		
+		//Invio conferma rimozione avvenuta
+		return sendResponse("Partita annullata con successo.", OK);
+	}
+	
+	@ApiMethod(
+			name = "api.annullaDisponibilita",
+			path = "api/annulladisponibilita",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean annullaDisponibilita(InfoGestionePartiteBean gestioneBean,
+											@Named("idSessione")Long idSessione)
+	{
+		setUp();
+		//Controllo esistenza Sessione
+		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( s == null)
+		{
+			log.log(Level.SEVERE, "annullaDisponibilita: sessione non esistente!");
+			return sendResponse("Sessione non presente!", NOT_FOUND);
+		}
+		//Controllo stato giusto
+		if( s.getStatoCorrente() != StatoSessione.DISPONIBILE_PER_PARTITA )
+		{
+			log.log(Level.SEVERE, "annullaDisponibilita: la sessione "+idSessione+" non è nello stato DISPONIBILE_PER_PARTITA!");
+			return sendResponse("Impossibile annullare una partita in questo punto!", BAD_REQUEST);
+		}
+		//Controllo esistenza giocatore
+		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestioneBean.getEmailGiocatore()).now();
+		if( giocatore == null ) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo esistenza partita
+		Partita partita = ofy().load().type(Partita.class).id(gestioneBean.getIdPartita()).now();
+		if(partita == null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo stato partita
+		if( partita.getStatoCorrente()!=Partita.Stato.PROPOSTA)
+			return sendResponse("Non è possibile annullare la propria disponibilità, "
+								+"poiché la partita è confermata o già giocata!", BAD_REQUEST);
+	
+		//EliminaLink Disponibile
+		InfoGestionePartiteBean proponeBean = new InfoGestionePartiteBean();
+		proponeBean.setEmailGiocatore(gestioneBean.getEmailGiocatore());
+		proponeBean.setIdPartita(gestioneBean.getIdPartita());
+		DefaultBean partialResult = eliminaLinkDisponibile(proponeBean);
+		if( !partialResult.getHttpCode().equals(OK) )
+		{
+			log.log(Level.SEVERE, "esciGruppo: errore durante l'uscita del giocatore dalla partita "
+									+gestioneBean.getIdPartita()+"!");
+			tearDown();
+			return partialResult;
+		}
+		
+		PayloadBean payload = new PayloadBean();
+		payload.setIdSessione(idSessione);
+		payload.setNuovoStato(StatoSessione.PARTITA);
+		partialResult = aggiornaStatoSessione(payload);
+		if( !partialResult.getHttpCode().equals(OK) )
+		{
+			log.log(Level.SEVERE, "esciGruppo: errore durante l'uscita del giocatore dalla partita "
+									+gestioneBean.getIdPartita()+"!");
+		}
+		tearDown();
+		return partialResult;
+	}
+
+	@ApiMethod(
 			name = "api.creaGruppo",
 			path = "api/creagruppo",
 			httpMethod = HttpMethod.POST
@@ -2009,6 +2140,204 @@ public class PdE2015_API
 		return sendResponse("Gruppo creato con successo!", CREATED);
 	}
 	
+	
+	@ApiMethod(
+			name = "api.esciGruppo",
+			path = "api/escigruppo",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean esciGruppo(InfoIscrittoGestisceBean iscrittoBean, @Named("idSessione")Long idSessione)
+	{
+		setUp();
+		//Controllo esistenza sessione
+		SessioneUtente sessione = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( sessione == null )
+		{
+			log.log(Level.SEVERE, "esciGruppo: la sessione "+idSessione+" non è presente nel Datastore!");
+			return sendResponse("Sessione non presente!", NOT_FOUND);
+		}
+		//Controllo stato giusto
+		if( sessione.getStatoCorrente() != StatoSessione.ESCI_GRUPPO )
+		{
+			log.log(Level.SEVERE, "esciGruppo: la sessione "+idSessione+" non è nello stato ESCI_GRUPPO!");
+			return sendResponse("Impossibile creare un gruppo in questo punto!", BAD_REQUEST);
+		}
+		//Controllo presenza mail utente in sessione
+		if( sessione.getEmailUtente() == null )
+		{
+			log.log(Level.SEVERE, "esciGruppo: la sessione "+idSessione+" non ha"
+								 +"memorizzato la mail dell'utente a cui è associata!");
+			return sendResponse("Errore durante la gestione della sessione!", INTERNAL_SERVER_ERROR);
+		}
+		//Controllo coincidenza email sessione - email in iscrittoBean
+		if( !sessione.getEmailUtente().equals(iscrittoBean.getGiocatore()) )
+		{
+			log.log(Level.SEVERE, "esciGruppo: la sessione "+idSessione+" non ha"
+					 			 +"memorizzato la mail diversa da quella dell'iscrittoBean!");
+			return sendResponse("Errore durante la gestione della sessione!", BAD_REQUEST);
+		}
+		//Controllo esistenza gruppo
+		Gruppo gruppo = ofy().load().type(Gruppo.class).id(iscrittoBean.getGruppo()).now();
+		if( gruppo == null )
+		{
+			log.log(Level.SEVERE, "esciGruppo: gruppo "+iscrittoBean.getGruppo()+" non presente nel Datastore!");
+		}
+		try {
+			//Controllo esistenza linkIscritto
+			List<TipoLinkIscritto> listaLinkIscritto =  ofy().load().type(TipoLinkIscritto.class)
+														.filter("giocatore", iscrittoBean.getGiocatore())
+														.filter("gruppo", iscrittoBean.getGruppo()).list();
+			if( listaLinkIscritto == null || listaLinkIscritto.size() == 0 )
+			{
+				log.log(Level.SEVERE, "esciGruppo: il giocatore "+iscrittoBean.getGiocatore()
+									 +" non risulta iscritto al gruppo "+iscrittoBean.getGruppo()+"!");
+				return sendResponse("L'utente non risulta iscritto al gruppo!", NOT_FOUND);
+			}
+			TipoLinkIscritto linkIscritto = listaLinkIscritto.get(0);
+			List<Long> elencoLinkIscritto = gruppo.getGiocatoriIscritti();
+			if( !elencoLinkIscritto.contains(linkIscritto) )
+			{
+				log.log(Level.SEVERE, "esciGruppo: il gruppo "+iscrittoBean.getGruppo()+" non ha memorizzato"
+									 +"il giocatore "+iscrittoBean.getGiocatore()+" tra i suoi iscritti!");
+				return sendResponse("L'utente non risulta iscritto al gruppo!", NOT_FOUND);
+			}
+			
+			//Controllo se il giocatore giocherà una partita confermata.
+			//Se così fosse, devo impedire al giocatore di uscire dal gruppo.
+			List<Partita> listaConfermate = ofy().load().type(Partita.class)
+								  .filter("gruppo", iscrittoBean.getGruppo())
+								  .filter("statoCorrente", Partita.Stato.CONFERMATA).list();
+			if( listaConfermate != null && listaConfermate.size()>0 )
+			{
+				Iterator<Partita> itConfermate = listaConfermate.iterator();
+				while( itConfermate.hasNext() )
+				{
+					Partita confermata = itConfermate.next();
+					Set<String> elencoGiocanti = confermata.getLinkGioca();
+					if( elencoGiocanti.contains(iscrittoBean.getGiocatore()) )
+					{
+						return sendResponse("Il giocatore figura tra i giocanti per una partita confermata!",
+											 UNAUTHORIZED);
+					}
+				}
+			}
+			
+			//Se il giocatore non partecipa a partire confermate, posso procedere con l'eliminazione.
+			DefaultBean partialResult = eliminaLinkIscritto(iscrittoBean);
+			if( !partialResult.getHttpCode().equals(OK) )
+			{
+				log.log(Level.SEVERE, "esciGruppo: errore durante la rimozione del linkIscritto tra "
+									 +iscrittoBean.getGiocatore()+" e il gruppo "+iscrittoBean.getGruppo()+"!");
+				return partialResult;
+			}
+			//Controllo esistenza linkGestisce(se l'utente è l'amministratore, bisogna nominarne un altro)
+			try {
+				if( gruppo.getLinkGestito().equals(linkIscritto) )
+				{
+					//Elimino il vecchio linkGestito.
+					partialResult = eliminaLinkGestito(iscrittoBean);
+					if( !partialResult.getHttpCode().equals(OK) )
+					{
+						log.log(Level.SEVERE, "esciGruppo: errore durante la rimozione del linkGestito tra "
+								 +iscrittoBean.getGiocatore()+" e il gruppo "+iscrittoBean.getGruppo()+"!");
+						return partialResult;
+					}
+					
+				}
+			} catch (EccezioneSubset e) {
+				log.log(Level.SEVERE, "esciGruppo: il gruppo "+iscrittoBean.getGruppo()+" non ha un amministratore!");
+			}
+			
+			//Controllo ultimo Iscritto: in quel caso bisogna eliminare il gruppo.
+			if( gruppo.quantiIscritti() == 0 )
+			{
+				//E' necessario prima annullare tutte le partite proposte, confermate e giocate dal gruppo
+				Set<Long> listaPartite = gruppo.getPartiteOrganizzate();
+				Iterator<Long> itPartite = listaPartite.iterator();
+				while( itPartite.hasNext() )
+				{
+					Long idPartita = itPartite.next();
+					Partita partita = ofy().load().type(Partita.class).id(idPartita).now();
+					if( partita.getStatoCorrente() == Partita.Stato.PROPOSTA  )
+					{
+						InfoGestionePartiteBean annullaBean = new InfoGestionePartiteBean();
+						annullaBean.setEmailGiocatore(iscrittoBean.getGiocatore());
+						annullaBean.setIdPartita(idPartita);
+						partialResult = annullaPartita(annullaBean, idSessione);
+					}
+					else partialResult = rimuoviPartitaGiocataConfermata(idPartita);
+						
+					if( !partialResult.getHttpCode().equals(OK) )
+					{
+						log.log(Level.SEVERE, "esciGruppo: errore durante l'annullamento della partita "+idPartita+"!");
+						continue;
+						//TODO o return partialResult; ?
+					}
+				}
+				//Eliminazione gruppo
+				InfoGruppoBean gruppoBean = new InfoGruppoBean();
+				gruppoBean.setId(iscrittoBean.getGruppo());
+				partialResult = eliminaGruppo(gruppoBean);
+				if( !partialResult.getHttpCode().equals(OK) )
+				{
+					log.log(Level.SEVERE, "esciGruppo: errore durante l'eliminazione del gruppo "
+										 +iscrittoBean.getGruppo()+"!");
+					return partialResult;
+				}
+			}
+			
+			//Se invece nel gruppo ci sono ancora altri giocatori, bisogna nominare un altro amministratore.
+			//Il nuovo amministratore sarà l'utente iscritto dal gruppo da più tempo.
+			TipoLinkIscritto nuovoGestore = listaLinkIscritto.get(1);
+			iscrittoBean.setGiocatore(nuovoGestore.getGiocatore());
+			partialResult = inserisciLinkGestito(iscrittoBean);
+			if( !partialResult.getHttpCode().equals(CREATED) )
+			{
+				log.log(Level.SEVERE, "esciGruppo: errore durante l'inserimento del linkGestito tra "
+						 +iscrittoBean.getGiocatore()+" e il gruppo "+iscrittoBean.getGruppo()+"!");
+				return partialResult;
+			}
+			
+			//E' inoltre necessario rimuovere i linkDisponibile dalle partite proposte,
+			//ed eventualmente, se il giocatore ne era anche il proponitore, cambiarne il proponitore.
+			//Per le partite giocate, lasciamo tutto.
+			List<Partita> listaProposte = ofy().load().type(Partita.class)
+										  .filter("gruppo", iscrittoBean.getGruppo())
+										  .filter("statoCorrente", Partita.Stato.PROPOSTA).list();
+			Iterator<Partita> itProposte = listaProposte.iterator();
+			while( itProposte.hasNext() )
+			{
+				Long idProposta = itProposte.next().getId();
+				InfoGestionePartiteBean proponeBean = new InfoGestionePartiteBean();
+				proponeBean.setEmailGiocatore(iscrittoBean.getGiocatore());
+				proponeBean.setIdPartita(idProposta);
+				partialResult = eliminaLinkDisponibile(proponeBean);
+				if( !partialResult.getHttpCode().equals(OK) )
+				{
+					log.log(Level.SEVERE, "esciGruppo: errore durante l'uscita del giocatore dalla partita "+idProposta+"!");
+					continue;
+					//TODO o return partialResult; ?
+				}
+			}
+		} catch (EccezioneMolteplicitaMinima e) {
+			log.log(Level.SEVERE, "esciGruppo: il gruppo "+iscrittoBean.getGruppo()+" non ha giocatori iscritti!");
+			return sendResponse("Errore durante la gestione delle iscrizioni!", INTERNAL_SERVER_ERROR);
+		}
+		
+		PayloadBean payload = new PayloadBean();
+		payload.setIdSessione(idSessione);
+		payload.setNuovoStato(StatoSessione.PRINCIPALE);
+		aggiornaStatoSessione(payload);
+		return sendResponse("Uscita dal gruppo effettuata con successo!", OK);
+	}
+	
+	
+	
+	
+	/////////////////////////////////////////
+	///////// TODO METODI AUSILIARI /////////
+	/////////////////////////////////////////
+	
 	@BeforeMethod
     private void setUp() {
         session = ObjectifyService.begin();
@@ -2028,6 +2357,7 @@ public class PdE2015_API
 		return response;
     }
     
+    //Metodo aggiunto per farsi restituire l'id degli oggetti creati, necessario per le API di alto livello.
     private DefaultBean sendResponseCreated(String mex, String code, Long idCreated)
     {
     	DefaultBean response = new DefaultBean();
@@ -2036,6 +2366,132 @@ public class PdE2015_API
 		response.setIdCreated(idCreated);
 		tearDown();
 		return response;
+    }
+    
+    private DefaultBean rimuoviPartitaGiocataConfermata(Long idPartita)
+    {
+    	Partita partita = ofy().load().type(Partita.class).id(idPartita).now();
+    	if( partita == null )
+    		return sendResponse("Partita giocata non esistente!", NOT_FOUND);
+    	
+    	DefaultBean partialResult;
+    	if( partita.getStatoCorrente() == Partita.Stato.GIOCATA )
+    	{
+    		//Elimina voti
+	    	Set<Long> elencoVoti = partita.getLinkVotoPerPartita();
+	    	Iterator<Long> itVoti = elencoVoti.iterator();
+	    	while( itVoti.hasNext() )
+	    	{
+	    		Long idVoto = itVoti.next();
+	    		VotoUomoPartita voto = ofy().load().type(VotoUomoPartita.class).id(idVoto).now();
+	    		if( voto == null )
+	    		{
+	    			log.log(Level.SEVERE, "rimuoviPartitaGiocata: il voto "+idVoto+" non è presente nel Datastore!");
+	    			continue;
+	    		}
+	    		else
+	    		{
+	    			try {
+						partialResult = eliminaVotoUomoPartita(voto.getVotanteUP(), voto.getId());
+						if( !partialResult.getHttpCode().equals(OK) )
+						{
+							log.log(Level.SEVERE, "rimuoviPartitaGiocata: errore durante l'eliminazione del voto "+voto.getId()+"!");
+							continue;
+							//TODO o return partialResult; ?
+						}
+					} catch (EccezioneMolteplicitaMinima e) {
+						log.log(Level.SEVERE, "rimuoviPartitaGiocata: il voto "+voto.getId()+" non ha memorizzato la mail del votante!");
+						continue;
+					}
+	    		}
+	    	}
+    	}
+    	//Elimina linkDisponibile
+    	try {
+			List<Long> elencoDisponibili = partita.getLinkDisponibile();
+			Set<String> elencoGiocanti = partita.getLinkGioca();
+			Iterator<Long> itDisponibili = elencoDisponibili.iterator();
+			while( itDisponibili.hasNext() )
+			{
+				Long idLink = itDisponibili.next();
+				TipoLinkDisponibile link = ofy().load().type(TipoLinkDisponibile.class)
+											.id(idLink).now();
+				if( link == null )
+				{
+					log.log(Level.SEVERE, "rimuoviPartitaGiocata: il linkDisponibile "+idLink+" non è presente nel Datastore!");
+					continue;
+				}
+				InfoGestionePartiteBean gestioneBean = new InfoGestionePartiteBean();
+				gestioneBean.setEmailGiocatore(link.getGiocatore());
+				gestioneBean.setIdPartita(idPartita);
+				partialResult = eliminaLinkDisponibile(gestioneBean);
+				if( !partialResult.getHttpCode().equals(OK) )
+				{
+					log.log(Level.SEVERE, "rimuoviPartitaGiocata: errore durante l'eliminazione del linkDisponibile tra "+link.getGiocatore()+"e "+link.getPartita()+"!");
+					continue;
+					//TODO o return partialResult; ?
+				}
+				
+				//Elimina linkGioca
+				if( elencoGiocanti.contains(link.getGiocatore()) )
+				{
+					partialResult = eliminaLinkGioca(gestioneBean);
+					if( !partialResult.getHttpCode().equals(OK) )
+					{
+						log.log(Level.SEVERE, "rimuoviPartitaGiocata: errore durante l'eliminazione del linkGioca tra "+link.getGiocatore()+"e "+link.getPartita()+"!");
+						continue;
+						//TODO o return partialResult; ?
+					}
+				}
+			}
+		} catch (EccezioneMolteplicitaMinima e) {
+			log.log(Level.SEVERE, "rimuoviPartitaGiocata: La partita "+partita.getId()+ "non ha linkDisponibile!" );
+		}
+    	
+    	//Elimina linkPropone
+    	try {
+    		InfoGestionePartiteBean proponeBean = new InfoGestionePartiteBean();
+			proponeBean.setEmailGiocatore(partita.getPropone());
+			proponeBean.setIdPartita(idPartita);
+	    	partialResult = eliminaLinkPropone(proponeBean);
+	    	if( !partialResult.getHttpCode().equals(OK) )
+			{
+				log.log(Level.SEVERE, "rimuoviPartitaGiocata: errore durante l'eliminazione del linkPropone "
+									 +"tra "+partita.getPropone()+"e "+idPartita+"!");
+				//TODO o return partialResult; ?
+			}
+		} catch (EccezioneMolteplicitaMinima e) {
+			log.log(Level.SEVERE, "La partita "+idPartita+"non ha memorizzato l'email di chi l'ha proposta!");
+		}
+    	//Elimina linkOrganizza con gruppo
+    	try {
+	    	InfoOrganizzaBean organizzaBean = new InfoOrganizzaBean();
+	    	organizzaBean.setPartita(idPartita);
+			organizzaBean.setGruppo(partita.getLinkOrganizza());
+			partialResult = eliminaLinkOrganizza(organizzaBean);
+			if( !partialResult.getHttpCode().equals(OK) )
+			{
+				log.log(Level.SEVERE, "rimuoviPartitaGiocata: errore durante l'eliminazione del linkOrganizza "
+									 +"tra "+partita.getLinkOrganizza()+"e "+idPartita+"!");
+				//TODO o return partialResult; ?
+			}
+		} catch (EccezioneMolteplicitaMinima e) {
+			log.log(Level.SEVERE, "La partita "+idPartita+"non ha memorizzato "
+								 +"l'id del gruppo che l'ha organizzata!");
+		}
+    	//Elimina partita
+    	InfoPartitaBean partitaBean = new InfoPartitaBean();
+    	partitaBean.setId(idPartita);
+    	partialResult = eliminaPartita(partitaBean);
+    	if( !partialResult.getHttpCode().equals(OK) )
+		{
+			log.log(Level.SEVERE, "rimuoviPartitaGiocata: errore durante l'eliminazione della "
+								 +"partita "+idPartita+"!");
+			//TODO o return partialResult; ?
+			return partialResult;
+		}
+    	
+    	return sendResponse("Partita giocata rimossa con successo.", OK);
     }
     
     // Metodo privato che data una lista, rimuove le partite Terminate

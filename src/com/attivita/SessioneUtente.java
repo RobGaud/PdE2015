@@ -1,10 +1,7 @@
 package com.attivita;
 
-import java.util.HashSet;
-
-import com.bean.PayloadBean;
+//import java.util.HashSet;
 import com.googlecode.objectify.annotation.*;
-import com.modello.Partita.Stato;
 
 @Entity
 public class SessioneUtente {
@@ -14,7 +11,8 @@ public class SessioneUtente {
 										 RICERCA_GRUPPO, INVITO, ISCRITTI_GRUPPO, STORICO,
 										 PARTITE_PROPOSTE, CREA_PARTITA, PARTITA, 
 										 VOTO, RICERCA_CAMPO, DISPONIBILE_PER_PARTITA,
-										 CAMPO, CREA_CAMPO, CREA_GRUPPO, EXIT
+										 CAMPO, CREA_CAMPO, CREA_GRUPPO, EXIT, ESCI_GRUPPO,
+										 ANNULLA_PARTITA, MODIFICA_DISPONIBILITA
 										};
 	
 	@Id private Long id;
@@ -72,9 +70,12 @@ public class SessioneUtente {
 			case PRINCIPALE:
 				this.statoPrecedente = StatoSessione.EXIT;
 				break;
-			//Se la transizione è crea_gruppo -> gruppo, devo cambiare lo stato precedente.	
+			//Se la transizione è crea_gruppo -> gruppo, o annulla_partita->crea_gruppo,
+			//devo cambiare lo stato precedente.	
 			case GRUPPO:
-				if(this.statoCorrente == StatoSessione.CREA_GRUPPO)
+				if(this.statoCorrente == StatoSessione.CREA_GRUPPO
+				   || this.statoCorrente == StatoSessione.ANNULLA_PARTITA)
+						
 					this.statoPrecedente = StatoSessione.PRINCIPALE;
 				else
 					this.statoPrecedente = this.statoCorrente;
@@ -126,11 +127,12 @@ public class SessioneUtente {
 				statiSuccessivi.add(StatoSessione.CREA_GRUPPO);
 				break;
 			case GRUPPO:
-				//TODO controllo appartenenza gruppo
+				//TODO controllo appartenenza gruppo: perché non farlo nelle API?
 				statiSuccessivi.add(StatoSessione.ISCRITTI_GRUPPO);
 				statiSuccessivi.add(StatoSessione.INVITO);
 				statiSuccessivi.add(StatoSessione.STORICO);
 				statiSuccessivi.add(StatoSessione.CREA_PARTITA);
+				statiSuccessivi.add(StatoSessione.PARTITE_PROPOSTE);
 				statiSuccessivi.add(StatoSessione.PARTITE_PROPOSTE);
 				break;
 			case PROFILO:
@@ -168,7 +170,7 @@ public class SessioneUtente {
 				statiSuccessivi.add(StatoSessione.CREA_PARTITA);
 				break;
 			case PARTITA:
-				//TODO Controllo stato partita 
+				//TODO Controllo stato partita
 				statiSuccessivi.add(StatoSessione.RICERCA_CAMPO);
 				statiSuccessivi.add(StatoSessione.DISPONIBILE_PER_PARTITA);
 				statiSuccessivi.add(StatoSessione.VOTO);
@@ -194,6 +196,9 @@ public class SessioneUtente {
 			case CREA_GRUPPO:
 				statiSuccessivi.add(StatoSessione.CREA_GRUPPO);
 				statiSuccessivi.add(StatoSessione.GRUPPO);
+				break;
+			case ESCI_GRUPPO:
+				statiSuccessivi.add(StatoSessione.PRINCIPALE);
 				break;
 		}
 		return statiSuccessivi;
