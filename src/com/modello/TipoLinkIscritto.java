@@ -8,8 +8,8 @@ public class TipoLinkIscritto {
 	
 	@Id Long id;
 	
-	private String giocatore;
-	private Long gruppo;
+	@Index private String giocatore;
+	@Index private Long gruppo;
 	// Indicizzato per query sul primo iscritto (Non si sa mai)
 	@Index private Date dataIscriz;
 	

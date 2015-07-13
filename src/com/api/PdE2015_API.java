@@ -29,6 +29,7 @@ import com.bean.*;
 
 import javax.annotation.Nullable;
 import javax.inject.*;
+import javax.naming.PartialResultException;
 
 //enum tipoPartita {CALCIO, CALCIOTTO, CALCETTO};
 
@@ -504,6 +505,7 @@ public class PdE2015_API
 		}
 	}
 	
+	//TODO convenrti in API di alto livello
 	@ApiMethod(
 			name = "partita.conferma",
 			path = "partita/confirm",
@@ -1229,6 +1231,49 @@ public class PdE2015_API
 		return sendResponse("TipoLinkRimosso con successo!", OK);	
 	}
 	
+	@ApiMethod(
+			name = "iscritto.estIscritto",
+			path = "iscritto/estiscritto",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean estIscritto(InfoIscrittoGestisceBean iscrittoBean)
+	{
+		// Il metodo estIscritto verifica che il giocatore figuri tra gl iscritti del gruppo;
+		// In caso positivo, restituisce nel campo idCreated l'id del TipoLinkIscritto in questione.
+		setUp();
+		//Controllo esistenza giocatore
+		Giocatore giocatore = ofy().load().type(Giocatore.class).id(iscrittoBean.getGiocatore()).now();
+		if( giocatore == null) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo esistenza gruppo
+		Gruppo gruppo = ofy().load().type(Gruppo.class).id(iscrittoBean.getGruppo()).now();
+		if( gruppo == null) return sendResponse("Gruppo non esistente!", PRECONDITION_FAILED);
+		
+		// Controllo esistenza TipoLinkIscritto
+		boolean found = false;
+		Long idLink = null;
+		TipoLinkIscritto link = null;
+		try {
+			Iterator<Long> it = gruppo.getGiocatoriIscritti().iterator();
+				
+			while(it.hasNext()) {
+				idLink = it.next();
+				link = ofy().load().type(TipoLinkIscritto.class).id(idLink).now();
+				if(link.getGiocatore().equals(iscrittoBean.getGiocatore())) {
+					found = true;
+					break;
+				}
+			}
+		}
+		catch(EccezioneMolteplicitaMinima e) {
+			log.log(Level.SEVERE, "Il Gruppo "+ gruppo.getId() +
+					"non rispetta la molteplicità minima!");
+			return sendResponse("Il gruppo non ha giocatori iscritti!", INTERNAL_SERVER_ERROR);
+		}
+		
+		if(!found) return sendResponse("Giocatore non iscritto!", NOT_FOUND);
+		else return sendResponseCreated("Giocatore iscritto al gruppo!", OK, idLink);
+	}
 	// TODO API Gestito
 	@ApiMethod(
 			name = "gestito.inserisciLinkGestito",
@@ -1262,7 +1307,7 @@ public class PdE2015_API
 		}
 		catch(EccezioneMolteplicitaMinima e) {
 			log.log(Level.SEVERE, "Il Gruppo "+ gruppo.getId() +
-					"non rispetta la molteplicità minima!");
+					" non rispetta la molteplicità minima!");
 		}
 		
 		if(!found) return sendResponse("Il gestore del gruppo deve farne parte!", PRECONDITION_FAILED);
@@ -1994,7 +2039,7 @@ public class PdE2015_API
 		//Aggiorno stato sessione
 		PayloadBean payload = new PayloadBean();
 		payload.setIdSessione(idSessione);
-		payload.setNuovoStato(StatoSessione.PARTITA);
+		payload.setNuovoStato(StatoSessione.GRUPPO);
 		partialResult = aggiornaStatoSessione(payload);
 		if( !partialResult.getHttpCode().equals(OK) )
 		{
@@ -2054,6 +2099,8 @@ public class PdE2015_API
 			tearDown();
 			return partialResult;
 		}
+		
+		//TODO se la partita non ha più giocatori disponibili, la elimino.
 		
 		PayloadBean payload = new PayloadBean();
 		payload.setIdSessione(idSessione);
@@ -2146,20 +2193,23 @@ public class PdE2015_API
 			path = "api/escigruppo",
 			httpMethod = HttpMethod.POST
           )
-	public DefaultBean esciGruppo(InfoIscrittoGestisceBean iscrittoBean, @Named("idSessione")Long idSessione)
+	public DefaultBean esciGruppo(InfoIscrittoGestisceBean iscrittoBean,
+									@Named("idSessione")Long idSessione)
 	{
 		setUp();
 		//Controllo esistenza sessione
 		SessioneUtente sessione = ofy().load().type(SessioneUtente.class).id(idSessione).now();
 		if( sessione == null )
 		{
-			log.log(Level.SEVERE, "esciGruppo: la sessione "+idSessione+" non è presente nel Datastore!");
+			log.log(Level.SEVERE, "esciGruppo: la sessione "+idSessione+
+									" non è presente nel Datastore!");
 			return sendResponse("Sessione non presente!", NOT_FOUND);
 		}
 		//Controllo stato giusto
 		if( sessione.getStatoCorrente() != StatoSessione.ESCI_GRUPPO )
 		{
-			log.log(Level.SEVERE, "esciGruppo: la sessione "+idSessione+" non è nello stato ESCI_GRUPPO!");
+			log.log(Level.SEVERE, "esciGruppo: la sessione "+idSessione+
+									" non è nello stato ESCI_GRUPPO!");
 			return sendResponse("Impossibile creare un gruppo in questo punto!", BAD_REQUEST);
 		}
 		//Controllo presenza mail utente in sessione
@@ -2176,32 +2226,34 @@ public class PdE2015_API
 					 			 +"memorizzato la mail diversa da quella dell'iscrittoBean!");
 			return sendResponse("Errore durante la gestione della sessione!", BAD_REQUEST);
 		}
+		//Controllo esistenza giocatore
+		Giocatore giocatore = ofy().load().type(Giocatore.class).id(sessione.getEmailUtente()).now();
+		if( giocatore == null )
+		{
+			log.log(Level.SEVERE, "esciGruppo: il giocatore "+idSessione+" non esiste!");
+			return sendResponse("Giocatore non esistente!", NOT_FOUND);
+		}
 		//Controllo esistenza gruppo
 		Gruppo gruppo = ofy().load().type(Gruppo.class).id(iscrittoBean.getGruppo()).now();
 		if( gruppo == null )
 		{
-			log.log(Level.SEVERE, "esciGruppo: gruppo "+iscrittoBean.getGruppo()+" non presente nel Datastore!");
+			log.log(Level.SEVERE, "esciGruppo: gruppo "+iscrittoBean.getGruppo()
+									+" non presente nel Datastore!");
+			return sendResponse("Gruppo non esistente!", NOT_FOUND);
 		}
 		try {
 			//Controllo esistenza linkIscritto
-			List<TipoLinkIscritto> listaLinkIscritto =  ofy().load().type(TipoLinkIscritto.class)
-														.filter("giocatore", iscrittoBean.getGiocatore())
-														.filter("gruppo", iscrittoBean.getGruppo()).list();
-			if( listaLinkIscritto == null || listaLinkIscritto.size() == 0 )
+			DefaultBean partialResult = estIscritto(iscrittoBean);
+			if( partialResult.getHttpCode().equals(NOT_FOUND) )
 			{
-				log.log(Level.SEVERE, "esciGruppo: il giocatore "+iscrittoBean.getGiocatore()
-									 +" non risulta iscritto al gruppo "+iscrittoBean.getGruppo()+"!");
-				return sendResponse("L'utente non risulta iscritto al gruppo!", NOT_FOUND);
-			}
-			TipoLinkIscritto linkIscritto = listaLinkIscritto.get(0);
-			List<Long> elencoLinkIscritto = gruppo.getGiocatoriIscritti();
-			if( !elencoLinkIscritto.contains(linkIscritto) )
-			{
-				log.log(Level.SEVERE, "esciGruppo: il gruppo "+iscrittoBean.getGruppo()+" non ha memorizzato"
-									 +"il giocatore "+iscrittoBean.getGiocatore()+" tra i suoi iscritti!");
+				log.log(Level.SEVERE, "esciGruppo: il giocatore "+iscrittoBean.getGiocatore()+
+								" non risulta iscritto al gruppo "+iscrittoBean.getGruppo()+"!");
 				return sendResponse("L'utente non risulta iscritto al gruppo!", NOT_FOUND);
 			}
 			
+			TipoLinkIscritto linkIscritto = ofy().load().type(TipoLinkIscritto.class)
+											.id(partialResult.getIdCreated()).now();
+
 			//Controllo se il giocatore giocherà una partita confermata.
 			//Se così fosse, devo impedire al giocatore di uscire dal gruppo.
 			List<Partita> listaConfermate = ofy().load().type(Partita.class)
@@ -2216,42 +2268,57 @@ public class PdE2015_API
 					Set<String> elencoGiocanti = confermata.getLinkGioca();
 					if( elencoGiocanti.contains(iscrittoBean.getGiocatore()) )
 					{
-						return sendResponse("Il giocatore figura tra i giocanti per una partita confermata!",
-											 UNAUTHORIZED);
+						return sendResponse("Il giocatore figura tra i giocanti"+
+											"per una partita confermata!", UNAUTHORIZED);
 					}
 				}
 			}
 			
-			//Se il giocatore non partecipa a partire confermate, posso procedere con l'eliminazione.
-			DefaultBean partialResult = eliminaLinkIscritto(iscrittoBean);
-			if( !partialResult.getHttpCode().equals(OK) )
-			{
-				log.log(Level.SEVERE, "esciGruppo: errore durante la rimozione del linkIscritto tra "
-									 +iscrittoBean.getGiocatore()+" e il gruppo "+iscrittoBean.getGruppo()+"!");
-				return partialResult;
-			}
-			//Controllo esistenza linkGestisce(se l'utente è l'amministratore, bisogna nominarne un altro)
+			//Controllo esistenza linkGestisce(se l'utente è l'amministratore, 
+			//bisogna nominarne un altro)
 			try {
-				if( gruppo.getLinkGestito().equals(linkIscritto) )
+				if( gruppo.getLinkGestito().equals(linkIscritto.getId()) )
 				{
 					//Elimino il vecchio linkGestito.
 					partialResult = eliminaLinkGestito(iscrittoBean);
 					if( !partialResult.getHttpCode().equals(OK) )
 					{
-						log.log(Level.SEVERE, "esciGruppo: errore durante la rimozione del linkGestito tra "
-								 +iscrittoBean.getGiocatore()+" e il gruppo "+iscrittoBean.getGruppo()+"!");
+						log.log(Level.SEVERE, "esciGruppo: errore durante la rimozione del linkGestito"
+											+ " tra "+iscrittoBean.getGiocatore()+
+											  " e il gruppo "+iscrittoBean.getGruppo()+"!");
+						tearDown();
 						return partialResult;
 					}
 					
 				}
 			} catch (EccezioneSubset e) {
-				log.log(Level.SEVERE, "esciGruppo: il gruppo "+iscrittoBean.getGruppo()+" non ha un amministratore!");
+				log.log(Level.SEVERE, "esciGruppo: il gruppo "+iscrittoBean.getGruppo()+
+									  " non ha un amministratore!");
+			}
+			
+			//Se il giocatore non partecipa a partire confermate, posso procedere con l'eliminazione.
+			partialResult = eliminaLinkIscritto(iscrittoBean);
+			if( !partialResult.getHttpCode().equals(OK) )
+			{
+				log.log(Level.SEVERE, "esciGruppo: errore durante la rimozione del linkIscritto tra "
+									 +iscrittoBean.getGiocatore()+" e il gruppo "
+									 +iscrittoBean.getGruppo()+"!");
+				tearDown();
+				return partialResult;
 			}
 			
 			//Controllo ultimo Iscritto: in quel caso bisogna eliminare il gruppo.
+			//Devo prendere nuovamente il gruppo dal Datastore, perchè è stato aggiornato.
+			tearDown();
+			setUp();
+			gruppo = ofy().load().type(Gruppo.class).id(iscrittoBean.getGruppo()).now();
+			log.log(Level.SEVERE, "quantiIscritti = "+gruppo.quantiIscritti());
+			
 			if( gruppo.quantiIscritti() == 0 )
 			{
-				//E' necessario prima annullare tutte le partite proposte, confermate e giocate dal gruppo
+				log.log(Level.SEVERE, "Il giocatore era l'ultimo iscritto, elimino il gruppo.");
+				//E' necessario prima annullare tutte le partite proposte, 
+				//confermate e giocate dal gruppo
 				Set<Long> listaPartite = gruppo.getPartiteOrganizzate();
 				Iterator<Long> itPartite = listaPartite.iterator();
 				while( itPartite.hasNext() )
@@ -2269,7 +2336,8 @@ public class PdE2015_API
 						
 					if( !partialResult.getHttpCode().equals(OK) )
 					{
-						log.log(Level.SEVERE, "esciGruppo: errore durante l'annullamento della partita "+idPartita+"!");
+						log.log(Level.SEVERE, "esciGruppo: errore durante l'annullamento della partita "
+											  +idPartita+"!");
 						continue;
 						//TODO o return partialResult; ?
 					}
@@ -2282,19 +2350,38 @@ public class PdE2015_API
 				{
 					log.log(Level.SEVERE, "esciGruppo: errore durante l'eliminazione del gruppo "
 										 +iscrittoBean.getGruppo()+"!");
+					tearDown();
 					return partialResult;
 				}
+				
+				//Se tutto è andato a buon fine, aggiorno lo stato della sessione,
+				//E riporto l'utente alla schermata principale.
+				PayloadBean payload = new PayloadBean();
+				payload.setIdSessione(idSessione);
+				payload.setNuovoStato(StatoSessione.PRINCIPALE);
+				partialResult = aggiornaStatoSessione(payload);
+				if( !partialResult.getHttpCode().equals(OK) )
+				{
+					log.log(Level.SEVERE, "esciGruppo: errore durante l'aggiornamento dello stato"
+										 +"della sessione "+idSessione+"!");
+					tearDown();
+					return partialResult;
+				}
+				return sendResponse("Uscita dal gruppo effettuata con successo!", OK);
 			}
 			
-			//Se invece nel gruppo ci sono ancora altri giocatori, bisogna nominare un altro amministratore.
+			log.log(Level.SEVERE, "Il giocatore non era l'ultimo iscritto.");
+			//Se invece nel gruppo ci sono ancora altri giocatori, bisogna nominare un altro admin.
 			//Il nuovo amministratore sarà l'utente iscritto dal gruppo da più tempo.
-			TipoLinkIscritto nuovoGestore = listaLinkIscritto.get(1);
+			TipoLinkIscritto nuovoGestore = ofy().load().type(TipoLinkIscritto.class)
+											.id(gruppo.getGiocatoriIscritti().get(0)).now();
 			iscrittoBean.setGiocatore(nuovoGestore.getGiocatore());
 			partialResult = inserisciLinkGestito(iscrittoBean);
 			if( !partialResult.getHttpCode().equals(CREATED) )
 			{
 				log.log(Level.SEVERE, "esciGruppo: errore durante l'inserimento del linkGestito tra "
 						 +iscrittoBean.getGiocatore()+" e il gruppo "+iscrittoBean.getGruppo()+"!");
+				tearDown();
 				return partialResult;
 			}
 			
@@ -2314,13 +2401,15 @@ public class PdE2015_API
 				partialResult = eliminaLinkDisponibile(proponeBean);
 				if( !partialResult.getHttpCode().equals(OK) )
 				{
-					log.log(Level.SEVERE, "esciGruppo: errore durante l'uscita del giocatore dalla partita "+idProposta+"!");
+					log.log(Level.SEVERE, "esciGruppo: errore durante l'uscita del giocatore "
+										 +"dalla partita "+idProposta+"!");
 					continue;
 					//TODO o return partialResult; ?
 				}
 			}
 		} catch (EccezioneMolteplicitaMinima e) {
-			log.log(Level.SEVERE, "esciGruppo: il gruppo "+iscrittoBean.getGruppo()+" non ha giocatori iscritti!");
+			log.log(Level.SEVERE, "esciGruppo: il gruppo "+iscrittoBean.getGruppo()+
+									" non ha giocatori iscritti!");
 			return sendResponse("Errore durante la gestione delle iscrizioni!", INTERNAL_SERVER_ERROR);
 		}
 		
@@ -2357,7 +2446,8 @@ public class PdE2015_API
 		return response;
     }
     
-    //Metodo aggiunto per farsi restituire l'id degli oggetti creati, necessario per le API di alto livello.
+    //Metodo aggiunto per farsi restituire l'id degli oggetti creati,
+    //necessario per le API di alto livello.
     private DefaultBean sendResponseCreated(String mex, String code, Long idCreated)
     {
     	DefaultBean response = new DefaultBean();
@@ -2386,7 +2476,8 @@ public class PdE2015_API
 	    		VotoUomoPartita voto = ofy().load().type(VotoUomoPartita.class).id(idVoto).now();
 	    		if( voto == null )
 	    		{
-	    			log.log(Level.SEVERE, "rimuoviPartitaGiocata: il voto "+idVoto+" non è presente nel Datastore!");
+	    			log.log(Level.SEVERE, "rimuoviPartitaGiocata: il voto "+idVoto+
+	    									" non è presente nel Datastore!");
 	    			continue;
 	    		}
 	    		else
@@ -2395,12 +2486,14 @@ public class PdE2015_API
 						partialResult = eliminaVotoUomoPartita(voto.getVotanteUP(), voto.getId());
 						if( !partialResult.getHttpCode().equals(OK) )
 						{
-							log.log(Level.SEVERE, "rimuoviPartitaGiocata: errore durante l'eliminazione del voto "+voto.getId()+"!");
+							log.log(Level.SEVERE, "rimuoviPartitaGiocata: errore durante l'eliminazione"
+												 +" del voto "+voto.getId()+"!");
 							continue;
 							//TODO o return partialResult; ?
 						}
 					} catch (EccezioneMolteplicitaMinima e) {
-						log.log(Level.SEVERE, "rimuoviPartitaGiocata: il voto "+voto.getId()+" non ha memorizzato la mail del votante!");
+						log.log(Level.SEVERE, "rimuoviPartitaGiocata: il voto "+voto.getId()+
+												" non ha memorizzato la mail del votante!");
 						continue;
 					}
 	    		}
@@ -2487,7 +2580,7 @@ public class PdE2015_API
 		{
 			log.log(Level.SEVERE, "rimuoviPartitaGiocata: errore durante l'eliminazione della "
 								 +"partita "+idPartita+"!");
-			//TODO o return partialResult; ?
+			tearDown();
 			return partialResult;
 		}
     	
