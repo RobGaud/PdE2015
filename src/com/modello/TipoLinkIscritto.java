@@ -7,7 +7,7 @@ import com.googlecode.objectify.annotation.*;
 public class TipoLinkIscritto {
 	
 	@Id Long id;
-	
+	//TODO verificare che l'indicizzazione di giocatore e gruppo sia effettivamente necessaria.
 	@Index private String giocatore;
 	@Index private Long gruppo;
 	// Indicizzato per query sul primo iscritto (Non si sa mai)

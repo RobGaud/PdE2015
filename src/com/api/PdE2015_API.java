@@ -611,10 +611,6 @@ public class PdE2015_API
 		return sendResponse("Partita confermata con successo.", OK);
    	}
 	
-	
-	
-	
-	
 	//TODO API Invito
 	@ApiMethod(
 			name = "invito.inserisciInvito",
@@ -1922,120 +1918,18 @@ public class PdE2015_API
 			log.log(Level.SEVERE, "annullaPartita: la sessione "+idSessione+" non è nello stato ANNULLA_PARTITA!");
 			return sendResponse("Impossibile annullare una partita in questo punto!", BAD_REQUEST);
 		}
-		//Controllo esistenza giocatore
-		Giocatore giocatore = ofy().load().type(Giocatore.class).id(annullaBean.getEmailGiocatore()).now();
-		if( giocatore == null ) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		//Termino la sessione sul Datastore per chiamare cancellaPartita.
+		tearDown();
 		
-		//Controllo esistenza partita
-		Partita partita = ofy().load().type(Partita.class).id(annullaBean.getIdPartita()).now();
-		if(partita == null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
-		
-		//Controllo stato partita
-		if( partita.getStatoCorrente()!=Partita.Stato.PROPOSTA)
-			return sendResponse("La partita non può essere annullata, poiché confermata o già giocata!", BAD_REQUEST);
-		//Controllo giocatore come proponitore
-		try {
-			if(!partita.getPropone().equals(annullaBean.getEmailGiocatore()))
-				return sendResponse("Solo chi propone la partita può confermarla!", UNAUTHORIZED);
-			
-		} catch (EccezioneMolteplicitaMinima e) {
-			log.log(Level.SEVERE, "annullaPartita: la partita "+annullaBean.getIdPartita()+" non ha un proponitore!");
-			//TODO che famo?
-			return sendResponse("Non si ha traccia del giocatore che ha proposto la partita!", INTERNAL_SERVER_ERROR);
-		}
-		
-		DefaultBean partialResult;
-		//Rimozione linkPresso alla partita
-		if( partita.quantiCampi()!=0 )
-		{
-			try {
-				InfoPressoBean pressoBean = new InfoPressoBean();
-				pressoBean.setCampo(partita.getCampo());
-				pressoBean.setPartita(annullaBean.getIdPartita());
-				partialResult = eliminaLinkPresso(pressoBean);
-				if( !partialResult.getHttpCode().equals(OK) )
-				{
-					log.log(Level.SEVERE, "annullaPartita: errore durante l'eliminazione del linkPresso dalla partita "
-											+pressoBean.getPartita()+"!");
-					tearDown();
-					return partialResult;
-				}
-			} catch (EccezioneMolteplicitaMinima e) {
-				log.log(Level.SEVERE, "annullaPartita: la partita non ha memorizzato un campo, eppure quantiCampi() restituisce 1!");
-			}
-		}
-		//Rimozione linkOrganizza alla partita
-		if( partita.quantiOrganizza()!=0 )
-		{
-			try{
-				InfoOrganizzaBean organizzaBean = new InfoOrganizzaBean();
-				organizzaBean.setGruppo(partita.getLinkOrganizza());
-				organizzaBean.setPartita(annullaBean.getIdPartita());
-				partialResult = eliminaLinkOrganizza(organizzaBean);
-				if( !partialResult.getHttpCode().equals(OK) )
-				{
-					log.log(Level.SEVERE, "annullaPartita: errore durante l'eliminazione del linkOrganizza dalla partita "
-											+organizzaBean.getPartita()+"!");
-					tearDown();
-					return partialResult;
-				}
-			} catch(EccezioneMolteplicitaMinima e)
-			{
-				log.log(Level.SEVERE, "La partita non ha un linkOrganizza, ma quantiOrganizza restituisce 1!");
-			}
-		}
-		//Rimozione linkDisponibile alla partita
-		if( partita.quantiDisponibili()!=0 )
-		{
-			try{
-				Iterator<Long> it = partita.getLinkDisponibile().iterator();
-				while( it.hasNext() )
-				{
-					TipoLinkDisponibile link = ofy().load().type(TipoLinkDisponibile.class).id(it.next()).now();
-					InfoGestionePartiteBean disponibileBean = new InfoGestionePartiteBean();
-					disponibileBean.setEmailGiocatore(link.getGiocatore());
-					disponibileBean.setIdPartita(annullaBean.getIdPartita());
-					partialResult = eliminaLinkDisponibile(disponibileBean);
-					if( !partialResult.getHttpCode().equals(OK) )
-					{
-						log.log(Level.SEVERE, "annullaPartita: errore durante l'eliminazione del linkDisponibile "
-											 +"dalla partita "+disponibileBean.getIdPartita()+"!");
-						tearDown();
-						return partialResult;
-					}
-				}
-			} catch(EccezioneMolteplicitaMinima e)
-			{
-				log.log(Level.SEVERE, "La partita non ha nessun linkDisponibile, ma quantiOrganizza() non restituisce 0!");
-			}
-		}
-		//Rimozione linkPropone alla partita
-		if( partita.quantiPropone()!=0 )
-		{
-			InfoGestionePartiteBean proponeBean = new InfoGestionePartiteBean();
-			proponeBean.setEmailGiocatore(annullaBean.getEmailGiocatore());
-			proponeBean.setIdPartita(annullaBean.getIdPartita());
-			partialResult = eliminaLinkPropone(proponeBean);
-			if( !partialResult.getHttpCode().equals(OK) )
-			{
-				log.log(Level.SEVERE, "annullaPartita: errore durante l'eliminazione del linkPropone "
-									 +"dalla partita "+proponeBean.getIdPartita()+"!");
-				tearDown();
-				return partialResult;
-			}
-		}
-		//Rimozione partita
-		InfoPartitaBean partitaBean = new InfoPartitaBean();
-		partitaBean.setId(annullaBean.getIdPartita());
-		partialResult = eliminaPartita(partitaBean);
+		DefaultBean partialResult = cancellaPartita(annullaBean);
 		if( !partialResult.getHttpCode().equals(OK) )
 		{
-			log.log(Level.SEVERE, "annullaPartita: errore durante l'eliminazione "
-								 +"della partita "+partitaBean.getId()+"!");
-			tearDown();
+			log.log(Level.SEVERE, "annullaPartita: errore durante la cancellazione"
+								+ " della partita+"+annullaBean.getIdPartita()+"!");
 			return partialResult;
 		}
 		
+		setUp();
 		//Aggiorno stato sessione
 		PayloadBean payload = new PayloadBean();
 		payload.setIdSessione(idSessione);
@@ -2043,7 +1937,7 @@ public class PdE2015_API
 		partialResult = aggiornaStatoSessione(payload);
 		if( !partialResult.getHttpCode().equals(OK) )
 		{
-			log.log(Level.SEVERE, "creaPartita: errore durante il cambio di stato della sessione "+idSessione+"+!");
+			log.log(Level.SEVERE, "annullaPartita: errore durante il cambio di stato della sessione "+idSessione+"+!");
 			tearDown();
 			return partialResult;
 		}
@@ -2330,7 +2224,7 @@ public class PdE2015_API
 						InfoGestionePartiteBean annullaBean = new InfoGestionePartiteBean();
 						annullaBean.setEmailGiocatore(iscrittoBean.getGiocatore());
 						annullaBean.setIdPartita(idPartita);
-						partialResult = annullaPartita(annullaBean, idSessione);
+						partialResult = cancellaPartita(annullaBean);
 					}
 					else partialResult = rimuoviPartitaGiocataConfermata(idPartita);
 						
@@ -2586,6 +2480,123 @@ public class PdE2015_API
     	
     	return sendResponse("Partita giocata rimossa con successo.", OK);
     }
+    
+    private DefaultBean cancellaPartita(InfoGestionePartiteBean annullaBean)
+	{	//Controllo esistenza giocatore
+		Giocatore giocatore = ofy().load().type(Giocatore.class).id(annullaBean.getEmailGiocatore()).now();
+		if( giocatore == null ) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo esistenza partita
+		Partita partita = ofy().load().type(Partita.class).id(annullaBean.getIdPartita()).now();
+		if(partita == null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo stato partita
+		if( partita.getStatoCorrente()!=Partita.Stato.PROPOSTA)
+			return sendResponse("La partita non può essere annullata, poiché confermata o già giocata!", BAD_REQUEST);
+		//Controllo giocatore come proponitore
+		try {
+			if(!partita.getPropone().equals(annullaBean.getEmailGiocatore()))
+				return sendResponse("Solo chi propone la partita può confermarla!", UNAUTHORIZED);
+			
+		} catch (EccezioneMolteplicitaMinima e) {
+			log.log(Level.SEVERE, "annullaPartita: la partita "+annullaBean.getIdPartita()+" non ha un proponitore!");
+			//TODO che famo?
+			return sendResponse("Non si ha traccia del giocatore che ha proposto la partita!", INTERNAL_SERVER_ERROR);
+		}
+		
+		DefaultBean partialResult;
+		//Rimozione linkPresso alla partita
+		if( partita.quantiCampi()!=0 )
+		{
+			try {
+				InfoPressoBean pressoBean = new InfoPressoBean();
+				pressoBean.setCampo(partita.getCampo());
+				pressoBean.setPartita(annullaBean.getIdPartita());
+				partialResult = eliminaLinkPresso(pressoBean);
+				if( !partialResult.getHttpCode().equals(OK) )
+				{
+					log.log(Level.SEVERE, "annullaPartita: errore durante l'eliminazione del linkPresso dalla partita "
+											+pressoBean.getPartita()+"!");
+					tearDown();
+					return partialResult;
+				}
+			} catch (EccezioneMolteplicitaMinima e) {
+				log.log(Level.SEVERE, "annullaPartita: la partita non ha memorizzato un campo, eppure quantiCampi() restituisce 1!");
+			}
+		}
+		//Rimozione linkOrganizza alla partita
+		if( partita.quantiOrganizza()!=0 )
+		{
+			try{
+				InfoOrganizzaBean organizzaBean = new InfoOrganizzaBean();
+				organizzaBean.setGruppo(partita.getLinkOrganizza());
+				organizzaBean.setPartita(annullaBean.getIdPartita());
+				partialResult = eliminaLinkOrganizza(organizzaBean);
+				if( !partialResult.getHttpCode().equals(OK) )
+				{
+					log.log(Level.SEVERE, "annullaPartita: errore durante l'eliminazione del linkOrganizza dalla partita "
+											+organizzaBean.getPartita()+"!");
+					tearDown();
+					return partialResult;
+				}
+			} catch(EccezioneMolteplicitaMinima e)
+			{
+				log.log(Level.SEVERE, "La partita non ha un linkOrganizza, ma quantiOrganizza restituisce 1!");
+			}
+		}
+		//Rimozione linkDisponibile alla partita
+		if( partita.quantiDisponibili()!=0 )
+		{
+			try{
+				Iterator<Long> it = partita.getLinkDisponibile().iterator();
+				while( it.hasNext() )
+				{
+					TipoLinkDisponibile link = ofy().load().type(TipoLinkDisponibile.class).id(it.next()).now();
+					InfoGestionePartiteBean disponibileBean = new InfoGestionePartiteBean();
+					disponibileBean.setEmailGiocatore(link.getGiocatore());
+					disponibileBean.setIdPartita(annullaBean.getIdPartita());
+					partialResult = eliminaLinkDisponibile(disponibileBean);
+					if( !partialResult.getHttpCode().equals(OK) )
+					{
+						log.log(Level.SEVERE, "annullaPartita: errore durante l'eliminazione del linkDisponibile "
+											 +"dalla partita "+disponibileBean.getIdPartita()+"!");
+						tearDown();
+						return partialResult;
+					}
+				}
+			} catch(EccezioneMolteplicitaMinima e)
+			{
+				log.log(Level.SEVERE, "La partita non ha nessun linkDisponibile, ma quantiOrganizza() non restituisce 0!");
+			}
+		}
+		//Rimozione linkPropone alla partita
+		if( partita.quantiPropone()!=0 )
+		{
+			InfoGestionePartiteBean proponeBean = new InfoGestionePartiteBean();
+			proponeBean.setEmailGiocatore(annullaBean.getEmailGiocatore());
+			proponeBean.setIdPartita(annullaBean.getIdPartita());
+			partialResult = eliminaLinkPropone(proponeBean);
+			if( !partialResult.getHttpCode().equals(OK) )
+			{
+				log.log(Level.SEVERE, "annullaPartita: errore durante l'eliminazione del linkPropone "
+									 +"dalla partita "+proponeBean.getIdPartita()+"!");
+				tearDown();
+				return partialResult;
+			}
+		}
+		//Rimozione partita
+		InfoPartitaBean partitaBean = new InfoPartitaBean();
+		partitaBean.setId(annullaBean.getIdPartita());
+		partialResult = eliminaPartita(partitaBean);
+		if( !partialResult.getHttpCode().equals(OK) )
+		{
+			log.log(Level.SEVERE, "annullaPartita: errore durante l'eliminazione "
+								 +"della partita "+partitaBean.getId()+"!");
+			
+		}
+		tearDown();
+		return partialResult;
+	}
     
     // Metodo privato che data una lista, rimuove le partite Terminate
     private void filtraPartite(List<? extends Partita> listaPartite)
