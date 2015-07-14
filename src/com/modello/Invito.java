@@ -10,7 +10,7 @@ public class Invito
 	@Id Long id;
 	
 	private String emailMittente;
-	//@Index private Long idLinkDestinatario;
+	//@Index private Long idLinkDestinatario;	
 	@Index private String emailDestinatario;
 	private Long idGruppo;
 	private Date dataInvio;

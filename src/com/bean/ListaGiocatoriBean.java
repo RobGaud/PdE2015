@@ -5,13 +5,23 @@ import java.util.List;
 
 import com.modello.Giocatore;
 
-public class ListaGiocatoriBean {
+public class ListaGiocatoriBean
+{
 	LinkedList<Giocatore> listaGiocatori;
-
+	String httpCode;
+	
 	public ListaGiocatoriBean() {
 		this.listaGiocatori = new LinkedList<Giocatore>();
 	}
 	
+	public String getHttpCode() {
+		return httpCode;
+	}
+
+	public void setHttpCode(String httpCode) {
+		this.httpCode = httpCode;
+	}
+
 	public void addGiocatore(Giocatore Giocatore)
 	{
 		if(Giocatore != null)

@@ -505,111 +505,7 @@ public class PdE2015_API
 		}
 	}
 	
-	//TODO convenrti in API di alto livello
-	@ApiMethod(
-			name = "partita.conferma",
-			path = "partita/confirm",
-			httpMethod = HttpMethod.POST
-          )
-	public DefaultBean confermaPartita(@Named("emailGiocatore")String emailGiocatore,
-									   @Named("idPartita")Long idPartita)
-   {
-		setUp();
-		//Controllo esistenza giocatore
-		Giocatore giocatore = ofy().load().type(Giocatore.class).id(emailGiocatore).now();
-		if( giocatore == null ) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
-		
-		//Controllo esistenza partita
-		Partita partita = ofy().load().type(Partita.class).id(idPartita).now();
-		if(partita == null)
-			return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
-		
-		//Controllo giocatore come proponitore
-		try {
-			if(!partita.getPropone().equals(emailGiocatore))
-				return sendResponse("Solo chi propone la partita può confermarla!", UNAUTHORIZED);
-			
-		} catch (EccezioneMolteplicitaMinima e) {
-			log.log(Level.SEVERE, "La partita "+idPartita+" non ha un proponitore!");
-			//TODO che famo?
-			return sendResponse("Non si ha traccia del giocatore che ha proposto la partita!", INTERNAL_SERVER_ERROR);
-		}
-		
-		//Controllo scelta campo
-		if( partita.quantiCampi() == 0 ) return sendResponse("Non è stato scelto il campo per la partita!", PRECONDITION_FAILED);
-		
-		//Controllo numero disponibili
-		if( getNDisponibili(idPartita).getnDisponibili()<partita.getNPartecipanti())
-			return sendResponse("La partita non può essere confermata: numero di partecipanti insufficiente!", PRECONDITION_FAILED);
-		
-		//Cambio stato partita
-		partita.setStatoCorrente(Partita.Stato.CONFERMATA);
-		
-		//Inserimento linkGioca con i giocatori che giocheranno la partita
-		int x = 0;
-		Iterator<Long> it;
-		try {
-			it = partita.getLinkDisponibile().iterator();
-			while(it.hasNext() && x<partita.getNPartecipanti())
-			{
-				TipoLinkDisponibile link = ofy().load().type(TipoLinkDisponibile.class).id(it.next()).now();
-				//Controllo esistenza giocatore
-				Giocatore g = ofy().load().type(Giocatore.class).id(link.getGiocatore()).now();
-				if( g == null )
-				{
-					log.log(Level.SEVERE, "Il giocatore "+link.getGiocatore()+
-							", preso dal link "+link.getId()+", non esiste!");
-					continue;
-				}
-				InfoGestionePartiteBean giocaBean = new InfoGestionePartiteBean();
-				giocaBean.setEmailGiocatore(link.getGiocatore());
-				giocaBean.setIdPartita(link.getPartita());
-				DefaultBean result = inserisciLinkGioca(giocaBean);
-				if( !result.getHttpCode().equals(CREATED) )
-				{
-					log.log(Level.SEVERE, "Errore durante inserimento linkGioca alla partita "+partita.getId());
-					continue;
-				}
-				
-				x += 1 + link.getnAmici();
-			}
-			if( x < partita.getNPartecipanti() )
-			{
-				//Se entro in questo ramo, c'è stato un errore di gestione dei link.
-				//Roll-back: rimuovo tutti i linkGioca inseriti.
-				it = partita.getLinkDisponibile().iterator();
-				while(it.hasNext() && x<partita.getNPartecipanti())
-				{
-					TipoLinkDisponibile link = ofy().load().type(TipoLinkDisponibile.class).id(it.next()).now();
-					//Controllo esistenza giocatore
-					Giocatore g = ofy().load().type(Giocatore.class).id(link.getGiocatore()).now();
-					if( g == null )
-					{
-						log.log(Level.SEVERE, "Il giocatore "+link.getGiocatore()+
-								", preso dal link "+link.getId()+", non esiste!");
-						continue;
-					}
-					InfoGestionePartiteBean giocaBean = new InfoGestionePartiteBean();
-					giocaBean.setEmailGiocatore(link.getGiocatore());
-					giocaBean.setIdPartita(link.getPartita());
-					DefaultBean result = eliminaLinkGioca(giocaBean);
-					if( !result.getHttpCode().equals(OK) )
-					{
-						log.log(Level.SEVERE, "Errore durante rimozione linkGioca alla partita "+partita.getId());
-						continue;
-					}
-					
-					x += 1 + link.getnAmici();
-				}
-				return sendResponse("Errore durante la conferma della partita!", INTERNAL_SERVER_ERROR);
-			}
-		} catch (EccezioneMolteplicitaMinima e) {
-			//NON ci dovremmo arrivare MAI!
-			return sendResponse("La partita non ha giocatori disponibili!", INTERNAL_SERVER_ERROR);
-		}
-		
-		return sendResponse("Partita confermata con successo.", OK);
-   	}
+	
 	
 	//TODO API Invito
 	@ApiMethod(
@@ -705,67 +601,6 @@ public class PdE2015_API
 		return sendResponse("Invito rimosso con successo!", OK);
 	}
 	
-	@ApiMethod(
-			name = "invito.rispondiInvito",
-			path = "invito/answer",
-			httpMethod = HttpMethod.POST
-          )
-	public DefaultBean rispondiInvito(@Named("emailDestinatario")String emailDestinatario,
-									  @Named("idInvito")Long idInvito,
-									  @Named("risposta") boolean risposta)
-	{
-		setUp();
-		//Controllo se l'invito esiste nel Datastore
-		Invito invito = ofy().load().type(Invito.class).id(idInvito).now();
-		if( invito == null ) return sendResponse("Invito non esistente!", PRECONDITION_FAILED);
-		
-		//Controllo se il destinatario esiste nel Datastore
-		Giocatore destinatario= ofy().load().type(Giocatore.class).id(emailDestinatario).now();
-		if( destinatario == null ) return sendResponse("Destinatario non esistente!", PRECONDITION_FAILED);
-		
-		//Se destinatario accetta l'invito
-		if( risposta )
-		{
-			//inserire linkIscritto in gruppo e destinatario
-			InfoIscrittoGestisceBean iscrittoBean = new InfoIscrittoGestisceBean();
-			iscrittoBean.setGiocatore(emailDestinatario);
-			try {
-				iscrittoBean.setGruppo(invito.getGruppo());
-			} catch (EccezioneMolteplicitaMinima e) {
-				log.log(Level.SEVERE, "L'invito "+invito.getId()+" non ha memorizzato l'id di un gruppo!");
-				return sendResponse("L'invito non ha memorizzato l'id di un gruppo!", PRECONDITION_FAILED);
-			}
-			DefaultBean insertResult = this.inserisciLinkIscritto(iscrittoBean);
-			if( !insertResult.getHttpCode().equals(CREATED) )
-			{
-				tearDown();
-				return insertResult;
-			}
-			//eliminare l'invito
-			DefaultBean deleteResult = eliminaInvito(emailDestinatario, idInvito);
-			if( !deleteResult.getHttpCode().equals(OK) )
-			{
-				insertResult = eliminaLinkIscritto(iscrittoBean);
-				if( !insertResult.getHttpCode().equals(OK) )
-				{
-					log.log(Level.SEVERE, "Rollback fallito durante rispondiInvito!");
-				}
-				tearDown();
-				return deleteResult;
-			}
-			return sendResponse("Risposta andata a buon fine!", OK);
-		}
-		else	// L'invito è stato rifiutato
-		{
-			DefaultBean deleteResult = eliminaInvito(emailDestinatario, idInvito);
-			if( !deleteResult.getHttpCode().equals(OK) )
-			{
-				log.log(Level.SEVERE, "Errore durante la rimozione dell'invito durante rispondiInvito!");
-				return sendResponse("Errore durante la risposta!", PRECONDITION_FAILED);
-			}
-			return sendResponse("Risposta inviata con successo.", OK);
-		}
-	}
 	
 	//TODO API VotoUomoPartita
 	@ApiMethod(
@@ -934,36 +769,6 @@ public class PdE2015_API
 		return sendResponse("Disponibilità rimossa non successo.", OK);
 	}
 	
-	@ApiMethod(
-			name = "disponibile.modificaDisponibile",
-			path = "disponibile",
-			httpMethod = HttpMethod.PUT
-			)
-	public DefaultBean modificaDisponibile(InfoGestionePartiteBean gestioneBean)
-	{
-		setUp();
-		//Controllo che la partita esista nel Datastore
-		Partita partita = ofy().load().type(Partita.class).id(gestioneBean.getIdPartita()).now();
-		if(partita==null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
-		
-		//Controllo che il giocatore esista nel Datastore
-		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestioneBean.getEmailGiocatore()).now();
-		if(giocatore==null) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
-		
-		//Controllo che il giocatore abbia dato disponibilità per la partita
-		List<TipoLinkDisponibile> listLink = ofy().load().type(TipoLinkDisponibile.class)
-											   .filter("giocatore", gestioneBean.getEmailGiocatore())
-											   .filter("partita", gestioneBean.getIdPartita()).list();
-		if( listLink.size() == 0 )
-			return sendResponse("Il giocatore non ha dato la sua disponibilità per la partita!", INTERNAL_SERVER_ERROR);
-		
-		//Aggiorno il link, e lo ricarico sul Datastore --- E' FONDAMENTALE CHE NON CAMBI IL SUO ID
-		TipoLinkDisponibile link = listLink.get(0);
-		link.setnAmici(gestioneBean.getnAmici());
-		ofy().save().entity(link).now();
-		
-		return sendResponse("Link disponibile aggiornato con successo!", OK);
-	}
 	
 	//TODO API associazione Propone
 	@ApiMethod(
@@ -1739,9 +1544,6 @@ public class PdE2015_API
 				listaBean.addStatoSessione(StatoSessione.ANNULLA_PARTITA); //In caso di errore.
 				break;
 			case ELENCO_VOTI:
-				break;
-			case MODIFICA_DISPONIBILITA:
-				listaBean.addStatoSessione(StatoSessione.PARTITA);
 				break;
 		}
 		return listaBean;
@@ -2535,7 +2337,585 @@ public class PdE2015_API
 		classificaVotiBean.setHttpCode(OK);
 		return classificaVotiBean;
 	}
+	
+	@ApiMethod(
+			name = "api.invitaGiocatore",
+			path = "api/invitagiocatore",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean invitaGiocatore(@Named("idSessione")Long idSessione,
+									   InfoInvitoBean invitoBean)
+   {
+		setUp();
+		//Controllo esistenza Sessione
+		SessioneUtente sessione = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( sessione == null)
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponse("Sessione non presente!", NOT_FOUND);
+		}
+		//Controllo stato giusto
+		if( sessione.getStatoCorrente() != StatoSessione.INVITO )
+		{
+			log.log(Level.SEVERE, "invitaGiocatore: la sessione "+idSessione
+								 +" non è nello stato INVITO!");
+			return sendResponse("Impossibile invitare un giocatore in questo punto!", BAD_REQUEST);
+		}
+		//Controllo presenza mail utente in sessione
+		if( sessione.getEmailUtente() == null )
+		{
+			log.log(Level.SEVERE, "invitaGiocatore: la sessione "+idSessione+" non ha"
+								 +"memorizzato la mail dell'utente a cui è associata!");
+			return sendResponse("Errore nella gestione della sessione!", INTERNAL_SERVER_ERROR);
+		}
+		
+		tearDown();
+		//Creazione invito
+		DefaultBean partialResult = inserisciInvito(invitoBean);
+		if( !partialResult.getHttpCode().equals(CREATED) )
+		{
+			log.log(Level.SEVERE, "invitaGiocatore: errore durante la creazione dell'invito!");
+			return partialResult;
+		}
+		
+		//Aggiornamento stato sessione
+		PayloadBean payload = new PayloadBean();
+		payload.setIdSessione(idSessione);
+		payload.setNuovoStato(StatoSessione.GRUPPO);
+		aggiornaStatoSessione(payload);
+		return partialResult;
+   }
+	
+	@ApiMethod(
+			name = "api.rispondiInvito",
+			path = "api/rispondiinvito",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean rispondiInvito(@Named("emailDestinatario")String emailDestinatario,
+									  @Named("idInvito")Long idInvito,
+									  @Named("risposta") boolean risposta,
+									  @Named("idSessione")Long idSessione)
+	{
+		setUp();
+		//Controllo esistenza Sessione
+		SessioneUtente sessione = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( sessione == null)
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponse("Sessione non presente!", NOT_FOUND);
+		}
+		//Controllo stato giusto
+		if( sessione.getStatoCorrente() != StatoSessione.INVITO )
+		{
+			log.log(Level.SEVERE, "invitaGiocatore: la sessione "+idSessione
+								 +" non è nello stato INVITO!");
+			return sendResponse("Impossibile invitare un giocatore in questo punto!", BAD_REQUEST);
+		}
+		//Controllo presenza mail utente in sessione
+		if( sessione.getEmailUtente() == null )
+		{
+			log.log(Level.SEVERE, "invitaGiocatore: la sessione "+idSessione+" non ha"
+								 +"memorizzato la mail dell'utente a cui è associata!");
+			return sendResponse("Errore nella gestione della sessione!", INTERNAL_SERVER_ERROR);
+		}
+		//Controllo se l'invito esiste nel Datastore
+		Invito invito = ofy().load().type(Invito.class).id(idInvito).now();
+		if( invito == null ) return sendResponse("Invito non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo se il destinatario esiste nel Datastore
+		Giocatore destinatario= ofy().load().type(Giocatore.class).id(emailDestinatario).now();
+		if( destinatario == null ) return sendResponse("Destinatario non esistente!", PRECONDITION_FAILED);
+		
+		//Se destinatario accetta l'invito
+		if( risposta )
+		{
+			//inserire linkIscritto in gruppo e destinatario
+			InfoIscrittoGestisceBean iscrittoBean = new InfoIscrittoGestisceBean();
+			iscrittoBean.setGiocatore(emailDestinatario);
+			try {
+				iscrittoBean.setGruppo(invito.getGruppo());
+			} catch (EccezioneMolteplicitaMinima e) {
+				log.log(Level.SEVERE, "L'invito "+invito.getId()+" non ha memorizzato l'id di un gruppo!");
+				return sendResponse("L'invito non ha memorizzato l'id di un gruppo!", PRECONDITION_FAILED);
+			}
+			tearDown();
+			DefaultBean insertResult = this.inserisciLinkIscritto(iscrittoBean);
+			if( !insertResult.getHttpCode().equals(CREATED) )
+			{
+				log.log(Level.SEVERE, "Errore durante l'inserimento del linkIscritto!");
+				return insertResult;
+			}
+			//eliminare l'invito
+			DefaultBean deleteResult = eliminaInvito(emailDestinatario, idInvito);
+			
+			//Se l'eliminazione dell'invito non va a buon fine, provo a fare rollback.
+			if( !deleteResult.getHttpCode().equals(OK) )
+			{
+				deleteResult = eliminaLinkIscritto(iscrittoBean);
+				if( !deleteResult.getHttpCode().equals(OK) )
+				{
+					log.log(Level.SEVERE, "Rollback fallito durante rispondiInvito!");
+				}
+				tearDown();
+				return deleteResult;
+			}
+			
+			//Aggiorna stato sessione in GRUPPO
+			//Aggiornamento stato sessione
+			PayloadBean payload = new PayloadBean();
+			payload.setIdSessione(idSessione);
+			payload.setNuovoStato(StatoSessione.GRUPPO);
+			aggiornaStatoSessione(payload);
+			
+			return sendResponse("Risposta inviata con successo.", OK);
+		}
+		else	// L'invito è stato rifiutato
+		{
+			DefaultBean deleteResult = eliminaInvito(emailDestinatario, idInvito);
+			if( !deleteResult.getHttpCode().equals(OK) )
+			{
+				log.log(Level.SEVERE, "Errore durante la rimozione dell'invito durante rispondiInvito!");
+				return sendResponse("Errore durante la risposta!", PRECONDITION_FAILED);
+			}
+			return sendResponse("Risposta inviata con successo.", OK);
+		}
+	}
+	
+	@ApiMethod(
+			name = "api.confermaPartita",
+			path = "partita/confermapartita",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean confermaPartita(@Named("idSessione")Long idSessione,
+									   @Named("idPartita")Long idPartita)
+	{
+		setUp();
+		//Controllo esistenza Sessione
+		SessioneUtente sessione = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( sessione == null)
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponse("Sessione non presente!", NOT_FOUND);
+		}
+		//Controllo stato giusto
+		if( sessione.getStatoCorrente() != StatoSessione.PARTITA )
+		{
+			log.log(Level.SEVERE, "confermaPartita: la sessione "+idSessione
+								 +" non è nello stato PARTITA!");
+			return sendResponse("Impossibile confermare una partita in questo punto!", BAD_REQUEST);
+		}
+		//Controllo presenza mail utente in sessione
+		if( sessione.getEmailUtente() == null )
+		{
+			log.log(Level.SEVERE, "confermaPartita: la sessione "+idSessione+" non ha"
+								 +"memorizzato la mail dell'utente a cui è associata!");
+			return sendResponse("Errore nella gestione della sessione!", INTERNAL_SERVER_ERROR);
+		}
+		//Controllo esistenza giocatore
+		Giocatore giocatore = ofy().load().type(Giocatore.class).id(sessione.getEmailUtente()).now();
+		if( giocatore == null ) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo esistenza partita
+		Partita partita = ofy().load().type(Partita.class).id(idPartita).now();
+		if(partita == null)
+			return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo giocatore come proponitore
+		try {
+			if(!partita.getPropone().equals(sessione.getEmailUtente()))
+				return sendResponse("Solo chi propone la partita può confermarla!", UNAUTHORIZED);
+			
+		} catch (EccezioneMolteplicitaMinima e) {
+			log.log(Level.SEVERE, "La partita "+idPartita+" non ha un proponitore!");
+			//TODO che famo?
+			return sendResponse("Non si ha traccia del giocatore che ha proposto la partita!", INTERNAL_SERVER_ERROR);
+		}
+		
+		//Controllo scelta campo
+		if( partita.quantiCampi() == 0 ) return sendResponse("Non è stato scelto il campo per la partita!", PRECONDITION_FAILED);
+		
+		//Controllo numero disponibili
+		if( getNDisponibili(idPartita).getnDisponibili()<partita.getNPartecipanti())
+			return sendResponse("La partita non può essere confermata: numero di partecipanti insufficiente!", PRECONDITION_FAILED);
+		
+		//Cambio stato partita
+		partita.setStatoCorrente(Partita.Stato.CONFERMATA);
+		
+		//Inserimento linkGioca con i giocatori che giocheranno la partita
+		int x = 0;
+		Iterator<Long> it;
+		try {
+			it = partita.getLinkDisponibile().iterator();
+			while(it.hasNext() && x<partita.getNPartecipanti())
+			{
+				TipoLinkDisponibile link = ofy().load().type(TipoLinkDisponibile.class).id(it.next()).now();
+				//Controllo esistenza giocatore
+				Giocatore g = ofy().load().type(Giocatore.class).id(link.getGiocatore()).now();
+				if( g == null )
+				{
+					log.log(Level.SEVERE, "Il giocatore "+link.getGiocatore()+
+							", preso dal link "+link.getId()+", non esiste!");
+					continue;
+				}
+				InfoGestionePartiteBean giocaBean = new InfoGestionePartiteBean();
+				giocaBean.setEmailGiocatore(link.getGiocatore());
+				giocaBean.setIdPartita(link.getPartita());
+				DefaultBean result = inserisciLinkGioca(giocaBean);
+				if( !result.getHttpCode().equals(CREATED) )
+				{
+					log.log(Level.SEVERE, "Errore durante inserimento linkGioca alla partita "+partita.getId());
+					continue;
+				}
+				
+				x += 1 + link.getnAmici();
+			}
+			if( x < partita.getNPartecipanti() )
+			{
+				//Se entro in questo ramo, c'è stato un errore di gestione dei link.
+				//Roll-back: rimuovo tutti i linkGioca inseriti.
+				it = partita.getLinkDisponibile().iterator();
+				while(it.hasNext() && x<partita.getNPartecipanti())
+				{
+					TipoLinkDisponibile link = ofy().load().type(TipoLinkDisponibile.class).id(it.next()).now();
+					//Controllo esistenza giocatore
+					Giocatore g = ofy().load().type(Giocatore.class).id(link.getGiocatore()).now();
+					if( g == null )
+					{
+						log.log(Level.SEVERE, "Il giocatore "+link.getGiocatore()+
+								", preso dal link "+link.getId()+", non esiste!");
+						continue;
+					}
+					InfoGestionePartiteBean giocaBean = new InfoGestionePartiteBean();
+					giocaBean.setEmailGiocatore(link.getGiocatore());
+					giocaBean.setIdPartita(link.getPartita());
+					DefaultBean result = eliminaLinkGioca(giocaBean);
+					if( !result.getHttpCode().equals(OK) )
+					{
+						log.log(Level.SEVERE, "Errore durante rimozione linkGioca alla partita "+partita.getId());
+						continue;
+					}
+					
+					x += 1 + link.getnAmici();
+				}
+				return sendResponse("Errore durante la conferma della partita!", INTERNAL_SERVER_ERROR);
+			}
+		} catch (EccezioneMolteplicitaMinima e) {
+			//NON ci dovremmo arrivare MAI!
+			return sendResponse("La partita non ha giocatori disponibili!", INTERNAL_SERVER_ERROR);
+		}
+		
+		return sendResponse("Partita confermata con successo.", OK);
+   	}
+	
+	@ApiMethod(
+			name = "api.modificaDisponibile",
+			path = "api/modificadisponibile",
+			httpMethod = HttpMethod.PUT
+			)
+	public DefaultBean modificaDisponibile(InfoGestionePartiteBean gestioneBean,
+										   @Named("idSessione")Long idSessione)
+	{
+		setUp();
+		//Controllo esistenza Sessione
+		SessioneUtente sessione = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( sessione == null)
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponse("Sessione non presente!", NOT_FOUND);
+		}
+		//Controllo stato giusto
+		if( sessione.getStatoCorrente() != StatoSessione.DISPONIBILE_PER_PARTITA )
+		{
+			log.log(Level.SEVERE, "la sessione "+idSessione
+								 +" non è nello stato DISPONIBILE_PER_PARTITA!");
+			return sendResponse("Impossibile modificare la propria partecipazione "
+								+ "in questo punto!", BAD_REQUEST);
+		}
+		//Controllo presenza mail utente in sessione
+		if( sessione.getEmailUtente() == null )
+		{
+			log.log(Level.SEVERE, "la sessione "+idSessione+" non ha"
+								 +"memorizzato la mail dell'utente a cui è associata!");
+			return sendResponse("Errore nella gestione della sessione!", INTERNAL_SERVER_ERROR);
+		}
+		//Controllo che la partita esista nel Datastore
+		Partita partita = ofy().load().type(Partita.class).id(gestioneBean.getIdPartita()).now();
+		if(partita==null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo che il giocatore esista nel Datastore
+		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestioneBean.getEmailGiocatore()).now();
+		if(giocatore==null) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo che il giocatore abbia dato disponibilità per la partita
+		List<TipoLinkDisponibile> listLink = ofy().load().type(TipoLinkDisponibile.class)
+											   .filter("giocatore", gestioneBean.getEmailGiocatore())
+											   .filter("partita", gestioneBean.getIdPartita()).list();
+		if( listLink.size() == 0 )
+			return sendResponse("Il giocatore non ha dato la sua disponibilità "
+								+ "per la partita!", INTERNAL_SERVER_ERROR);
+		
+		//Aggiorno il link, e lo ricarico sul Datastore --- E' FONDAMENTALE CHE NON CAMBI IL SUO ID
+		TipoLinkDisponibile link = listLink.get(0);
+		link.setnAmici(gestioneBean.getnAmici());
+		ofy().save().entity(link).now();
+		
+		//Aggiorna stato sessione in PARTITA
+		//Aggiornamento stato sessione
+		PayloadBean payload = new PayloadBean();
+		payload.setIdSessione(idSessione);
+		payload.setNuovoStato(StatoSessione.PARTITA);
+		aggiornaStatoSessione(payload);
+		
+		return sendResponse("Link disponibile aggiornato con successo!", OK);
+	}
+	
+	@ApiMethod(
+			name = "api.listaInviti",
+			path = "api/listainviti",
+			httpMethod = HttpMethod.GET
+			)
+	public ListaInvitiBean listaInviti(@Named("idSessione")Long idSessione)
+	{
+		setUp();
+		ListaInvitiBean listaInvitiBean = new ListaInvitiBean();
+		//Controllo esistenza Sessione
+		SessioneUtente sessione = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( sessione == null)
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			tearDown();
+			listaInvitiBean.setHttpCode(NOT_FOUND);
+			return listaInvitiBean;
+		}
+		//Controllo stato giusto
+		if( sessione.getStatoCorrente() != StatoSessione.DISPONIBILE_PER_PARTITA )
+		{
+			log.log(Level.SEVERE, "la sessione "+idSessione
+								 +" non è nello stato DISPONIBILE_PER_PARTITA!");
+			tearDown();
+			listaInvitiBean.setHttpCode(BAD_REQUEST);
+			return listaInvitiBean;
+		}
+		//Controllo presenza mail utente in sessione
+		if( sessione.getEmailUtente() == null )
+		{
+			log.log(Level.SEVERE, "la sessione "+idSessione+" non ha"
+								 +"memorizzato la mail dell'utente a cui è associata!");
+			tearDown();
+			listaInvitiBean.setHttpCode(INTERNAL_SERVER_ERROR);
+			return listaInvitiBean;
+		}
+		
+		List<Invito> listaInviti = ofy().load().type(Invito.class)
+									.filter("emailDestinatario", sessione.getEmailUtente()).list();
+		Iterator<Invito> it = listaInviti.iterator();
+		while(it.hasNext())
+		{
+			Invito invito = it.next();
+			listaInvitiBean.addInvito(invito);
+		}
+		
+		tearDown();
+		listaInvitiBean.setHttpCode(OK);
+		return listaInvitiBean;
+	}
+	
+	
+	@ApiMethod(
+			name = "api.listaGiocatoriPartitaProposta",
+			path = "api/listagiocatoripartitaproposta",
+			httpMethod = HttpMethod.GET
+			)
+	public ListaGiocatoriBean listaGiocatoriPartitaProposta(@Named("idSessione")Long idSessione,
+															@Named("idPartita")Long idPartita)
+	{
+		setUp();
+		ListaGiocatoriBean listaGiocatori = new ListaGiocatoriBean();
+		//Controllo esistenza Sessione
+		SessioneUtente sessione = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( sessione == null)
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			listaGiocatori.setHttpCode(NOT_FOUND);
+			return listaGiocatori;
+		}
+		//Controllo stato giusto
+		if( sessione.getStatoCorrente() != StatoSessione.PARTITA )
+		{
+			log.log(Level.SEVERE, "la sessione "+idSessione
+								 +" non è nello stato PARTITA!");
+			listaGiocatori.setHttpCode(BAD_REQUEST);
+			return listaGiocatori;
+		}
+		//Controllo presenza mail utente in sessione
+		if( sessione.getEmailUtente() == null )
+		{
+			log.log(Level.SEVERE, "la sessione "+idSessione+" non ha"
+								 +"memorizzato la mail dell'utente a cui è associata!");
+			listaGiocatori.setHttpCode(INTERNAL_SERVER_ERROR);
+			return listaGiocatori;
+		}
+		//Controllo esistenza partita
+		Partita partita = ofy().load().type(Partita.class).id(idPartita).now();
+		if( partita == null )
+		{
+			log.log(Level.SEVERE, "Partita non esistente!");
+			listaGiocatori.setHttpCode(NOT_FOUND);
+			return listaGiocatori;
+		}
+		//Controllo stato partita
+		if( partita.getStatoCorrente() != Stato.PROPOSTA)
+		{
+			log.log(Level.SEVERE, "La partita non è nello stato PROPOSTA!");
+			listaGiocatori.setHttpCode(BAD_REQUEST);
+			return listaGiocatori;
+		}
+		
+		List<TipoLinkDisponibile> elencoLink = ofy().load().type(TipoLinkDisponibile.class)
+												.filter("partita", idPartita).list();
+		Iterator<TipoLinkDisponibile> it = elencoLink.iterator();
+		while(it.hasNext())
+		{
+			String email = it.next().getGiocatore();
+			Giocatore giocatore = ofy().load().type(Giocatore.class).id(email).now();
+			if( giocatore == null )
+			{
+				log.log(Level.SEVERE, "Il giocatore "+email+" non esiste!");
+				continue;
+			}
+			listaGiocatori.addGiocatore(giocatore);
+		}
+		
+		tearDown();
+		listaGiocatori.setHttpCode(OK);
+		return listaGiocatori;
+	}
+	
+	@ApiMethod(
+			name = "api.listaGiocatoriPartitaConfermata",
+			path = "api/listagiocatoripartitaconfermata",
+			httpMethod = HttpMethod.GET
+			)
+	public ListaGiocatoriBean listaGiocatoriPartitaConfermata(@Named("idSessione")Long idSessione,
+															  @Named("idPartita")Long idPartita)
+	{
+		setUp();
+		ListaGiocatoriBean listaGiocatori = new ListaGiocatoriBean();
+		//Controllo esistenza Sessione
+		SessioneUtente sessione = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( sessione == null)
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			listaGiocatori.setHttpCode(NOT_FOUND);
+			return listaGiocatori;
+		}
+		//Controllo stato giusto
+		if( sessione.getStatoCorrente() != StatoSessione.PARTITA )
+		{
+			log.log(Level.SEVERE, "la sessione "+idSessione
+								 +" non è nello stato PARTITA!");
+			listaGiocatori.setHttpCode(BAD_REQUEST);
+			return listaGiocatori;
+		}
+		//Controllo presenza mail utente in sessione
+		if( sessione.getEmailUtente() == null )
+		{
+			log.log(Level.SEVERE, "la sessione "+idSessione+" non ha"
+								 +"memorizzato la mail dell'utente a cui è associata!");
+			listaGiocatori.setHttpCode(INTERNAL_SERVER_ERROR);
+			return listaGiocatori;
+		}
+		//Controllo esistenza partita
+		Partita partita = ofy().load().type(Partita.class).id(idPartita).now();
+		if( partita == null )
+		{
+			log.log(Level.SEVERE, "Partita non esistente!");
+			listaGiocatori.setHttpCode(NOT_FOUND);
+			return listaGiocatori;
+		}
+		//Controllo stato partita
+		if( partita.getStatoCorrente() != Stato.CONFERMATA)
+		{
+			log.log(Level.SEVERE, "La partita non è nello stato CONFERMATA!");
+			listaGiocatori.setHttpCode(BAD_REQUEST);
+			return listaGiocatori;
+		}
+		
+		try {
+			Set<String> elencoEmailGiocanti = partita.getLinkGioca();
+			Iterator<String> it = elencoEmailGiocanti.iterator();
+			while(it.hasNext())
+			{
+				String email = it.next();
+				Giocatore giocatore = ofy().load().type(Giocatore.class).id(email).now();
+				if( giocatore == null )
+				{
+					log.log(Level.SEVERE, "Il giocatore "+email+" non esiste!");
+					continue;
+				}
+				listaGiocatori.addGiocatore(giocatore);
+			}	
+		} catch (EccezioneMolteplicitaMinima e) {
+			log.log(Level.SEVERE, "La partita non ha giocatori giocanti!");
+			listaGiocatori.setHttpCode(INTERNAL_SERVER_ERROR);
+			return listaGiocatori;
+		}
+		
+		listaGiocatori.setHttpCode(OK);
+		return listaGiocatori;
+	}
+	
+	public DefaultBean inserisciDisponibilita(@Named("idSessione")Long idSessione,
+											  @Named("idPartita")Long idPartita)
+	{
+		setUp();
+		//Controllo esistenza Sessione
+		SessioneUtente sessione = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( sessione == null)
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponse("Sessione non presente!", NOT_FOUND);
+		}
+		//Controllo stato giusto
+		if( sessione.getStatoCorrente() != StatoSessione.DISPONIBILE_PER_PARTITA )
+		{
+			log.log(Level.SEVERE, "la sessione "+idSessione
+								 +" non è nello stato DISPONIBILE_PER_PARTITA!");
+			return sendResponse("Impossibile inserire la propria partecipazione "
+								+ "in questo punto!", BAD_REQUEST);
+		}
+		//Controllo presenza mail utente in sessione
+		if( sessione.getEmailUtente() == null )
+		{
+			log.log(Level.SEVERE, "la sessione "+idSessione+" non ha"
+								 +"memorizzato la mail dell'utente a cui è associata!");
+			return sendResponse("Errore nella gestione della sessione!", INTERNAL_SERVER_ERROR);
+		}
+		
+		InfoGestionePartiteBean disponibileBean = new InfoGestionePartiteBean();
+		disponibileBean.setEmailGiocatore(sessione.getEmailUtente());
+		disponibileBean.setIdPartita(idPartita);
+		DefaultBean partialResult = inserisciLinkDisponibile(disponibileBean);
+		if( !partialResult.getHttpCode().equals(CREATED))
+		{
+			log.log(Level.SEVERE, "Errore durante la creazione del linkDisponibile!");
+			tearDown();
+			return partialResult;
+		}
+		
+		//Aggiorna stato sessione in PARTITA
+		//Aggiornamento stato sessione
+		PayloadBean payload = new PayloadBean();
+		payload.setIdSessione(idSessione);
+		payload.setNuovoStato(StatoSessione.PARTITA);
+		aggiornaStatoSessione(payload);
+				
+		tearDown();
+		return partialResult;
+	}
 
+	
+	
 	/////////////////////////////////////////
 	///////// TODO METODI AUSILIARI /////////
 	/////////////////////////////////////////
