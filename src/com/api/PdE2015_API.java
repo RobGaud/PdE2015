@@ -3,22 +3,33 @@ package com.api;
 import com.google.api.server.spi.config.Api;
 import com.google.api.server.spi.config.ApiMethod;
 import com.google.api.server.spi.config.ApiMethod.*;
+import com.google.appengine.api.datastore.Link;
+import com.google.gwt.dev.ModuleTabPanel.Session;
 import com.googlecode.objectify.ObjectifyService;
 import com.googlecode.objectify.util.Closeable;
+import com.attivita.SessioneUtente;
+import com.attivita.SessioneUtente.StatoSessione;
 
 import static com.persistence.OfyService.ofy;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
+import org.yaml.snakeyaml.DumperOptions.ScalarStyle;
 
 import com.modello.*;
+import com.modello.Partita.Stato;
+import com.attivita.SessioneUtente.StatoSessione;
 import com.bean.*;
 
-import javax.inject.Named;
+import javax.annotation.Nullable;
+import javax.inject.*;
 
 //enum tipoPartita {CALCIO, CALCIOTTO, CALCETTO};
 
@@ -32,10 +43,19 @@ public class PdE2015_API
 	public static final int CODICE_CALCETTO = 1;
 	public static final int CODICE_CALCIOTTO = 2;
 	public static final int CODICE_CALCIO = 3;
-
+	
+	private static final String CREATED = "201 Created";
+	private static final String OK = "200 OK"; 
+	private static final String PRECONDITION_FAILED = "412 Precondition Failed";
+	private static final String CONFLICT = "409 Conflict";
+	private static final String UNAUTHORIZED = "401 Unauthorized";
+	private static final String INTERNAL_SERVER_ERROR = "500 Internal Server Error";
+	private static final String BAD_REQUEST = "400 Bad Request";
+	private static final String NOT_FOUND = "404 Not Found";
 	
 	Closeable session;
-	private static final Logger log = Logger.getLogger(PdE2015_API.class.getName()); 
+	private static final Logger log = Logger.getLogger(PdE2015_API.class.getName());
+	
 	
 	@ApiMethod(
 				name = "campo.inserisciCampo",
@@ -48,12 +68,7 @@ public class PdE2015_API
 		List<Campo> l = ofy().load().type(Campo.class).filter("indirizzo", campoBean.getIndirizzo())
 													  .filter("citta", campoBean.getCitta()).list();
 		
-		if(l.size() > 0) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Campo già esistente!");
-			tearDown();
-			return response;
-		}
+		if(l.size() > 0) return sendResponse("Campo già esistente!", PRECONDITION_FAILED);
 			
 		Campo campo = new Campo(campoBean.getNome(), campoBean.getTelefono(), campoBean.getIndirizzo(), campoBean.getCitta(), campoBean.getPrezzo());
 		if (!campoBean.getGiorniChiusura().isEmpty()) {
@@ -72,10 +87,8 @@ public class PdE2015_API
 		// Use Objectify to save the campo and now() is used to make the call synchronously as we
 	    // will immediately get a new page using redirect and we want the data to be present.
 		ofy().save().entity(campo).now();
-		tearDown();
-		DefaultBean response = new DefaultBean();
-		response.setResult("Campo inserito con successo");
-		return response;
+		
+		return sendResponseCreated("Campo inserito con successo.", CREATED, campo.getId());
 	}
 	
 	@ApiMethod(
@@ -107,12 +120,7 @@ public class PdE2015_API
 		List<Campo> l = ofy().load().type(Campo.class).filter("indirizzo", ic.getIndirizzo())
 				 									.filter("citta", ic.getCitta()).list();
 		
-		if(l.size() <= 0) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Campo non esistente!");
-			tearDown();
-			return response;
-		}
+		if(l.size() <= 0) return sendResponse("Campo non esistente!", PRECONDITION_FAILED);
 		
 		Campo campo = l.get(0);
 		
@@ -129,11 +137,8 @@ public class PdE2015_API
 			campo.addGiornoChiusura(it.next());
 		
 		ofy().save().entity(campo).now();
-		tearDown();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("Campo aggiornato con successo!");
-		return response;
+		return sendResponse("Campo aggiornato con successo!", OK);
 	}
 	
 	@ApiMethod(
@@ -146,21 +151,12 @@ public class PdE2015_API
 		List<Campo> l = ofy().load().type(Campo.class).filter("indirizzo", campoBean.getIndirizzo())
 				 									.filter("citta", campoBean.getCitta()).list();
 		
-		if(l.size() <= 0) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Campo non esistente!");
-			tearDown();
-			return response;
-		}
+		if(l.size() <= 0) return sendResponse("Campo non esistente!", PRECONDITION_FAILED);
 		
 		Campo campo = l.get(0);
 		ofy().delete().entity(campo).now();
-		tearDown();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("Campo eliminato con successo!");
-		return response;
-		
+		return sendResponse("Campo eliminato con successo!", OK);
 	}
 	
 	//TODO API Giocatore
@@ -173,21 +169,13 @@ public class PdE2015_API
 		setUp();
 		Giocatore giocatore = ofy().load().type(Giocatore.class).id(giocatoreBean.getEmail()).now();
 		
-		if(giocatore != null) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Giocatore già esistente!");
-			tearDown();
-			return response;
-		}
-		// TODO tutte le mail in minuscolo (altrimenti rischio problemi identificazione)
+		if(giocatore != null) return sendResponse("Giocatore già esistente!", PRECONDITION_FAILED);
+		
 		giocatore = new Giocatore(giocatoreBean.getNome(), giocatoreBean.getEmail(), giocatoreBean.getTelefono(),
 									giocatoreBean.getRuoloPreferito(), giocatoreBean.getFotoProfilo());
 		ofy().save().entity(giocatore).now();
-		tearDown();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("Giocatore inserito con successo!");
-		return response;
+		return sendResponse("Giocatore inserito con successo!", CREATED);
 	}
 	
 	@ApiMethod(
@@ -218,12 +206,7 @@ public class PdE2015_API
 		setUp();
 		Giocatore g = ofy().load().type(Giocatore.class).id(ig.getEmail()).now();
 		
-		if(g == null) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Giocatore non esistente!");
-			tearDown();
-			return response;
-		}
+		if(g == null) sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
 		
 		if(ig.getNome() != null)
 			g.setNome(ig.getNome());
@@ -236,11 +219,8 @@ public class PdE2015_API
 		
 		
 		ofy().save().entity(g).now();
-		tearDown();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("Giocatore aggiornato con successo!");
-		return response;
+		return sendResponse("Giocatore aggiornato con successo!", OK);
 	}
 	
 	@ApiMethod(
@@ -252,20 +232,11 @@ public class PdE2015_API
 		setUp();
 		Giocatore giocatore = ofy().load().type(Giocatore.class).id(giocatoreBean.getEmail()).now();
 		
-		if(giocatore == null) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Giocatore non esistente!");
-			tearDown();
-			return response;
-		}
+		if(giocatore == null) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
 		
 		ofy().delete().entity(giocatore).now();
-		tearDown();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("Giocatore eliminato con successo!");
-		return response;
-		
+		return sendResponse("Giocatore eliminato con successo!", OK);
 	}
 	
 	//TODO API Gruppo
@@ -278,20 +249,19 @@ public class PdE2015_API
 	public DefaultBean inserisciGruppo(InfoGruppoBean gruppoBean) {
 		// NB: Il gruppo viene identificato attraverso l'id
 		setUp();
+		Long idGruppo;
 		if(gruppoBean.isAperto()){
-			GruppoAperto ga = new GruppoAperto(gruppoBean.getNome());
+			GruppoAperto ga = new GruppoAperto(gruppoBean.getNome(), gruppoBean.getCitta());
 			ofy().save().entity(ga).now();
+			idGruppo = ga.getId();
 		}
 		else {
-			GruppoChiuso gc = new GruppoChiuso(gruppoBean.getNome());
+			GruppoChiuso gc = new GruppoChiuso(gruppoBean.getNome(), gruppoBean.getCitta());
 			ofy().save().entity(gc).now();
+			idGruppo = gc.getId();
 		}
-		tearDown();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("Gruppo inserito con successo!");
-		return response;
-		
+		return sendResponseCreated("Gruppo inserito con successo!", CREATED, idGruppo);
 	}
 	
 	@ApiMethod(
@@ -299,19 +269,25 @@ public class PdE2015_API
 				path = "gruppo",
 				httpMethod = HttpMethod.GET
 	          )
-	public ListaGruppiBean listaGruppi(@Named("aperto") boolean aperto) {
+	public ListaGruppiBean listaGruppi(@Named("aperto") boolean aperto, @Named("citta") String citta) {
 		ListaGruppiBean lg = new ListaGruppiBean();
 		setUp();
-		if(aperto) {
-			List<GruppoAperto> l = ofy().load().type(GruppoAperto.class).list();
+		if(aperto)
+		{
+			List<GruppoAperto> l;
+			if( citta.equals("") ) 
+				l = ofy().load().type(GruppoAperto.class).list();
+			else l = ofy().load().type(GruppoAperto.class).filter("citta", citta).list();
 			Iterator<GruppoAperto> it =  l.iterator();
 			
 			while(it.hasNext())
 				lg.addGruppo(it.next());
-			
 		}
 		else {
-			List<GruppoChiuso> l = ofy().load().type(GruppoChiuso.class).list();
+			List<GruppoChiuso> l;
+			if( citta.equals("") ) 
+				l = ofy().load().type(GruppoChiuso.class).list();
+			else l = ofy().load().type(GruppoChiuso.class).filter("citta", citta).list();
 			Iterator<GruppoChiuso> it =  l.iterator();
 			
 			while(it.hasNext())
@@ -319,7 +295,6 @@ public class PdE2015_API
 		}
 		tearDown();
 		return lg;
-		
 	}
 	
 	@ApiMethod(
@@ -331,22 +306,14 @@ public class PdE2015_API
 		setUp();
 		Gruppo gruppo = ofy().load().type(Gruppo.class).id(gruppoBean.getId()).now();
 		
-		if(gruppo == null) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Gruppo non esistente!");
-			tearDown();
-			return response;
-		}
+		if(gruppo == null) return sendResponse("Gruppo non esistente!", PRECONDITION_FAILED);
 		
 		if(gruppoBean.getNome() != null)
 			gruppo.setNome(gruppoBean.getNome());
 		
 		ofy().save().entity(gruppo).now();
-		tearDown();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("Gruppo aggiornato con successo!");
-		return response;	
+		return sendResponse("Gruppo aggiornato con successo!", OK);
 	}
 	
 	@ApiMethod(
@@ -358,23 +325,15 @@ public class PdE2015_API
 		setUp();
 		Gruppo gruppo = ofy().load().type(Gruppo.class).id(gruppoBean.getId()).now();
 		
-		if(gruppo == null) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Gruppo non esistente!");
-			tearDown();
-			return response;
-		}
+		if(gruppo == null) return sendResponse("Gruppo non esistente!", PRECONDITION_FAILED);
 		
 		ofy().delete().type(Gruppo.class).id(gruppoBean.getId()).now();
-		tearDown();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("Gruppo eliminato con successo!");
-		return response;
+		return sendResponse("Gruppo eliminato con successo.", OK);
 	}
 	
 	
-	//API Partita
+	//TODO API Partita
 	@ApiMethod(
 				name = "partita.inserisciPartita",
 				path = "partita",
@@ -383,69 +342,30 @@ public class PdE2015_API
 	public DefaultBean inserisciPartita(InfoPartitaBean partitaBean)
 	{
 		setUp();
+		Long idPartita;
 		switch(partitaBean.getTipo()) {
 			case CODICE_CALCETTO:
-				PartitaCalcetto pc_1 = new PartitaCalcetto(partitaBean.getDataOraPartita(), partitaBean.getQuota());
+				PartitaCalcetto pc_1 = new PartitaCalcetto(partitaBean.getDataOraPartita());
 				ofy().save().entity(pc_1).now();
+				idPartita = pc_1.getId();
 				break;
 			case CODICE_CALCIOTTO:
-				PartitaCalciotto pc_2 = new PartitaCalciotto(partitaBean.getDataOraPartita(), partitaBean.getQuota());
+				PartitaCalciotto pc_2 = new PartitaCalciotto(partitaBean.getDataOraPartita());
 				ofy().save().entity(pc_2).now();
+				idPartita = pc_2.getId();
 				break;
 			case CODICE_CALCIO:
-				PartitaCalcio pc_3 = new PartitaCalcio(partitaBean.getDataOraPartita(), partitaBean.getQuota());
+				PartitaCalcio pc_3 = new PartitaCalcio(partitaBean.getDataOraPartita());
 				ofy().save().entity(pc_3).now();
+				idPartita = pc_3.getId();
 				break;
 			default:
-				tearDown();
-				DefaultBean response = new DefaultBean();
-				response.setResult("Tipo partita non previsto!");
-				return response;	
-		}
-		tearDown();
-		
-		DefaultBean response = new DefaultBean();
-		response.setResult("Partita inserita con successo!");
-		return response;
-	}
-	
-	@ApiMethod(
-				name = "partita.listaPartite",
-				path = "partita",
-				httpMethod = HttpMethod.GET
-	          )
-	public ListaPartiteBean listaPartite(/*InfoPartitaBean partitaBean*/ @Named("tipo")int tipo) {
-		setUp();
-		//log.log(Level.WARNING,"tipo: "+partitaBean.getTipo());
-		ListaPartiteBean lg = new ListaPartiteBean();
-		switch(/*partitaBean.getTipo()*/ tipo) {
-			case 1:
-				List<PartitaCalcetto> l1 = ofy().load().type(PartitaCalcetto.class).list();
-				Iterator<PartitaCalcetto> it1 =  l1.iterator();
-				log.log(Level.WARNING,"CALCETTO");
-				while(it1.hasNext())
-					lg.addPartita(it1.next());
-				break;
-			case 2:
-				List<PartitaCalciotto> l2 = ofy().load().type(PartitaCalciotto.class).list();
-				Iterator<PartitaCalciotto> it2 =  l2.iterator();
-				log.log(Level.WARNING,"CALCIOTTO");
-				while(it2.hasNext())
-					lg.addPartita(it2.next());
-				break;
-			case 3:
-				List<PartitaCalcio> l3 = ofy().load().type(PartitaCalcio.class).list();
-				Iterator<PartitaCalcio> it3 =  l3.iterator();
-				log.log(Level.WARNING,"CALCIO");
-				while(it3.hasNext())
-					lg.addPartita(it3.next());
-				break;
+				log.log(Level.SEVERE, "E' stato tentato l'inserimento di una partita con un tipo non previsto!");
+				return sendResponseCreated("Tipo partita non previsto!", PRECONDITION_FAILED, null);	
 		}
 		
-		tearDown();
-		return lg;
+		return sendResponseCreated("Partita inserita con successo!", CREATED, idPartita);
 	}
-	
 	
 	@ApiMethod(
 			name = "partita.eliminaPartita",
@@ -454,21 +374,14 @@ public class PdE2015_API
           )
 	public DefaultBean eliminaPartita(InfoPartitaBean partitaBean) {
 		setUp();
-		Partita partita = ofy().load().type(Partita.class).id(partitaBean.getId()).now();
 		
-		if(partita == null) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Partita non esistente!");
-			tearDown();
-			return response;
-		}
+		Partita partita = ofy().load().type(Partita.class).id(partitaBean.getId()).now();
+		if(partita == null)
+			return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
 		
 		ofy().delete().type(Partita.class).id(partitaBean.getId()).now();
-		tearDown();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("Partita eliminata con successo!");
-		return response;
+		return sendResponse("Partita eliminata con successo!", OK);
 	}
 	
 	@ApiMethod(
@@ -480,26 +393,256 @@ public class PdE2015_API
 		setUp();
 		Partita partita = ofy().load().type(Partita.class).id(partitaBean.getId()).now();
 		
+		if(partita == null)
+			return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
+		
+		if(partitaBean.getDataOraPartita() != null)
+			partita.setDataOraPartita(partitaBean.getDataOraPartita());
+
+		ofy().save().entity(partita).now();
+		
+		return sendResponse("Partita aggiornata con successo!", OK);
+	}
+	
+	@ApiMethod(
+				name = "partita.getNDisponibili",
+				path = "partita/ndisponibili",
+				httpMethod = HttpMethod.GET
+	          )
+	public NDisponibiliBean getNDisponibili(@Named("Id Partita")Long idPartita)
+	{
+		setUp();
+		Partita partita = ofy().load().type(Partita.class).id(idPartita).now();
 		if(partita == null) {
-			DefaultBean response = new DefaultBean();
+			NDisponibiliBean response = new NDisponibiliBean();
 			response.setResult("Partita non esistente!");
+			response.setHttpCode(PRECONDITION_FAILED);
+			response.setnDisponibili(-1);
 			tearDown();
 			return response;
 		}
 		
-		if(partitaBean.getDataOraPartita() != null)
-			partita.setDataOraPartita(partitaBean.getDataOraPartita());
-		if(partitaBean.getQuota() != 0.0f)
-			partita.setQuota(partitaBean.getQuota());
-
-		ofy().save().entity(partita).now();
-		tearDown();
-		
-		DefaultBean response = new DefaultBean();
-		response.setResult("Partita aggiornata con successo!");
-		return response;
+		int nDisponibili = 0;
+		try {
+			Iterator<Long> it = partita.getLinkDisponibile().iterator();
+			while(it.hasNext())
+			{
+				TipoLinkDisponibile link = ofy().load().type(TipoLinkDisponibile.class).id(it.next()).now();
+				nDisponibili += link.getnAmici()+1;
+			}
+			NDisponibiliBean response = new NDisponibiliBean();
+			response.setResult("Calcolo effettuato con successo!");
+			response.setHttpCode(OK);
+			response.setnDisponibili(nDisponibili);
+			tearDown();
+			return response;
+		} catch (EccezioneMolteplicitaMinima e) {
+			log.log(Level.SEVERE, "Nessun giocatore ha dato disponibilità per la partita"+partita.getId()+"!");
+			NDisponibiliBean response = new NDisponibiliBean();
+			response.setResult("Nessun giocatore ha dato disponibilità per la partita!");
+			response.setHttpCode(INTERNAL_SERVER_ERROR);
+			response.setnDisponibili(-1);
+			tearDown();
+			return response;
+		}
 	}
 	
+	@ApiMethod(
+			name = "partita.conferma",
+			path = "partita/confirm",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean confermaPartita(@Named("emailGiocatore")String emailGiocatore,
+									   @Named("idPartita")Long idPartita)
+   {
+		setUp();
+		//Controllo esistenza giocatore
+		Giocatore giocatore = ofy().load().type(Giocatore.class).id(emailGiocatore).now();
+		if( giocatore == null ) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo esistenza partita
+		Partita partita = ofy().load().type(Partita.class).id(idPartita).now();
+		if(partita == null)
+			return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo giocatore come proponitore
+		try {
+			if(!partita.getPropone().equals(emailGiocatore))
+				return sendResponse("Solo chi propone la partita può confermarla!", UNAUTHORIZED);
+			
+		} catch (EccezioneMolteplicitaMinima e) {
+			log.log(Level.SEVERE, "La partita "+idPartita+" non ha un proponitore!");
+			//TODO che famo?
+			return sendResponse("Non si ha traccia del giocatore che ha proposto la partita!", INTERNAL_SERVER_ERROR);
+		}
+		
+		//Controllo scelta campo
+		if( partita.quantiCampi() == 0 ) return sendResponse("Non è stato scelto il campo per la partita!", PRECONDITION_FAILED);
+		
+		//Controllo numero disponibili
+		if( getNDisponibili(idPartita).getnDisponibili()<partita.getNPartecipanti())
+			return sendResponse("La partita non può essere confermata: numero di partecipanti insufficiente!", PRECONDITION_FAILED);
+		
+		//Cambio stato partita
+		partita.setStatoCorrente(Partita.Stato.CONFERMATA);
+		
+		//Inserimento linkGioca con i giocatori che giocheranno la partita
+		int x = 0;
+		Iterator<Long> it;
+		try {
+			it = partita.getLinkDisponibile().iterator();
+			while(it.hasNext() && x<partita.getNPartecipanti())
+			{
+				TipoLinkDisponibile link = ofy().load().type(TipoLinkDisponibile.class).id(it.next()).now();
+				//Controllo esistenza giocatore
+				Giocatore g = ofy().load().type(Giocatore.class).id(link.getGiocatore()).now();
+				if( g == null )
+				{
+					log.log(Level.SEVERE, "Il giocatore "+link.getGiocatore()+
+							", preso dal link "+link.getId()+", non esiste!");
+					continue;
+				}
+				InfoGestionePartiteBean giocaBean = new InfoGestionePartiteBean();
+				giocaBean.setEmailGiocatore(link.getGiocatore());
+				giocaBean.setIdPartita(link.getPartita());
+				DefaultBean result = inserisciLinkGioca(giocaBean);
+				if( !result.getHttpCode().equals(CREATED) )
+				{
+					log.log(Level.SEVERE, "Errore durante inserimento linkGioca alla partita "+partita.getId());
+					continue;
+				}
+				
+				x += 1 + link.getnAmici();
+			}
+			if( x < partita.getNPartecipanti() )
+			{
+				//Se entro in questo ramo, c'è stato un errore di gestione dei link.
+				//Roll-back: rimuovo tutti i linkGioca inseriti.
+				it = partita.getLinkDisponibile().iterator();
+				while(it.hasNext() && x<partita.getNPartecipanti())
+				{
+					TipoLinkDisponibile link = ofy().load().type(TipoLinkDisponibile.class).id(it.next()).now();
+					//Controllo esistenza giocatore
+					Giocatore g = ofy().load().type(Giocatore.class).id(link.getGiocatore()).now();
+					if( g == null )
+					{
+						log.log(Level.SEVERE, "Il giocatore "+link.getGiocatore()+
+								", preso dal link "+link.getId()+", non esiste!");
+						continue;
+					}
+					InfoGestionePartiteBean giocaBean = new InfoGestionePartiteBean();
+					giocaBean.setEmailGiocatore(link.getGiocatore());
+					giocaBean.setIdPartita(link.getPartita());
+					DefaultBean result = eliminaLinkGioca(giocaBean);
+					if( !result.getHttpCode().equals(OK) )
+					{
+						log.log(Level.SEVERE, "Errore durante rimozione linkGioca alla partita "+partita.getId());
+						continue;
+					}
+					
+					x += 1 + link.getnAmici();
+				}
+				return sendResponse("Errore durante la conferma della partita!", INTERNAL_SERVER_ERROR);
+			}
+		} catch (EccezioneMolteplicitaMinima e) {
+			//NON ci dovremmo arrivare MAI!
+			return sendResponse("La partita non ha giocatori disponibili!", INTERNAL_SERVER_ERROR);
+		}
+		
+		//TODO inserito da fabrizio
+		ofy().save().entity(partita).now();
+		return sendResponse("Partita confermata con successo.", OK);
+   	}
+	
+	@ApiMethod(
+			name = "partita.annullaPartita",
+			path = "partita/cancel",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean annullaPartita(@Named("emailGiocatore")String emailGiocatore,
+			   						  @Named("idPartita")Long idPartita)
+	{
+		setUp();
+		//Controllo esistenza giocatore
+		Giocatore giocatore = ofy().load().type(Giocatore.class).id(emailGiocatore).now();
+		if( giocatore == null ) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo esistenza partita
+		Partita partita = ofy().load().type(Partita.class).id(idPartita).now();
+		if(partita == null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo stato partita
+		if( partita.getStatoCorrente()!=Partita.Stato.PROPOSTA)
+			return sendResponse("La partita non può essere annullata, poiché confermata o già giocata!", BAD_REQUEST);
+		//Controllo giocatore come proponitore
+		try {
+			if(!partita.getPropone().equals(emailGiocatore))
+				return sendResponse("Solo chi propone la partita può confermarla!", UNAUTHORIZED);
+			
+		} catch (EccezioneMolteplicitaMinima e) {
+			log.log(Level.SEVERE, "La partita "+idPartita+" non ha un proponitore!");
+			//TODO che famo?
+			return sendResponse("Non si ha traccia del giocatore che ha proposto la partita!", INTERNAL_SERVER_ERROR);
+		}
+		
+		//Rimozione linkPresso alla partita
+		if( partita.quantiCampi()!=0 )
+		{
+			try {
+				InfoPressoBean pressoBean = new InfoPressoBean();
+				pressoBean.setCampo(partita.getCampo());
+				pressoBean.setPartita(idPartita);
+				eliminaLinkPresso(pressoBean);
+			} catch (EccezioneMolteplicitaMinima e) {
+				log.log(Level.SEVERE, "La partita non ha memorizzato un campo, eppure quantiCampi() restituisce 1!");
+			}
+		}
+		//Rimozione linkOrganizza alla partita
+		if( partita.quantiOrganizza()!=0 )
+		{
+			try{
+				InfoOrganizzaBean organizzaBean = new InfoOrganizzaBean();
+				organizzaBean.setGruppo(partita.getLinkOrganizza());
+				organizzaBean.setPartita(idPartita);
+				eliminaLinkOrganizza(organizzaBean);
+			} catch(EccezioneMolteplicitaMinima e)
+			{
+				log.log(Level.SEVERE, "La partita non ha un linkOrganizza, ma quantiOrganizza restituisce 1!");
+			}
+		}
+		//Rimozione linkDisponibile alla partita
+		if( partita.quantiDisponibili()!=0 )
+		{
+			try{
+				Iterator<Long> it = partita.getLinkDisponibile().iterator();
+				while( it.hasNext() )
+				{
+					TipoLinkDisponibile link = ofy().load().type(TipoLinkDisponibile.class).id(it.next()).now();
+					InfoGestionePartiteBean disponibileBean = new InfoGestionePartiteBean();
+					disponibileBean.setEmailGiocatore(link.getGiocatore());
+					disponibileBean.setIdPartita(idPartita);
+					eliminaLinkDisponibile(disponibileBean);
+				}
+			} catch(EccezioneMolteplicitaMinima e)
+			{
+				log.log(Level.SEVERE, "La partita non ha nessun linkDisponibile, ma quantiOrganizza() non restituisce 0!");
+			}
+		}
+		//Rimozione linkPropone alla partita
+		if( partita.quantiPropone()!=0 )
+		{
+			InfoGestionePartiteBean proponeBean = new InfoGestionePartiteBean();
+			proponeBean.setEmailGiocatore(emailGiocatore);
+			proponeBean.setIdPartita(idPartita);
+			eliminaLinkPropone(proponeBean);
+		}
+		//Rimozione partita
+		InfoPartitaBean partitaBean = new InfoPartitaBean();
+		partitaBean.setId(idPartita);
+		eliminaPartita(partitaBean);
+		//Invio conferma rimozione avvenuta
+		return sendResponse("Partita annullata con successo.", OK);
+	}
 	
 	//TODO API Invito
 	@ApiMethod(
@@ -509,44 +652,31 @@ public class PdE2015_API
           )
 	public DefaultBean inserisciInvito(InfoInvitoBean invitoBean)
 	{
-		//TODO controllo se il destinatario non fa già parte del gruppo
-		
 		if( invitoBean.getEmailDestinatario().equals(invitoBean.getEmailMittente()))
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Mittente e destinatario coincidenti!");
-			tearDown();
-			return response;
-		}
+			return sendResponse("Mittente e destinatario coincidenti!", PRECONDITION_FAILED);
 		
 		setUp();
 		//Controllo se il mittente esiste nel Datastore
 		Giocatore mittente = ofy().load().type(Giocatore.class).id(invitoBean.getEmailMittente()).now();
-		if( mittente == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Mittente non esistente!");
-			tearDown();
-			return response;
-		}
+		if( mittente == null) return sendResponse("Mittente non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo se il destinatario esiste nel Datastore
 		Giocatore destinatario = ofy().load().type(Giocatore.class).id(invitoBean.getEmailDestinatario()).now();
-		if( destinatario == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Destinatario non esistente!");
-			tearDown();
-			return response;
-		}
+		if( destinatario == null) return sendResponse("Destinatario non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo se il gruppo esiste nel Datastore
 		Gruppo gruppo = ofy().load().type(Gruppo.class).id(invitoBean.getIdGruppo()).now();
-		if( gruppo == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Gruppo non esistente!");
-			tearDown();
-			return response;
-		}
+		if( gruppo == null) return sendResponse("Gruppo non esistente!", PRECONDITION_FAILED);
+		
+		//TODO controllare che il mittente faccia parte del gruppo, ovviamente.
+		//Controllo che il destinatario non faccia già parte del gruppo;
+		//devo quindi controllare che non esista un tipoLinkIscritto
+		//con questo gruppo e questo giocatore
+		List<TipoLinkIscritto> list = ofy().load().type(TipoLinkIscritto.class)
+									  .filter("gruppo", gruppo.getId())
+									  .filter("giocatore", destinatario.getEmail()).list();
+		if( list.size()>0) return sendResponse("Il destinatario fa già parte del gruppo!", PRECONDITION_FAILED);
+		
 		//Controllo che il destinatario non sia già stato invitato nel gruppo
 		//Non deve quindi esistere, in destinatario.linkdestinatario, nessun id
 		//di oggetti Invito collegati al gruppo in questione
@@ -563,12 +693,7 @@ public class PdE2015_API
 			}
 			try {
 				if(i.getGruppo().equals(gruppo.getId()))
-				{
-					DefaultBean response = new DefaultBean();
-					response.setResult("Il destinatario è già stato invitato nel gruppo!");
-					tearDown();
-					return response;
-				}
+					return sendResponse("Il destinatario è già stato invitato nel gruppo!", PRECONDITION_FAILED);
 			} catch (EccezioneMolteplicitaMinima e) {
 				log.log(Level.SEVERE, "L'invito "+i.getId()+
 						" non ha memorizzato l'id di un gruppo!");
@@ -578,73 +703,13 @@ public class PdE2015_API
 		//Carico preventivamente l'invito sul Datastore per ottenere un id
 		Invito invito = new Invito(invitoBean.getEmailMittente(), invitoBean.getIdGruppo());
 		ofy().save().entity(invito).now();
+		//Inserisco il link e ricarico le entità sul Datastore
 		destinatario.inserisciLinkDestinatario(invito.getId());
 		invito.inserisciLinkDestinatario(destinatario.getEmail());
 		ofy().save().entity(invito).now();
 		ofy().save().entity(destinatario).now();
 
-	/*	//Controllo che il destinatario non sia già stato invitato nel gruppo
-		
-		Iterator<Long> it = destinatario.getLinkDestinatario().iterator();
-		while(it.hasNext())
-		{
-			Long idLink = it.next();
-			TipoLinkDestinatario link = ofy().load().type(TipoLinkDestinatario.class).id(idLink).now();
-			if( link == null )
-			{	
-				log.log(Level.SEVERE, "Il destinatario "+destinatario.getEmail()+
-						" ha memorizzato l'id di un linkDestinario che non esiste!");
-				continue;
-			}
-			Invito i = ofy().load().type(Invito.class).id(link.getIdInvito()).now();
-			if( i == null )
-			{
-				log.log(Level.SEVERE, "Il linkDestinatario "+link.getId()+
-						" ha memorizzato l'id di un Invito che non esiste!");
-				continue;
-			}
-			try {
-				if(i.getGruppo().equals(gruppo.getId()))
-				{
-					DefaultBean response = new DefaultBean();
-					response.setResult("Il destinatario è già stato invitato nel gruppo!");
-					tearDown();
-					return response;
-				}
-			} catch (EccezioneMolteplicitaMinima e) {
-				log.log(Level.SEVERE, "L'invito "+i.getId()+
-						" non ha memorizzato l'id di un gruppo!");
-				continue;
-			}
-		}
-		//Carico preventivamente l'invito sul Datastore per ottenere un id
-		Invito invito = new Invito(invitoBean.getEmailMittente(), invitoBean.getIdGruppo());
-		ofy().save().entity(invito).now();
-		invito = ofy().load().entity(invito).now();
-		//TODO ricordati di vedere il fatto dell'id dopo il caricamento
-		//Creazione TipoLinkDestinatario
-		try {
-			TipoLinkDestinatario link = new TipoLinkDestinatario(invitoBean.getEmailDestinatario(), invito.getId());
-			ofy().save().entity(link).now();
-			destinatario.inserisciLinkDestinatario(link.getId());
-			invito.inserisciLinkDestinatario(link.getId());
-			ofy().save().entity(invito).now();
-			ofy().save().entity(destinatario).now();
-		} catch (EccezionePrecondizioni e)
-		{
-			ofy().delete().entity(invito).now();
-			log.log(Level.SEVERE, "Uno tra invito.getId() e invitoBean.getEmailDestinatario() ha restituito null");
-			DefaultBean response = new DefaultBean();
-			response.setResult("Errore imprevisto!");
-			tearDown();
-			return response;
-		}
-	*/	
-		DefaultBean response = new DefaultBean();
-		response.setResult("Invito inserito con successo!");
-		tearDown();
-		return response;
-	
+		return sendResponseCreated("Invito inserito con successo!", CREATED, invito.getId());
 	}
 	
 	@ApiMethod(
@@ -658,57 +723,86 @@ public class PdE2015_API
 		setUp();
 		//Controllo se l'invito esiste nel Datastore
 		Invito invito = ofy().load().type(Invito.class).id(idInvito).now();
-		if( invito == null )
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Invito non esistente!");
-			tearDown();
-			return response;
-		}
-		//Controllo se l'invito esiste nel Datastore
+		if( invito == null ) return sendResponse("Invito non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo se il destinatario esiste nel Datastore
 		Giocatore destinatario= ofy().load().type(Giocatore.class).id(emailDestinatario).now();
-		if( destinatario == null )
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Destinatario non esistente!");
-			tearDown();
-			return response;
-		}
+		if( destinatario == null ) return sendResponse("Destinatario non esistente!", PRECONDITION_FAILED);
+		
 		//Rimozione idLink da destinatario.linkDestinatario
 		destinatario.eliminaLinkDestinatario(idInvito);
 		ofy().save().entity(destinatario).now();
 		//Rimozione invito dal Datastore
 		ofy().delete().type(Invito.class).id(idInvito).now();
 		
-	/*	
-		Long idLink;
-		try {
-			idLink = invito.getLinkDestinatario();
-			//Rimozione idLink da destinatario.linkDestinatario
-			destinatario.eliminaLinkDestinatario(idLink);
-			ofy().save().entity(destinatario).now();
-			//Rimozione tipolink dal Datastore
-			ofy().delete().type(TipoLinkDestinatario.class).id(idLink).now();
-			//Rimozione invito dal Datastore
-			ofy().delete().type(Invito.class).id(idInvito).now();
+		return sendResponse("Invito rimosso con successo!", OK);
+	}
+	
+	@ApiMethod(
+			name = "invito.rispondiInvito",
+			path = "invito/answer",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean rispondiInvito(@Named("emailDestinatario")String emailDestinatario,
+									  @Named("idInvito")Long idInvito,
+									  @Named("risposta") boolean risposta)
+	{
+		setUp();
+		//Controllo se l'invito esiste nel Datastore
+		Invito invito = ofy().load().type(Invito.class).id(idInvito).now();
+		if( invito == null ) return sendResponse("Invito non esistente!", PRECONDITION_FAILED);
 		
-		} catch (EccezioneMolteplicitaMinima e) {
-			log.log(Level.SEVERE, "L'invito"+invito.getId()+" non ha memorizzato l'id di un linkDestinatario!");
-			DefaultBean response = new DefaultBean();
-			response.setResult("Errore non previsto!");
-			tearDown();
-			return response;
+		//Controllo se il destinatario esiste nel Datastore
+		Giocatore destinatario= ofy().load().type(Giocatore.class).id(emailDestinatario).now();
+		if( destinatario == null ) return sendResponse("Destinatario non esistente!", PRECONDITION_FAILED);
+		
+		//Se destinatario accetta l'invito
+		if( risposta )
+		{
+			//inserire linkIscritto in gruppo e destinatario
+			InfoIscrittoGestisceBean iscrittoBean = new InfoIscrittoGestisceBean();
+			iscrittoBean.setGiocatore(emailDestinatario);
+			try {
+				iscrittoBean.setGruppo(invito.getGruppo());
+			} catch (EccezioneMolteplicitaMinima e) {
+				log.log(Level.SEVERE, "L'invito "+invito.getId()+" non ha memorizzato l'id di un gruppo!");
+				return sendResponse("L'invito non ha memorizzato l'id di un gruppo!", PRECONDITION_FAILED);
+			}
+			DefaultBean insertResult = this.inserisciLinkIscritto(iscrittoBean);
+			if( !insertResult.getHttpCode().equals(CREATED) )
+			{
+				tearDown();
+				return insertResult;
+			}
+			//eliminare l'invito
+			DefaultBean deleteResult = eliminaInvito(emailDestinatario, idInvito);
+			if( !deleteResult.getHttpCode().equals(OK) )
+			{
+				insertResult = eliminaLinkIscritto(iscrittoBean);
+				if( !insertResult.getHttpCode().equals(OK) )
+				{
+					log.log(Level.SEVERE, "Rollback fallito durante rispondiInvito!");
+				}
+				tearDown();
+				return deleteResult;
+			}
+			return sendResponse("Risposta andata a buon fine!", OK);
 		}
-	*/	
-		DefaultBean response = new DefaultBean();
-		response.setResult("Invito rimosso con successo!");
-		tearDown();
-		return response;
+		else	// L'invito è stato rifiutato
+		{
+			DefaultBean deleteResult = eliminaInvito(emailDestinatario, idInvito);
+			if( !deleteResult.getHttpCode().equals(OK) )
+			{
+				log.log(Level.SEVERE, "Errore durante la rimozione dell'invito durante rispondiInvito!");
+				return sendResponse("Errore durante la risposta!", PRECONDITION_FAILED);
+			}
+			return sendResponse("Risposta inviata con successo.", OK);
+		}
 	}
 	
 	//TODO API VotoUomoPartita
 	@ApiMethod(
-				name = "voto.inserisciVoto",
+				name = "voto.inserisciVotoUomoPartita",
 				path = "voto",
 				httpMethod = HttpMethod.PUT
 	          )
@@ -717,46 +811,27 @@ public class PdE2015_API
 		setUp();
 		//Controllo che il votante esista nel Datastore
 		Giocatore votante = ofy().load().type(Giocatore.class).id(votoBean.getVotante()).now();
-		if( votante == null )
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Votante non esistente!");
-			tearDown();
-			return response;
-		}
+		if( votante == null ) return sendResponse("Votante non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo che il votato esista nel Datastore
 		Giocatore votato = ofy().load().type(Giocatore.class).id(votoBean.getVotato()).now();
-		if( votato == null )
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Votato non esistente!");
-			tearDown();
-			return response;
-		}
+		if( votato == null ) return sendResponse("Votato non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo che il votato esista nel Datastore
 		Partita partita = ofy().load().type(Partita.class).id(votoBean.getLinkVotoPerPartita()).now();
-		if( partita == null )
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Partita non esistente!");
-			tearDown();
-			return response;
-		}
+		if( partita == null ) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo che non esista già un voto da parte dello stesso votante per la stessa partita
-		List<VotoUomoPartita> idVoti = ofy().load().type(VotoUomoPartita.class)
-									   .filter("linkVotoPerPartita", votoBean.getLinkVotoPerPartita()).list();
-		Iterator<VotoUomoPartita> it = idVoti.iterator();
+		Set<Long> idVoti = partita.getLinkPerPartita();
+		Iterator<Long> it = idVoti.iterator();
 		while(it.hasNext())
 		{
-			VotoUomoPartita v = it.next();
+			VotoUomoPartita v = ofy().load().type(VotoUomoPartita.class).id(it.next()).now();
 			try {
+				log.log(Level.WARNING, "v.getVotante()="+v.getVotanteUP()+", votante.getEmail()="+votante.getEmail());
 				if( v.getVotanteUP().equals(votante.getEmail()) )
-				{
-					DefaultBean response = new DefaultBean();
-					response.setResult("Il votante ha già votato per questa partita!");
-					tearDown();
-					return response;
-				}
+					return sendResponse("Il votante ha già votato per questa partita!", PRECONDITION_FAILED);
+				
 			} catch (EccezioneMolteplicitaMinima e) {
 				log.log(Level.SEVERE, "Il voto "+v.getId()+
 						" non ha memorizzato l'id di un votante!");
@@ -773,10 +848,315 @@ public class PdE2015_API
 		partita.inserisciLinkPerPartita(voto.getId());
 		ofy().save().entity(partita).now();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("Voto inserito con successo!");
-		tearDown();
-		return response;
+		return sendResponse("Voto inserito con successo!", CREATED);
+	}
+	
+	@ApiMethod(
+			name = "voto.eliminaVotoUomoPartita",
+			path = "voto/delete",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean eliminaVotoUomoPartita(@Named("emailVotante")String emailVotante,
+											  @Named("idVoto")Long idVoto)
+	{
+		setUp();
+		//Controllo se il voto esiste nel Datastore
+		VotoUomoPartita voto = ofy().load().type(VotoUomoPartita.class).id(idVoto).now();
+		if( voto == null ) return sendResponse("Voto non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo se il votante esiste nel Datastore
+		Giocatore votante= ofy().load().type(Giocatore.class).id(emailVotante).now();
+		if( votante == null ) return sendResponse("Votante non esistente!", PRECONDITION_FAILED);
+
+		
+		try {
+			//Rimozione idVoto da partita.idVoti
+			Partita partita = ofy().load().type(Partita.class).id(voto.getLinkVotoPerPartita()).now();
+			partita.eliminaLinkVotoPerPartita(idVoto);
+			ofy().save().entity(partita).now();
+			//Rimozione voto dal Datastore
+			ofy().delete().type(VotoUomoPartita.class).id(idVoto).now();
+			
+			return sendResponse("Voto rimosso con successo!", OK);
+			
+		} catch (EccezioneMolteplicitaMinima e)
+		{
+			return sendResponse("Il voto "+idVoto+"non ha memorizzato l'id della partita!", INTERNAL_SERVER_ERROR);
+		}
+	}
+	
+	//TODO API associazione Disponibile
+	@ApiMethod(
+				name = "disponibile.inserisciDisponibile",
+				path = "disponibile",
+				httpMethod = HttpMethod.POST
+				)
+	public DefaultBean inserisciLinkDisponibile(InfoGestionePartiteBean gestioneBean)
+	{
+		//TODO controllo se il giocatore appartiene al gruppo?
+		setUp();
+		//Controllo che la partita esista nel Datastore
+		Partita partita = ofy().load().type(Partita.class).id(gestioneBean.getIdPartita()).now();
+		if(partita==null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo che il giocatore esista nel Datastore
+		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestioneBean.getEmailGiocatore()).now();
+		if(giocatore==null) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo che il giocatore non abbia già dato disponibilità per questa partita
+		Long idLink = null;
+		try {
+			TipoLinkDisponibile link = new TipoLinkDisponibile(gestioneBean.getEmailGiocatore(),
+										   gestioneBean.getIdPartita(), gestioneBean.getnAmici());
+			List<TipoLinkDisponibile> linkList = ofy().load().type(TipoLinkDisponibile.class)
+												 .filter("giocatore", gestioneBean.getEmailGiocatore())
+												 .filter("partita", gestioneBean.getIdPartita()).list();
+			if(linkList.contains(link))
+				return sendResponse("Il giocatore ha già dato la sua disponibilità per questa partita!", PRECONDITION_FAILED);
+			
+			//Carico il link sul Datastore
+			ofy().save().entity(link).now();
+			idLink = link.getId();
+			
+			//Aggiorno giocatore e partita
+			giocatore.inserisciLinkDisponibile(idLink);
+			partita.inserisciLinkDisponibile(idLink);
+		
+		} catch (EccezionePrecondizioni e) {
+			return sendResponse("Almeno uno dei campi di interesse è null!", BAD_REQUEST);
+		}
+		//Li carico nel datastore
+		ofy().save().entity(giocatore).now();
+		ofy().save().entity(partita).now();
+	
+		return sendResponseCreated("Disponibilità inserita con successo.", CREATED, idLink);
+	}
+	
+	@ApiMethod(
+			name = "disponibile.eliminaDisponibile",
+			path = "disponibile/delete",
+			httpMethod = HttpMethod.POST
+			)
+	public DefaultBean eliminaLinkDisponibile(InfoGestionePartiteBean gestioneBean)
+	{
+		setUp();
+		//Controllo che la partita esista nel Datastore
+		Partita partita = ofy().load().type(Partita.class).id(gestioneBean.getIdPartita()).now();
+		if(partita==null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo che il giocatore esista nel Datastore
+		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestioneBean.getEmailGiocatore()).now();
+		if(giocatore==null) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo che il giocatore abbia dato disponibilità per la partita
+		List<TipoLinkDisponibile> listLink = ofy().load().type(TipoLinkDisponibile.class)
+										   .filter("giocatore", gestioneBean.getEmailGiocatore())
+										   .filter("partita", gestioneBean.getIdPartita()).list();
+		if( listLink.size() == 0 ) return sendResponse("Il giocatore non ha dato la sua disponibilità per la partita!", INTERNAL_SERVER_ERROR);
+		
+		TipoLinkDisponibile link = listLink.get(0);
+		//Elimino il link dal Datastore
+		ofy().delete().entity(link).now();
+		//Aggiorno giocatore e partita
+		giocatore.eliminaLinkDisponibile(link.getId());
+		partita.eliminaLinkDisponibile(link.getId());
+		//Li carico nel datastore
+		ofy().save().entity(giocatore);
+		ofy().save().entity(partita);
+		
+		return sendResponse("Disponibilità rimossa non successo.", OK);
+	}
+	
+	@ApiMethod(
+			name = "disponibile.modificaDisponibile",
+			path = "disponibile",
+			httpMethod = HttpMethod.PUT
+			)
+	public DefaultBean modificaDisponibile(InfoGestionePartiteBean gestioneBean)
+	{
+		setUp();
+		//Controllo che la partita esista nel Datastore
+		Partita partita = ofy().load().type(Partita.class).id(gestioneBean.getIdPartita()).now();
+		if(partita==null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo che il giocatore esista nel Datastore
+		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestioneBean.getEmailGiocatore()).now();
+		if(giocatore==null) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo che il giocatore abbia dato disponibilità per la partita
+		List<TipoLinkDisponibile> listLink = ofy().load().type(TipoLinkDisponibile.class)
+											   .filter("giocatore", gestioneBean.getEmailGiocatore())
+											   .filter("partita", gestioneBean.getIdPartita()).list();
+		if( listLink.size() == 0 )
+			return sendResponse("Il giocatore non ha dato la sua disponibilità per la partita!", INTERNAL_SERVER_ERROR);
+		
+		//Aggiorno il link, e lo ricarico sul Datastore --- E' FONDAMENTALE CHE NON CAMBI IL SUO ID
+		TipoLinkDisponibile link = listLink.get(0);
+		link.setnAmici(gestioneBean.getnAmici());
+		ofy().save().entity(link).now();
+		
+		return sendResponse("Link disponibile aggiornato con successo!", OK);
+	}
+	
+	//TODO API associazione Propone
+	@ApiMethod(
+				name = "propone.inserisciPropone",
+				path = "propone",
+				httpMethod = HttpMethod.POST
+				)
+	public DefaultBean inserisciLinkPropone(InfoGestionePartiteBean gestioneBean)
+	{
+		setUp();
+		//Controllo che la partita esista nel Datastore
+		Partita partita = ofy().load().type(Partita.class).id(gestioneBean.getIdPartita()).now();
+		if(partita==null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo che il giocatore esista nel Datastore
+		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestioneBean.getEmailGiocatore()).now();
+		if(giocatore==null) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
+		//TODO: vediamola bene sta cosa
+		//Controllo che la partita non abbia già un giocatore che l'ha proposta
+		if( partita.quantiPropone() == 1 )
+			return sendResponse("La partita ha già memorizzato un giocatore che l'ha proposta!", PRECONDITION_FAILED);
+		
+		//Controllo che il giocatore figuri tra i disponibili per la partita
+		try{
+			List<TipoLinkDisponibile> listLink = ofy().load().type(TipoLinkDisponibile.class)
+												   .filter("giocatore", gestioneBean.getEmailGiocatore())
+												   .filter("partita", gestioneBean.getIdPartita()).list();
+			if( listLink.size() == 0 )
+				return sendResponse("Il giocatore non ha dato la sua disponibilità per la partita!", PRECONDITION_FAILED);
+			
+			TipoLinkDisponibile link = listLink.get(0);
+			if( !partita.getLinkDisponibile().contains(link.getId()) )
+				return sendResponse("Chi propone una partita deve figurare automaticamente tra i disponibili!", PRECONDITION_FAILED);
+			
+		}catch(EccezioneMolteplicitaMinima e)
+		{
+			log.log(Level.SEVERE, "La partita "+partita.getId()+
+					" non ha nessun giocatore disponibile!");
+			return sendResponse("La partita deve avere almeno un giocatore disponibile!", INTERNAL_SERVER_ERROR);
+		}
+		//Aggiorno partita e la ricarico sul Datastore
+		partita.inserisciPropone(gestioneBean.getEmailGiocatore());
+		ofy().save().entity(partita).now();
+		
+		return sendResponse("Link propone inserito con successo!", CREATED);
+	}
+	
+	//Ha senso eliminare chi ha proposto una partita? Forse giusto se il giocatore organizza
+	//e poi disdice, e quindi toglie la disponibilità, e allora gli togliamo anche il ruolo
+	//di "proponitore"... boh, io l'ho fatta, poi se non serve la togliamo...
+	@ApiMethod(
+			name = "propone.eliminaPropone",
+			path = "propone/delete",
+			httpMethod = HttpMethod.POST
+			)
+	public DefaultBean eliminaLinkPropone(InfoGestionePartiteBean gestioneBean)
+	{
+		setUp();
+		//Controllo che la partita esista nel Datastore
+		Partita partita = ofy().load().type(Partita.class).id(gestioneBean.getIdPartita()).now();
+		if(partita==null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo che il giocatore esista nel Datastore
+		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestioneBean.getEmailGiocatore()).now();
+		if(giocatore==null) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo che il giocatore sia effettivamente chi ha proposto la partita
+		try {
+			if( !partita.getPropone().equals(gestioneBean.getEmailGiocatore()) )
+				return sendResponse("Il giocatore non è colui che ha proposto la partita!", CONFLICT);
+		} catch (EccezioneMolteplicitaMinima e) {
+			log.log(Level.SEVERE, "La partita "+partita.getId()+" non ha un link propone!");
+		}
+		//Aggiorno la partita e la ricarico sul Datastore
+		partita.eliminaPropone();
+		ofy().save().entity(partita).now();
+		
+		return sendResponse("Link propone rimosso con successo.", OK);
+	}
+	
+	//TODO API associazione Gioca
+	@ApiMethod(
+				name = "gioca.inserisciLinkGioca",
+				path = "gioca",
+				httpMethod = HttpMethod.POST
+				)
+	public DefaultBean inserisciLinkGioca(InfoGestionePartiteBean gestioneBean)
+	{
+		setUp();
+		//Controllo che la partita esista nel Datastore
+		Partita partita = ofy().load().type(Partita.class).id(gestioneBean.getIdPartita()).now();
+		if(partita==null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo che il giocatore esista nel Datastore
+		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestioneBean.getEmailGiocatore()).now();
+		if(giocatore==null) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo che il giocatore figuri tra i disponibili per la partita
+		try{
+			List<TipoLinkDisponibile> listLink = ofy().load().type(TipoLinkDisponibile.class)
+												   .filter("giocatore", gestioneBean.getEmailGiocatore())
+												   .filter("partita", gestioneBean.getIdPartita()).list();
+			
+			if( listLink.size() == 0 )
+				return sendResponse("Il giocatore non ha dato la sua disponibilità per la partita!", INTERNAL_SERVER_ERROR);
+			
+			TipoLinkDisponibile link = listLink.get(0);
+			if( !partita.getLinkDisponibile().contains(link.getId()) )
+				return sendResponse("Chi propone una partita deve figurare automaticamente tra i disponibili!", INTERNAL_SERVER_ERROR);
+			
+		}catch(EccezioneMolteplicitaMinima e)
+		{
+			log.log(Level.SEVERE, "La partita "+partita.getId()+
+					" non ha nessun giocatore disponibile!");
+			return sendResponse("La partita deve avere almeno un giocatore disponibile!", INTERNAL_SERVER_ERROR);
+		}
+		//Controllo non esistenza link gioca - Non posso fare questo controllo:
+		//Al primo inserimento di un giocatore come linkGioca, partita.getLinkGioca()
+		//Lancerà sempre una EccezioneMolteplicitaMinima; dobbiamo spostare il test su Partita
+		
+		//Inserimento link gioca - aggiornamento partita e giocatore
+		partita.inserisciLinkGioca(giocatore.getEmail());
+		giocatore.inserisciLinkGioca(partita.getId());
+		ofy().save().entity(partita).now();
+		ofy().save().entity(giocatore).now();
+		
+		return sendResponse("LinkGioca inserito con successo.", CREATED);
+	}
+	
+	@ApiMethod(
+				name = "gioca.eliminaLinkGioca",
+				path = "gioca/delete",
+				httpMethod = HttpMethod.POST
+				)
+	public DefaultBean eliminaLinkGioca(InfoGestionePartiteBean gestioneBean)
+	{
+		setUp();
+		//Controllo che la partita esista nel Datastore
+		Partita partita = ofy().load().type(Partita.class).id(gestioneBean.getIdPartita()).now();
+		if(partita==null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo che il giocatore esista nel Datastore
+		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestioneBean.getEmailGiocatore()).now();
+		if(giocatore==null) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
+		//Controllo che il giocatore giochi effettivamente la partita
+		try {
+			if( !partita.getLinkGioca().contains(gestioneBean.getEmailGiocatore()) )
+				return sendResponse("Il giocatore non gioca la partita!", INTERNAL_SERVER_ERROR);
+		} catch (EccezioneMolteplicitaMinima e) {
+			log.log(Level.SEVERE, "La partita "+partita.getId()+" non ha nessun LinkGioca!");
+		}
+		//Aggiorno partita e giocatore e li ricarico sul Datastore
+		partita.eliminaLinkGioca(giocatore.getEmail());
+		giocatore.eliminaLinkGioca(partita.getId());
+		ofy().save().entity(partita).now();
+		ofy().save().entity(giocatore).now();
+		
+		return sendResponse("LinkGioca rimosso con successo.", OK);
 	}
 	
 	// TODO API Iscritto
@@ -789,99 +1169,71 @@ public class PdE2015_API
 		setUp();
 		//Controllo esistenza giocatore
 		Giocatore giocatore = ofy().load().type(Giocatore.class).id(iscrittoBean.getGiocatore()).now();
-		if( giocatore == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Destinatario non esistente!");
-			tearDown();
-			return response;
-		}
+		if( giocatore == null) return sendResponse("Destinatario non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo esistenza gruppo
 		Gruppo gruppo = ofy().load().type(Gruppo.class).id(iscrittoBean.getGruppo()).now();
-		if( gruppo == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Gruppo non esistente!");
-			tearDown();
-			return response;
-		}
+		if( gruppo == null) return sendResponse("Gruppo non esistente!", PRECONDITION_FAILED);
 		
 		// Controllo iscrizione unica
-		try {
-			Iterator<Long> it = gruppo.getGiocatoriIscritti().iterator();
-			
-			while(it.hasNext()) {
-				Long idLink = it.next();
-				TipoLinkIscritto link = ofy().load().type(TipoLinkIscritto.class).id(idLink).now();
-				if(link.getGiocatore().equals(iscrittoBean.getGiocatore())) {
-					DefaultBean response = new DefaultBean();
-					response.setResult("Giocatore già iscritto!");
-					tearDown();
-					return response;
+		if( gruppo.quantiIscritti() != 0 )
+		{
+			try {
+				Iterator<Long> it = gruppo.getGiocatoriIscritti().iterator();
+				
+				while(it.hasNext()) {
+					Long idLink = it.next();
+					TipoLinkIscritto link = ofy().load().type(TipoLinkIscritto.class).id(idLink).now();
+					if(link.getGiocatore().equals(iscrittoBean.getGiocatore()))
+						return sendResponse("Giocatore già iscritto!", CONFLICT);
 				}
 			}
-		}
-		catch(EccezioneMolteplicitaMinima e) {
-			log.log(Level.SEVERE, "Il Gruppo "+ gruppo.getId() +
-					"non rispetta la molteplicità minima!");
+			catch(EccezioneMolteplicitaMinima e) {
+				log.log(Level.SEVERE, "Il Gruppo "+ gruppo.getId() +
+						"non rispetta la molteplicità minima!");
+			}
 		}
 		
 		// Creazione TipoLinkIscritto ed salvataggio/aggiornamento
+		Long idLink = null;
 		try {
 			TipoLinkIscritto link = new TipoLinkIscritto(iscrittoBean.getGiocatore(), iscrittoBean.getGruppo());
 			ofy().save().entity(link).now();
-			giocatore.inserisciLinkIscritto(link.getId());
+			idLink = link.getId();
+			giocatore.inserisciLinkIscritto(idLink);
 			ofy().save().entity(giocatore).now();
-			gruppo.inserisciLinkIscritto(link.getId());
+			gruppo.inserisciLinkIscritto(idLink);
 			ofy().save().entity(gruppo).now();
 		}
 		catch(EccezionePrecondizioni e) {
 			log.log(Level.SEVERE, "Almeno uno tra iscrittoBean.getGruppo() e iscrittoBean.getGIocatore() ha restituito null");
-			DefaultBean response = new DefaultBean();
-			response.setResult("Errore imprevisto!");
-			tearDown();
-			return response;
+			return sendResponse("Errore imprevisto!", PRECONDITION_FAILED);
 		}
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("TipoLinkIscritto inserito con successo!");
-		tearDown();
-		return response;
+		return sendResponseCreated("TipoLinkIscritto inserito con successo!", CREATED, idLink);
 	}
 	
 	@ApiMethod(
-			name = "iscritto.rimuoviLinkIscritto",
+			name = "iscritto.eliminaLinkIscritto",
 			path = "iscritto/delete",
 			httpMethod = HttpMethod.POST
           )
-	public DefaultBean rimuoviLinkIscritto(InfoIscrittoGestisceBean iscrittoBean) {
+	public DefaultBean eliminaLinkIscritto(InfoIscrittoGestisceBean iscrittoBean) {
 		setUp();
 		//Controllo esistenza giocatore
 		Giocatore giocatore = ofy().load().type(Giocatore.class).id(iscrittoBean.getGiocatore()).now();
-		if( giocatore == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Giocatore non esistente!");
-			tearDown();
-			return response;
-		}
+		if( giocatore == null) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo esistenza gruppo
 		Gruppo gruppo = ofy().load().type(Gruppo.class).id(iscrittoBean.getGruppo()).now();
-		if( gruppo == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Gruppo non esistente!");
-			tearDown();
-			return response;
-		}
+		if( gruppo == null) return sendResponse("Gruppo non esistente!", PRECONDITION_FAILED);
 		
 		// Controllo esistenza TipoLinkIscritto
 		boolean found = false;
 		TipoLinkIscritto link = null;
 		try {
 			Iterator<Long> it = gruppo.getGiocatoriIscritti().iterator();
-			
-			
+				
 			while(it.hasNext()) {
 				Long idLink = it.next();
 				link = ofy().load().type(TipoLinkIscritto.class).id(idLink).now();
@@ -896,26 +1248,18 @@ public class PdE2015_API
 					"non rispetta la molteplicità minima!");
 		}
 		
-		if(!found) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Giocatore non iscritto!");
-			tearDown();
-			return response;
-		}
+		if(!found) return sendResponse("Giocatore non iscritto!", BAD_REQUEST);
 		
 		// Rimozione TipoLinkIscritto e salvataggio/aggiornamento
-		gruppo.rimuoviLinkIscritto(link.getId());
+		gruppo.eliminaLinkIscritto(link.getId());
 		ofy().save().entity(gruppo).now();
 		giocatore.eliminaLinkIscritto(link.getId());
 		ofy().save().entity(giocatore).now();
 		ofy().delete().entity(link).now();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("TipoLinkRimosso con successo!");
-		tearDown();
-		return response;
-		
+		return sendResponse("TipoLinkRimosso con successo!", OK);	
 	}
+	
 	// TODO API Gestito
 	@ApiMethod(
 			name = "gestito.inserisciLinkGestito",
@@ -926,29 +1270,17 @@ public class PdE2015_API
 		setUp();
 		//Controllo esistenza giocatore
 		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestisceBean.getGiocatore()).now();
-		if( giocatore == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Giocatore non esistente!");
-			tearDown();
-			return response;
-		}
+		if( giocatore == null) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo esistenza gruppo
 		Gruppo gruppo = ofy().load().type(Gruppo.class).id(gestisceBean.getGruppo()).now();
-		if( gruppo == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Gruppo non esistente!");
-			tearDown();
-			return response;
-		}
+		if( gruppo == null) return sendResponse("Gruppo non esistente!", PRECONDITION_FAILED);
 		
 		// Controllo esistenza TipoLinkIscritto
 		boolean found = false;
 		TipoLinkIscritto link = null;
 		try {
 			Iterator<Long> it = gruppo.getGiocatoriIscritti().iterator();
-			
 			
 			while(it.hasNext()) {
 				Long idLink = it.next();
@@ -964,63 +1296,38 @@ public class PdE2015_API
 					"non rispetta la molteplicità minima!");
 		}
 		
-		if(!found) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Il gestore del gruppo deve farne parte!");
-			tearDown();
-			return response;
-		}
+		if(!found) return sendResponse("Il gestore del gruppo deve farne parte!", PRECONDITION_FAILED);
 		
 		// Controllo Unicità del gestore
-		if(gruppo.quantiGestito() == 1) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Gruppo già gestito da un giocatore!");
-			tearDown();
-			return response;
-		}
+		if(gruppo.quantiGestito() == 1) return sendResponse("Gruppo già gestito da un giocatore!", CONFLICT);
 		
 		// Creazione LinkGestisce
 		gruppo.inserisciLinkGestito(link.getId());
 		ofy().save().entity(gruppo).now();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("LinkGestisce inserito con successo!");
-		tearDown();
-		return response;
+		return sendResponseCreated("LinkGestisce inserito con successo!", CREATED, link.getId());
 	}
 	
 	@ApiMethod(
-			name = "gestito.rimuoviLinkGestito",
+			name = "gestito.eliminaLinkGestito",
 			path = "gestito/delete",
 			httpMethod = HttpMethod.POST
           )
-	public DefaultBean rimuoviLinkGestito(InfoIscrittoGestisceBean gestisceBean) {
+	public DefaultBean eliminaLinkGestito(InfoIscrittoGestisceBean gestisceBean) {
 		setUp();
 		//Controllo esistenza giocatore
 		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestisceBean.getGiocatore()).now();
-		if( giocatore == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Giocatore non esistente!");
-			tearDown();
-			return response;
-		}
+		if( giocatore == null) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
+		
 		//Controllo esistenza gruppo
 		Gruppo gruppo = ofy().load().type(Gruppo.class).id(gestisceBean.getGruppo()).now();
-		if( gruppo == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Gruppo non esistente!");
-			tearDown();
-			return response;
-		}
+		if( gruppo == null) return sendResponse("Gruppo non esistente!", PRECONDITION_FAILED);
 		
 		// Controllo esistenza TipoLinkIscritto
 		boolean found = false;
 		TipoLinkIscritto link = null;
 		try {
 			Iterator<Long> it = gruppo.getGiocatoriIscritti().iterator();
-			
 			
 			while(it.hasNext()) {
 				Long idLink = it.next();
@@ -1032,26 +1339,16 @@ public class PdE2015_API
 			}
 		}
 		catch(EccezioneMolteplicitaMinima e) {
-			log.log(Level.SEVERE, "Il Gruppo "+ gruppo.getId() +
-					"non rispetta la molteplicità minima!");
+			log.log(Level.SEVERE, "Il Gruppo "+gruppo.getId()+" non rispetta la molteplicità minima!");
 		}
 		
-		if(!found) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Giocatore non iscritto!");
-			tearDown();
-			return response;
-		}
+		if(!found) return sendResponse("Giocatore non iscritto!", INTERNAL_SERVER_ERROR);
 		
 		// Rimozione LinkGestisce
-		gruppo.rimuoviLinkGestito(link.getId());
+		gruppo.eliminaLinkGestito(link.getId());
 		ofy().save().entity(gruppo).now();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("LinkGestisce rimosso con successo!");
-		tearDown();
-		return response;
-		
+		return sendResponse("LinkGestisce rimosso con successo!", OK);
 	}
 	// TODO API Conosce
 	@ApiMethod(
@@ -1063,23 +1360,11 @@ public class PdE2015_API
 		setUp();
 		// Controllo esistenza gruppo
 		Gruppo gruppo = ofy().load().type(Gruppo.class).id(conosceBean.getGruppo()).now();
-		if( gruppo == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Gruppo non esistente!");
-			tearDown();
-			return response;
-		}
+		if( gruppo == null) return sendResponse("Gruppo non esistente!", PRECONDITION_FAILED);
 		
 		// Controllo esistenza Campo
 		Campo campo = ofy().load().type(Campo.class).id(conosceBean.getCampo()).now();
-		if( campo == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Campo non esistente!");
-			tearDown();
-			return response;
-		}
+		if( campo == null) return sendResponse("Campo non esistente!", PRECONDITION_FAILED);
 		
 		// Controllo campi duplicati
 		/*
@@ -1095,59 +1380,36 @@ public class PdE2015_API
 			}
 		}
 		*/
-		if(gruppo.getCampiPreferiti().contains(conosceBean.getCampo())) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Campo già presente!");
-			tearDown();
-			return response;
-		}
+		if(gruppo.getCampiPreferiti().contains(conosceBean.getCampo()))
+			return sendResponse("Campo già presente!", CONFLICT);
 		
 		// Inserimento linkConosce e salvataggio/aggiornamento
 		gruppo.inserisciCampo(conosceBean.getCampo());
 		ofy().save().entity(gruppo).now();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("LinkConosce inserito con successo!");
-		tearDown();
-		return response;
+		return sendResponse("LinkConosce inserito con successo!", CREATED);
 	}
 	
 	@ApiMethod(
-			name = "conosce.rimuoviLinkConosce",
+			name = "conosce.eliminaLinkConosce",
 			path = "conosce/delete",
 			httpMethod = HttpMethod.POST
           )
-	public DefaultBean rimuoviLinkConosce(InfoConosceBean conosceBean) {
+	public DefaultBean eliminaLinkConosce(InfoConosceBean conosceBean) {
 		setUp();
 		// Controllo esistenza gruppo
 		Gruppo gruppo = ofy().load().type(Gruppo.class).id(conosceBean.getGruppo()).now();
-		if( gruppo == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Gruppo non esistente!");
-			tearDown();
-			return response;
-		}
+		if( gruppo == null) return sendResponse("Gruppo non esistente!", PRECONDITION_FAILED);
 		
 		// Controllo esistenza Campo
 		Campo campo = ofy().load().type(Campo.class).id(conosceBean.getCampo()).now();
-		if( campo == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Campo non esistente!");
-			tearDown();
-			return response;
-		}
+		if( campo == null) return sendResponse("Campo non esistente!", PRECONDITION_FAILED);
 		
 		// Rimozione LinkConosce
-		gruppo.rimuoviCampo(conosceBean.getCampo());
+		gruppo.eliminaCampo(conosceBean.getCampo());
 		ofy().save().entity(gruppo).now();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("LinkConosce rimosso con successo!");
-		tearDown();
-		return response;
-		
+		return sendResponse("LinkConosce rimosso con successo!", OK);
 	}
 	
 	// TODO API Organizza
@@ -1160,32 +1422,16 @@ public class PdE2015_API
 		setUp();
 		// Controllo esistenza gruppo
 		Gruppo gruppo = ofy().load().type(Gruppo.class).id(organizzaBean.getGruppo()).now();
-		if( gruppo == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Gruppo non esistente!");
-			tearDown();
-			return response;
-		}
+		if( gruppo == null) return sendResponse("Gruppo non esistente!", PRECONDITION_FAILED);
 		
 		// Controllo esistenza partita
 		Partita partita = ofy().load().type(Partita.class).id(organizzaBean.getPartita()).now();
-		if( partita == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Partita non esistente!");
-			tearDown();
-			return response;
-		}
+		if( partita == null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
 		
 		// Controllo link duplicati
 		// TODO Rivedere bene gli equals!!
-		if(gruppo.getPartiteOrganizzate().contains(organizzaBean.getPartita())) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Partita già organizzata!");
-			tearDown();
-			return response;
-		}
+		if(gruppo.getPartiteOrganizzate().contains(organizzaBean.getPartita())) 
+			return sendResponse("Partita già organizzata!", CONFLICT);
 		
 		// inserimento LinkOrganizza e salvataggio/aggiornamento
 		partita.inserisciLinkOrganizza(organizzaBean.getGruppo());
@@ -1193,49 +1439,31 @@ public class PdE2015_API
 		gruppo.inserisciLinkOrganizza(organizzaBean.getPartita());
 		ofy().save().entity(gruppo).now();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("LinkOrganizza inserito con successo!");
-		tearDown();
-		return response;
+		return sendResponse("LinkOrganizza inserito con successo!", CREATED);
 	}
 	
 	@ApiMethod(
-			name = "organizza.rimuoviLinkOrganizza",
+			name = "organizza.eliminaLinkOrganizza",
 			path = "organizza/delete",
 			httpMethod = HttpMethod.POST
           )
-	public 	DefaultBean rimuoviLinkOrganizza(InfoOrganizzaBean organizzaBean) {
+	public 	DefaultBean eliminaLinkOrganizza(InfoOrganizzaBean organizzaBean) {
 		setUp();
 		// Controllo esistenza gruppo
 		Gruppo gruppo = ofy().load().type(Gruppo.class).id(organizzaBean.getGruppo()).now();
-		if( gruppo == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Gruppo non esistente!");
-			tearDown();
-			return response;
-		}
+		if( gruppo == null) return sendResponse("Gruppo non esistente!", PRECONDITION_FAILED);
 		
 		// Controllo esistenza partita
 		Partita partita = ofy().load().type(Partita.class).id(organizzaBean.getPartita()).now();
-		if( partita == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Partita non esistente!");
-			tearDown();
-			return response;
-		}
+		if( partita == null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
 		
 		// rimozione LinkOrganizza e salvataggio/aggiornamento
 		partita.eliminaLinkOrganizza(organizzaBean.getGruppo());
 		ofy().save().entity(partita).now();
-		gruppo.rimuoviLinkOrganizza(organizzaBean.getPartita());
+		gruppo.eliminaLinkOrganizza(organizzaBean.getPartita());
 		ofy().save().entity(gruppo).now();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("LinkOrganizza rimosso con successo!");
-		tearDown();
-		return response;
+		return sendResponse("LinkOrganizza rimosso con successo!", OK);
 	}
 	
 	// TODO API Presso
@@ -1248,78 +1476,1310 @@ public class PdE2015_API
 		setUp();
 		// Controllo esistenza Campo
 		Campo campo = ofy().load().type(Campo.class).id(pressoBean.getCampo()).now();
-		if( campo == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Campo non esistente!");
-			tearDown();
-			return response;
-		}
+		
+		if( campo == null) return sendResponse("Campo non esistente!", PRECONDITION_FAILED);
 		
 		// Controllo esistenza partita
 		Partita partita = ofy().load().type(Partita.class).id(pressoBean.getPartita()).now();
-		if( partita == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Partita non esistente!");
-			tearDown();
-			return response;
-		}
+		
+		if( partita == null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
 		
 		// Controllo unicità Campo
 		// TODO vedere bene per la possibilità di cambiare campo
-		if(partita.quantiCampi() == 1) {
-			DefaultBean response = new DefaultBean();
-			response.setResult("Campo già impostato!");
-			tearDown();
-			return response;
-		}
+		if(partita.quantiCampi() == 1) return sendResponse("Campo già impostato!", CONFLICT);
 		
 		// inserimento LinkPresso e salvataggio/aggiornamento
 		partita.inserisciCampo(pressoBean.getCampo());
+		partita.setQuota(campo.getPrezzo()/partita.getNPartecipanti());
 		ofy().save().entity(partita).now();
 		
-		DefaultBean response = new DefaultBean();
-		response.setResult("LinkPresso inserito con successo!");
+		return sendResponse("LinkPresso inserito con successo!", CREATED);
+	}
+	
+	@ApiMethod(
+			name = "presso.eliminaLinkPresso",
+			path = "presso/delete",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean eliminaLinkPresso(InfoPressoBean pressoBean) {
+		setUp();
+		// Controllo esistenza Campo
+		Campo campo = ofy().load().type(Campo.class).id(pressoBean.getCampo()).now();
+		
+		if( campo == null) return sendResponse("Campo non esistente!", PRECONDITION_FAILED);
+		
+		// Controllo esistenza partita
+		Partita partita = ofy().load().type(Partita.class).id(pressoBean.getPartita()).now();
+		
+		if( partita == null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
+		
+		// rimozione LinkPresso e salvataggio/aggiornamento
+		partita.eliminaCampo(pressoBean.getCampo());
+		partita.setQuota(Partita.SENTINELLA);
+		ofy().save().entity(partita).now();
+		
+		return sendResponse("LinkPresso rimosso con successo!", OK);
+	}
+	
+	//TODO API Sessione
+	
+	@ApiMethod(
+			name = "sessione.inserisciSessione",
+			path = "sessione",
+			httpMethod = HttpMethod.POST
+          )
+	public PayloadBean inserisciSessione()
+	{
+		setUp();
+		
+		SessioneUtente s = new SessioneUtente();
+		ofy().save().entity(s).now();
+		PayloadBean res = new PayloadBean();
+		res.setIdSessione(s.getId());
+		return res;
+	}
+	
+	@ApiMethod(
+			name = "sessione.eliminaSessione",
+			path = "sessione/delete",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean eliminaSessione(@Named("idSessione")Long idSessione)
+	{
+		setUp();
+		//Controllo esistenza Sessione
+		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( s == null)
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponse("Sessione non presente!", NOT_FOUND);
+		}
+		
+		ofy().delete().entity(s).now();
+		return sendResponse("Sessione rimossa con successo.", OK);
+	}
+	
+	@ApiMethod(
+			name = "sessione.aggiornaStato",
+			path = "sessione",
+			httpMethod = HttpMethod.PUT
+          )
+	public DefaultBean aggiornaStatoSessione(PayloadBean payload)
+	{
+		setUp();
+		//Controllo esistenza Sessione
+		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(payload.getIdSessione()).now();
+		if( s == null)
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponse("Sessione non presente!", NOT_FOUND);
+		}
+		s.aggiornaStato(payload.getNuovoStato());
+		ofy().save().entity(s).now();
+		return sendResponse("Stato sessione aggiornato con successo!", OK);
+	}
+	
+	@ApiMethod(
+			name = "sessione.sessioneIndietro",
+			path = "sessione/back",
+			httpMethod = HttpMethod.PUT
+          )
+	public DefaultBean sessioneIndietro(PayloadBean payload) {
+		setUp();
+		//Controllo esistenza Sessione
+		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(payload.getIdSessione()).now();
+		if( s == null)
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponse("Sessione non presente!", NOT_FOUND);
+		}
+		s.setStatoCorrente(s.getStatoPrecedente());
+		switch(s.getStatoPrecedente()) {
+			case PRINCIPALE:
+				s.setStatoPrecedente(StatoSessione.EXIT);
+				break;
+			case PROFILO:
+				if(!s.getStatoPrePrecedente().equals(StatoSessione.STATO_SENTINELLA)) {
+					s.setStatoPrecedente(s.getStatoPrePrecedente());
+					s.setStatoPrePrecedente();
+				}
+				else
+					s.setStatoPrecedente(StatoSessione.PRINCIPALE);
+			break;
+			case GRUPPO:
+				s.setStatoPrecedente(StatoSessione.PRINCIPALE);
+				break;
+			case PARTITA:
+				if(!s.getStatoPrePrecedente().equals(StatoSessione.STATO_SENTINELLA)) {
+					s.setStatoPrecedente(s.getStatoPrePrecedente());
+					s.setStatoPrePrecedente();
+				}
+				else
+					s.setStatoPrecedente(StatoSessione.GRUPPO);
+				break;
+			case EXIT:
+				s.setStatoCorrente(StatoSessione.PRINCIPALE);
+				s.setStatoPrecedente(StatoSessione.EXIT);
+				
+		}
+		ofy().save().entity(s).now();
+		return sendResponse("Stato sessione aggiornato con successo!", OK);
+	}
+	
+	@ApiMethod(
+			name = "sessione.listaStati",
+			path = "sessione/list",
+			httpMethod = HttpMethod.POST
+          )
+	public ListaStatiBean listaStati(PayloadBean payload)
+	{
+		//TODO cambia parametro bean in named nullable
+		setUp();
+		ListaStatiBean listaBean = new ListaStatiBean();
+		
+		Long idSessione = payload.getIdSessione();
+		if( idSessione == null ) log.log(Level.SEVERE, "L'id della sessione nel bean è null!");
+		SessioneUtente sessione = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( sessione == null )
+		{
+			log.log(Level.SEVERE, "IdSessione non registrato!");
+			listaBean.setHttpCode(NOT_FOUND);
+			return listaBean;
+		}
+		
+		switch( sessione.getStatoCorrente() )
+		{
+			case LOGIN_E_REGISTRAZIONE:
+				listaBean.addStatoSessione(StatoSessione.LOGIN);
+				listaBean.addStatoSessione(StatoSessione.REGISTRAZIONE);
+				break;
+			case LOGIN:
+				listaBean.addStatoSessione(StatoSessione.LOGIN);
+				listaBean.addStatoSessione(StatoSessione.PRINCIPALE);
+				break;
+			case REGISTRAZIONE:
+				listaBean.addStatoSessione(StatoSessione.REGISTRAZIONE);
+				listaBean.addStatoSessione(StatoSessione.PRINCIPALE);
+				break;
+			case PRINCIPALE:
+				listaBean.addStatoSessione(StatoSessione.PROFILO);
+				listaBean.addStatoSessione(StatoSessione.RICERCA_GRUPPO);
+				listaBean.addStatoSessione(StatoSessione.GRUPPO);
+				listaBean.addStatoSessione(StatoSessione.CREA_GRUPPO);
+				break;
+			case GRUPPO:
+				Giocatore utente = ofy().load().type(Giocatore.class).id(sessione.getEmailUtente()).now();
+				// Se l'utente è membro del gruppo da visualizzare...
+				if( utente.getEIscritto().contains(payload.getIdGruppo()) )
+				{
+					listaBean.addStatoSessione(StatoSessione.ISCRITTI_GRUPPO);
+					listaBean.addStatoSessione(StatoSessione.INVITO);
+					listaBean.addStatoSessione(StatoSessione.STORICO);
+					listaBean.addStatoSessione(StatoSessione.CREA_PARTITA);
+					listaBean.addStatoSessione(StatoSessione.PARTITE_PROPOSTE);
+				}
+				//Altrimenti, se il gruppo è aperto...
+				else
+				{
+					GruppoAperto ga = ofy().load().type(GruppoAperto.class).id(payload.getIdGruppo()).now();
+					if( ga != null )
+						listaBean.addStatoSessione(StatoSessione.GRUPPO); //Iscrizione GruppoAPerto
+				}
+				break;
+			case PROFILO:
+				//Se l'utente sta visualizzando il proprio profilo...
+				if( payload.getProfiloDaVisitare().equals(sessione.getEmailUtente()) )
+				{
+					listaBean.addStatoSessione(StatoSessione.MODIFICA_PROFILO);
+					listaBean.addStatoSessione(StatoSessione.LOGIN_E_REGISTRAZIONE);	//Logout
+				}
+				break;
+			case MODIFICA_PROFILO:
+				listaBean.addStatoSessione(StatoSessione.PROFILO);
+				listaBean.addStatoSessione(StatoSessione.MODIFICA_PROFILO);
+				break;
+			case RICERCA_GRUPPO:
+				listaBean.addStatoSessione(StatoSessione.GRUPPO);
+				listaBean.addStatoSessione(StatoSessione.RICERCA_GRUPPO);
+				break;
+			case INVITO:
+				listaBean.addStatoSessione(StatoSessione.GRUPPO);
+				listaBean.addStatoSessione(StatoSessione.PROFILO);
+				break;
+			case ISCRITTI_GRUPPO:
+				listaBean.addStatoSessione(StatoSessione.GRUPPO);
+				listaBean.addStatoSessione(StatoSessione.PROFILO);
+				break;
+			case STORICO:
+				listaBean.addStatoSessione(StatoSessione.PARTITA);
+				break;
+			case PARTITE_PROPOSTE:
+				listaBean.addStatoSessione(StatoSessione.PARTITA);
+				break;
+			case CREA_PARTITA:
+				listaBean.addStatoSessione(StatoSessione.PARTITA);
+				listaBean.addStatoSessione(StatoSessione.RICERCA_CAMPO);
+				listaBean.addStatoSessione(StatoSessione.CREA_PARTITA);
+				break;
+			case PARTITA:
+				Partita partita = ofy().load().type(Partita.class).id(payload.getIdPartita()).now();
+				if( partita != null )
+				{
+					Stato statoPartita = partita.getStatoCorrente();
+					switch(statoPartita)
+					{
+						case PROPOSTA:
+							listaBean.addStatoSessione(StatoSessione.RICERCA_CAMPO);
+							listaBean.addStatoSessione(StatoSessione.DISPONIBILE_PER_PARTITA);
+							break;
+						case GIOCATA:
+							listaBean.addStatoSessione(StatoSessione.VOTO);
+							break;
+						default:
+							break;
+					}
+				}
+				else
+					log.log(Level.SEVERE, "Nel payload c'è l'id di una partita non presente!");
+				
+				break;
+			case VOTO:
+				listaBean.addStatoSessione(StatoSessione.PARTITA);
+				break;
+			case RICERCA_CAMPO:
+				listaBean.addStatoSessione(StatoSessione.CAMPO);
+				listaBean.addStatoSessione(StatoSessione.CREA_CAMPO);
+				listaBean.addStatoSessione(sessione.getStatoSessionePrecedente());
+				break;
+			case DISPONIBILE_PER_PARTITA:
+				listaBean.addStatoSessione(StatoSessione.PARTITA);
+				break;
+			case CAMPO:
+				break;
+			case CREA_CAMPO:
+				listaBean.addStatoSessione(StatoSessione.CAMPO);
+				listaBean.addStatoSessione(StatoSessione.CREA_CAMPO);
+				break;
+			case CREA_GRUPPO:
+				listaBean.addStatoSessione(StatoSessione.CREA_GRUPPO);
+				listaBean.addStatoSessione(StatoSessione.GRUPPO);
+				break;
+			case EXIT:
+				listaBean.addStatoSessione(StatoSessione.PRINCIPALE);
+				break;
+			case MODIFICA_GRUPPO:
+				listaBean.addStatoSessione(StatoSessione.MODIFICA_GRUPPO);
+				listaBean.addStatoSessione(StatoSessione.GRUPPO);
+				break;
+			case MODIFICA_PARTITA:
+				listaBean.addStatoSessione(StatoSessione.MODIFICA_PARTITA);
+				listaBean.addStatoSessione(StatoSessione.PARTITA);
+				break;
+		}
+		return listaBean;
+	}
+	
+	//TODO API alto livello
+	@ApiMethod(
+			name = "api.login",
+			path = "api/login",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean login(@Named("emailUtente")String emailUtente,
+							 @Named("idSessione")Long idSessione)
+	{
+		setUp();
+		//Controllo esistenza Giocatore
+		Giocatore g = ofy().load().type(Giocatore.class).id(emailUtente).now();
+		if( g == null)
+		{
+			log.log(Level.SEVERE, "Giocatore non registrato!");
+			return sendResponse("Giocatore non registrato!", NOT_FOUND);
+		}
+		//Controllo esistenza Sessione
+		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( s == null )
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponse("Sessione non esistente!", NOT_FOUND);
+		}
+		//Controllo stato sessione
+		if( s.getStatoCorrente() != StatoSessione.LOGIN )
+		{
+			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato LOGIN!");
+			return sendResponse("Impossibile effettuare il login in questo punto!", BAD_REQUEST);
+		}	
+		s.setEmailUtente(emailUtente);
+		s.aggiornaStato(StatoSessione.PRINCIPALE);
+		ofy().save().entity(s).now();
+		return sendResponse("Login effettuato con successo!", OK);
+	}
+	
+	@ApiMethod(
+			name = "api.registrazione",
+			path = "api/regitstrazione",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean registrazione(InfoGiocatoreBean giocatoreBean,
+									 @Named("idSessione")Long idSessione)
+	{
+		setUp();
+		//Controllo esistenza Sessione
+		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( s == null )
+		{
+			log.log(Level.SEVERE, "registrazione: Sessione "+idSessione+" non esistente!");
+			return sendResponse("Sessione non presente!", NOT_FOUND);
+		}
+		//Controllo stato Sessione
+		if( s.getStatoCorrente() != StatoSessione.REGISTRAZIONE)
+		{
+			log.log(Level.SEVERE, "La sessione "+idSessione+"non è nello stato REGISTRAZIONE!");
+			return sendResponse("Impossibile effettuare la registrazione in questo punto!", BAD_REQUEST);
+		}
+		//Inserimento nuovo Giocatore
+		DefaultBean result_inserisci = inserisciGiocatore(giocatoreBean);
+		if( !result_inserisci.getHttpCode().equals(CREATED) )
+		{
+				log.log(Level.SEVERE, "registrazione: errore durante inserimento giocatore!");
+				return result_inserisci;
+		}	
+		s.setEmailUtente(giocatoreBean.getEmail());
+		s.aggiornaStato(StatoSessione.PRINCIPALE);
+		ofy().save().entity(s).now();
+		return sendResponse("Registrazione effettuata con successo!", OK);
+	}
+	
+	@ApiMethod(
+			name = "api.logout",
+			path = "api/logout",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean logout(@Named("emailUtente")String emailUtente,
+							  @Named("idSessione")Long idSessione)
+	{
+		setUp();
+		//Controllo esistenza Giocatore
+		Giocatore g = ofy().load().type(Giocatore.class).id(emailUtente).now();
+		if( g == null)
+		{
+			log.log(Level.SEVERE, "Giocatore non registrato!");
+			return sendResponse("Giocatore non registrato!", NOT_FOUND);
+		}
+		//Controllo esistenza Sessione
+		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( s == null )
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponse("Sessione non esistente!", NOT_FOUND);
+		}
+		//Controllo stato sessione
+		if( s.getStatoCorrente() != StatoSessione.PROFILO )
+		{
+			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato PROFILO!");
+			return sendResponse("Impossibile effettuare il logout in questo punto!", BAD_REQUEST);
+		}
+		s.setEmailUtente(null);
+		s.aggiornaStato(StatoSessione.LOGIN_E_REGISTRAZIONE);
+		ofy().save().entity(s).now();
+		return sendResponse("Logout effettuato con successo!", OK);
+	}
+	
+	@ApiMethod(
+			name = "api.creaPartita",
+			path = "api/creapartita",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean creaPartita(InfoPartitaBean partitaBean,
+								   @Named("idSessione")Long idSessione,
+								   @Named("idGruppo")Long idGruppo)
+	{
+		setUp();
+		//Controllo esistenza gruppo
+		Gruppo gruppo = ofy().load().type(Gruppo.class).id(idGruppo).now();
+		if( gruppo == null )
+		{
+			return sendResponse("Gruppo non esistente", NOT_FOUND);
+		}
+		//Controllo esistenza sessione
+		SessioneUtente sessione = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( sessione == null )
+		{
+			log.log(Level.SEVERE, "creaPartita: la sessione "+idSessione+" non è presente nel Datastore!");
+			return sendResponse("Sessione non presente!", NOT_FOUND);
+		}
+		//Controllo stato giusto
+		if( sessione.getStatoCorrente() != StatoSessione.CREA_PARTITA )
+		{
+			log.log(Level.SEVERE, "creaPartita: la sessione "+idSessione+" non è nello stato CREA_PARTITA!");
+			return sendResponse("Impossibile creare una partita in questo punto!", BAD_REQUEST);
+		}
+		//Controllo presenza mail utente in sessione
+		if( sessione.getEmailUtente() == null )
+		{
+			log.log(Level.SEVERE, "creaPartita: la sessione "+idSessione+" non ha memorizzato la mail dell'utente a cui è associata!");
+			return sendResponse("Errore durante la gestione della sessione!", INTERNAL_SERVER_ERROR);
+		}
+		//Inserisco la partita
+		DefaultBean partialResult = inserisciPartita(partitaBean);
+		if( !partialResult.getHttpCode().equals(CREATED) )
+		{
+			log.log(Level.SEVERE, "creaPartita: errore durante l'inserimento di una partita dalla sessione "+idSessione+"!");
+			tearDown();
+			return partialResult;
+		}
+		Long idPartita = partialResult.getIdCreated();
+		//Inserisco link disponibile
+		InfoGestionePartiteBean gestioneBean = new InfoGestionePartiteBean();
+		gestioneBean.setEmailGiocatore(sessione.getEmailUtente());
+		gestioneBean.setIdPartita(idPartita);
+		partialResult = inserisciLinkDisponibile(gestioneBean);
+		if( !partialResult.getHttpCode().equals(CREATED) )
+		{
+			log.log(Level.SEVERE, "creaPartita: errore durante l'inserimento del linkDisponibile per la partita "+idPartita+"!");
+			tearDown();
+			return partialResult;
+		}
+		//Inserisco link propone
+		partialResult = inserisciLinkPropone(gestioneBean);
+		if( !partialResult.getHttpCode().equals(CREATED) )
+		{
+			log.log(Level.SEVERE, "creaPartita: errore durante l'inserimento del linkPropone per la partita "+idPartita+"!");
+			tearDown();
+			return partialResult;
+		}
+		//Inserisco link organizza
+		InfoOrganizzaBean organizzaBean = new InfoOrganizzaBean();
+		organizzaBean.setGruppo(idGruppo);
+		organizzaBean.setPartita(idPartita);
+		partialResult = inserisciLinkOrganizza(organizzaBean);
+		if( !partialResult.getHttpCode().equals(CREATED) )
+		{
+			log.log(Level.SEVERE, "creaPartita: errore durante l'inserimento del linkOrganizza per la partita "+idPartita+"!");
+			tearDown();
+			return partialResult;
+		}
+		//Aggiorno stato sessione
+		PayloadBean payload = new PayloadBean();
+		payload.setIdSessione(idSessione);
+		payload.setNuovoStato(StatoSessione.PARTITA);
+		partialResult = aggiornaStatoSessione(payload);
+		if( !partialResult.getHttpCode().equals(OK) )
+		{
+			log.log(Level.SEVERE, "creaPartita: errore durante il cambio di stato della sessione "+idSessione+"+!");
+			tearDown();
+			return partialResult;
+		}
+		return sendResponse("Partita creata con successo!", CREATED);
+	}
+	
+	@ApiMethod(
+			name = "api.creaGruppo",
+			path = "api/creagruppo",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean creaGruppo(InfoGruppoBean gruppoBean,
+								   @Named("idSessione")Long idSessione)
+	{
+		setUp();
+		//Controllo esistenza sessione
+		SessioneUtente sessione = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( sessione == null )
+		{
+			log.log(Level.SEVERE, "creaGruppo: la sessione "+idSessione+" non è presente nel Datastore!");
+			return sendResponse("Sessione non presente!", NOT_FOUND);
+		}
+		//Controllo stato giusto
+		if( sessione.getStatoCorrente() != StatoSessione.CREA_GRUPPO )
+		{
+			log.log(Level.SEVERE, "creaGruppo: la sessione "+idSessione+" non è nello stato CREA_GRUPPO!");
+			return sendResponse("Impossibile creare un gruppo in questo punto!", BAD_REQUEST);
+		}
+		//Controllo presenza mail utente in sessione
+		if( sessione.getEmailUtente() == null )
+		{
+			log.log(Level.SEVERE, "creaGruppo: la sessione "+idSessione+" non ha memorizzato la mail dell'utente a cui è associata!");
+			return sendResponse("Errore durante la gestione della sessione!", INTERNAL_SERVER_ERROR);
+		}
+		//Inserisco gruppo
+		DefaultBean partialResult = inserisciGruppo(gruppoBean);
+		if( !partialResult.getHttpCode().equals(CREATED) )
+		{
+			log.log(Level.SEVERE, "creaGruppo: errore durante la creazione della partita!");
+			tearDown();
+			return partialResult;
+		}
+		Long idGruppo = partialResult.getIdCreated();
+		//Inserisco link iscritto
+		InfoIscrittoGestisceBean iscrittoBean = new InfoIscrittoGestisceBean();
+		iscrittoBean.setGiocatore(sessione.getEmailUtente());
+		iscrittoBean.setGruppo(idGruppo);
+		partialResult = inserisciLinkIscritto(iscrittoBean);
+		if( !partialResult.getHttpCode().equals(CREATED) )
+		{
+			log.log(Level.SEVERE, "creaGruppo: errore durante l'inserimento "
+								 +"del primo link iscritto nel gruppo "+idGruppo+"!");
+			tearDown();
+			return partialResult;
+		}
+		//Inserisco link gestisce
+		partialResult = inserisciLinkGestito(iscrittoBean);
+		if( !partialResult.getHttpCode().equals(CREATED) )
+		{
+			log.log(Level.SEVERE, "creaGruppo: errore durante l'inserimento "
+								 +"del link gestisce nel gruppo "+idGruppo+"!");
+			tearDown();
+			return partialResult;
+		}
+		//Aggiorno stato sessione
+		PayloadBean payload = new PayloadBean();
+		payload.setIdSessione(idSessione);
+		payload.setNuovoStato(StatoSessione.GRUPPO);
+		partialResult = aggiornaStatoSessione(payload);
+		if( !partialResult.getHttpCode().equals(OK) )
+		{
+			log.log(Level.SEVERE, "creaGruppo: errore durante il cambio di stato della sessione "+idSessione+"+!");
+			tearDown();
+			return partialResult;
+		}
+		return sendResponse("Gruppo creato con successo!", CREATED);
+	}
+	
+	@ApiMethod(
+			name = "api.getGiocatore",
+			path = "api/getGiocatore",
+			httpMethod = HttpMethod.GET
+          )
+	public GiocatoreBean getGiocatore(@Named("emailUtente")String emailUtente,
+									  @Named("idSessione")Long idSessione) {
+		setUp();
+		//Controllo esistenza Giocatore
+		Giocatore g = ofy().load().type(Giocatore.class).id(emailUtente).now();
+		if( g == null)
+		{
+			log.log(Level.SEVERE, "Giocatore non registrato!");
+			return sendResponseGiocatore(null, "Giocatore non esistente!", NOT_FOUND);
+		}
+		//Controllo esistenza Sessione
+		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( s == null )
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponseGiocatore(null, "Sessione non esistente!", NOT_FOUND);
+		}
+		//Controllo stato sessione
+		if( s.getStatoCorrente() != StatoSessione.PROFILO )
+		{
+			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato PROFILO!");
+			return sendResponseGiocatore(null, "Impossibile chiamare il metodo in questo punto!", BAD_REQUEST);
+		}
+		return sendResponseGiocatore(g, "Operazione completata con successo", OK);
+	}
+	
+	@ApiMethod(
+			name = "api.getGruppo",
+			path = "api/getGruppo",
+			httpMethod = HttpMethod.GET
+          )
+	public GruppoBean getGruppo(@Named("idGruppo")Long idGruppo,
+								@Named("idSessione")Long idSessione) {
+		setUp();
+		//Controllo esistenza Gruppo
+		Gruppo g = ofy().load().type(Gruppo.class).id(idGruppo).now();
+		if( g == null)
+		{
+			log.log(Level.SEVERE, "Gruppo non esistente!");
+			return sendResponseGruppo(null, "Gruppo non esistente!", NOT_FOUND);
+		}
+		//Controllo esistenza Sessione
+		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( s == null )
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponseGruppo(null, "Sessione non esistente!", NOT_FOUND);
+		}
+		//Controllo stato sessione
+		if( s.getStatoCorrente() != StatoSessione.GRUPPO )
+		{
+			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato GRUPPO!");
+			return sendResponseGruppo(null, "Impossibile chiamare il metodo in questo punto!", BAD_REQUEST);
+		}
+		return sendResponseGruppo(g, "Operazione completata con successo", OK);
+	}
+	
+	@ApiMethod(
+			name = "api.getPartita",
+			path = "api/getPartita",
+			httpMethod = HttpMethod.GET
+          )
+	public PartitaBean getPartita(@Named("idPartita")Long idPartita,
+								  @Named("idSessione")Long idSessione) {
+		setUp();
+		//Controllo esistenza Partita
+		Partita p = ofy().load().type(Partita.class).id(idPartita).now();
+		if( p == null)
+		{
+			log.log(Level.SEVERE, "Partita non esistente!");
+			return sendResponsePartita(null, "Partita non esistente!", NOT_FOUND);
+		}
+		//Controllo esistenza Sessione
+		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( s == null )
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponsePartita(null, "Sessione non esistente!", NOT_FOUND);
+		}
+		//Controllo stato sessione
+		if( s.getStatoCorrente() != StatoSessione.PARTITA )
+		{
+			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato PARTITA!");
+			return sendResponsePartita(null, "Impossibile chiamare il metodo in questo punto!", BAD_REQUEST);
+		}
+		return sendResponsePartita(p, "Operazione completata con successo", OK);
+	}
+	
+	@ApiMethod(
+			name = "api.setGiocatore",
+			path = "api/setGiocatore",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean setGiocatore(InfoGiocatoreBean giocatoreBean,
+									@Named("idSessione")Long idSessione) {
+		setUp();
+		//Controllo esistenza Giocatore
+		Giocatore g = ofy().load().type(Giocatore.class).id(giocatoreBean.getEmail()).now();
+		if( g == null)
+		{
+			log.log(Level.SEVERE, "Giocatore non registrato!");
+			return sendResponse("Giocatore non esistente!", NOT_FOUND);
+		}
+		//Controllo esistenza Sessione
+		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( s == null )
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponse("Sessione non esistente!", NOT_FOUND);
+		}
+		//Controllo stato sessione
+		if( s.getStatoCorrente() != StatoSessione.MODIFICA_PROFILO )
+		{
+			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato MODIFICA_PROFILO!");
+			return sendResponse("Impossibile chiamare il metodo in questo punto!", BAD_REQUEST);
+		}
+		//Controllo Giocatore Sessione
+		if( !giocatoreBean.getEmail().equals(s.getEmailUtente()) ) {
+			log.log(Level.SEVERE, "Il giocatore da modificare non corrisponde con quello della sessione!");
+			return sendResponse("Il giocatore da modificare non corrisponde con quello della sessione!", PRECONDITION_FAILED);
+		}
+		tearDown();
+		DefaultBean response = modificaGiocatore(giocatoreBean);
+		if(!response.getHttpCode().equals(OK)) {
+			log.log(Level.SEVERE, "setGiocatore: Errore durante la modifica"
+					+ "del giocatore "+ g.getEmail() +" !");
+			tearDown();
+			return response;
+			
+		}
+		setUp();
+		s.aggiornaStato(StatoSessione.PROFILO);
+		ofy().save().entity(s).now();
 		tearDown();
 		return response;
 	}
 	
 	@ApiMethod(
-			name = "presso.rimuoviLinkPresso",
-			path = "presso/delete",
+			name = "api.setGruppo",
+			path = "api/setGruppo",
 			httpMethod = HttpMethod.POST
           )
-	public DefaultBean rimuoviLinkPresso(InfoPressoBean pressoBean) {
+	public DefaultBean setGruppo(InfoGruppoBean gruppoBean,
+								 @Named("idSessione")Long idSessione) {
 		setUp();
-		// Controllo esistenza Campo
-		Campo campo = ofy().load().type(Campo.class).id(pressoBean.getCampo()).now();
-		if( campo == null)
+		//Controllo esistenza Gruppo
+		Gruppo g = ofy().load().type(Gruppo.class).id(gruppoBean.getId()).now();
+		if( g == null)
 		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Campo non esistente!");
+			log.log(Level.SEVERE, "Gruppo non esistente!");
+			return sendResponse("Gruppo non esistente!", NOT_FOUND);
+		}
+		//Controllo esistenza Sessione
+		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( s == null )
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponse("Sessione non esistente!", NOT_FOUND);
+		}
+		//Controllo stato sessione
+		if( s.getStatoCorrente() != StatoSessione.MODIFICA_GRUPPO )
+		{
+			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato MODIFICA_GRUPPO!");
+			return sendResponse("Impossibile chiamare il metodo in questo punto!", BAD_REQUEST);
+		}
+		//Controllo Gestore Gruppo
+		Long idLink = null;
+		try {
+			idLink = g.getLinkGestito();
+			TipoLinkIscritto l = ofy().load().type(TipoLinkIscritto.class).id(idLink).now();
+			if( !l.getGiocatore().equals(s.getEmailUtente()) ) {
+				log.log(Level.SEVERE, "Il giocatore associato alla sessione non è il gestore del gruppo!");
+				return sendResponse("Il giocatore associato alla sessione non è il gestore del gruppo!", PRECONDITION_FAILED);
+			}
+		}
+		catch(Exception e) {
+			log.log(Level.SEVERE, "Il TipolinkIscritto "+ idLink + " ha lanciato la"
+					+ " seguente eccezione: " + e.getMessage());
+			return sendResponse("Gestore del gruppo mancante o non iscritto al gruppo!", INTERNAL_SERVER_ERROR);
+			
+		}
+		tearDown();
+		DefaultBean response = modificaGruppo(gruppoBean);
+		if(!response.getHttpCode().equals(OK)) {
+			log.log(Level.SEVERE, "setGruppo: Errore durante la modifica"
+					+ "del gruppo "+ g.getId() +" !");
 			tearDown();
 			return response;
+			
 		}
-		
-		// Controllo esistenza partita
-		Partita partita = ofy().load().type(Partita.class).id(pressoBean.getPartita()).now();
-		if( partita == null)
-		{
-			DefaultBean response = new DefaultBean();
-			response.setResult("Partita non esistente!");
-			tearDown();
-			return response;
-		}
-		
-		// rimozione LinkPresso e salvataggio/aggiornamento
-		partita.eliminaCampo(pressoBean.getCampo());
-		ofy().save().entity(partita).now();
-		
-		DefaultBean response = new DefaultBean();
-		response.setResult("LinkPresso rimosso con successo!");
+		setUp();
+		s.aggiornaStato(StatoSessione.GRUPPO);
+		ofy().save().entity(s).now();
 		tearDown();
 		return response;
+	}
+	
+	@ApiMethod(
+			name = "api.setPartita",
+			path = "api/setPartita",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean setPartita(InfoPartitaBean partitaBean,
+								 @Named("idSessione")Long idSessione) {
+		setUp();
+		//Controllo esistenza Giocatore
+		Partita p = ofy().load().type(Partita.class).id(partitaBean.getId()).now();
+		if( p == null)
+		{
+			log.log(Level.SEVERE, "Partita non esistente!");
+			return sendResponse("Partita non esistente!", NOT_FOUND);
+		}
+		//Controllo esistenza Sessione
+		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( s == null )
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponse("Sessione non esistente!", NOT_FOUND);
+		}
+		//Controllo stato sessione
+		if( s.getStatoCorrente() != StatoSessione.MODIFICA_PARTITA )
+		{
+			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato MODIFICA_PARTITA!");
+			return sendResponse("Impossibile chiamare il metodo in questo punto!", BAD_REQUEST);
+		}
+		//Controllo Proponente Partita
+		try {
+			if( !p.getPropone().equals(s.getEmailUtente()) ) {
+				log.log(Level.SEVERE, "Il giocatore associato alla sessione non ha proposto la partita!");
+				return sendResponse("Il giocatore associato alla sessione non ha proposto la partita!", PRECONDITION_FAILED);
+			}
+		}
+		catch(EccezioneMolteplicitaMinima e) {
+			log.log(Level.SEVERE, "La partita "+ p.getId() +" non ha un giocatore che l'ha proposta!");
+			return sendResponse("La partita non ha un giocatore che l'ha proposta!", INTERNAL_SERVER_ERROR);
+		}
+		// Controllo stato partita
+		if( !p.getStatoCorrente().equals(Partita.Stato.PROPOSTA) ) {
+			log.log(Level.SEVERE, "La partita non può essere modificata in questo stato!");
+			return sendResponse("La partita non può essere modificata in questo stato!", PRECONDITION_FAILED);
+		}
+		tearDown();
+		DefaultBean response = modificaPartita(partitaBean);
+		if(!response.getHttpCode().equals(OK)) {
+			log.log(Level.SEVERE, "setPartita: Errore durante la modifica"
+					+ "della partita "+ p.getId() +" !");
+			tearDown();
+			return response;
+			
+		}
+		setUp();
+		s.aggiornaStato(StatoSessione.PARTITA);
+		ofy().save().entity(s).now();
+		tearDown();
+		return response;
+	}
+	
+	@ApiMethod(
+			name = "api.listaGruppiIscritto",
+			path = "api/listaGruppiIscritto",
+			httpMethod = HttpMethod.GET
+          )
+	public ListaGruppiBean listaGruppiIscritto(@Named("idGruppo")String emailUtente,
+			  								   @Named("idSessione")Long idSessione) {
+		setUp();
+		//Controllo esistenza Giocatore
+		Giocatore g = ofy().load().type(Giocatore.class).id(emailUtente).now();
+		if( g == null)
+		{
+			log.log(Level.SEVERE, "Giocatore non registrato!");
+			return sendResponseListaGruppi("Giocatore non registrato!", NOT_FOUND, new LinkedList<Gruppo>());
+		}
+		//Controllo esistenza Sessione
+		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( s == null )
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponseListaGruppi("Sessione non esistente!", NOT_FOUND, new LinkedList<Gruppo>());
+		}
+		//Controllo stato sessione
+		//TODO E' giusto metterlo?!
+		if( s.getStatoCorrente() != StatoSessione.PRINCIPALE )
+		{
+			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato PRINCIPALE!");
+			return sendResponseListaGruppi("Impossibile chiamare il metodo in questo punto!", BAD_REQUEST, new LinkedList<Gruppo>());
+		}
+		LinkedList<Gruppo> lg = new LinkedList<Gruppo>();
+		Iterator<Long> it = g.getEIscritto().iterator();
+		while(it.hasNext()) {
+			Long idLink = it.next();
+			TipoLinkIscritto link = ofy().load().type(TipoLinkIscritto.class).id(idLink).now();
+			if(link == null) {
+				log.log(Level.SEVERE, "Giocatore "+ g.getEmail() + "ha un TipoLinkIscritto con id"
+						+ idLink + "non esistente!");
+				continue;
+			}
+			Gruppo gr = ofy().load().type(Gruppo.class).id(link.getGruppo()).now();
+			if(gr == null) {
+				log.log(Level.SEVERE, "TipolinkIscritto "+ link.getId() + "ha un gruppo con id"
+						+ link.getGruppo() + "non esistente!");
+				continue;
+			}
+			lg.add(gr);
+		}
+		return sendResponseListaGruppi("Operazione completata con successo!", OK, lg);
+	}
+	
+	@ApiMethod(
+			name = "api.listaIscrittiGruppo",
+			path = "api/listaIscrittiGruppo",
+			httpMethod = HttpMethod.GET
+          )
+	public ListaGiocatoriBean listaIscrittiGrupppo(@Named("idGruppo")Long idGruppo,
+			   									   @Named("idSessione")Long idSessione) {
+		setUp();
+		//Controllo esistenza Gruppo
+		Gruppo g = ofy().load().type(Gruppo.class).id(idGruppo).now();
+		if( g == null)
+		{
+			log.log(Level.SEVERE, "Gruppo non esistente!");
+			return sendResponseListaGiocatori("Gruppo non esistente!", NOT_FOUND, new LinkedList<Giocatore>());
+		}
+		//Controllo esistenza Sessione
+		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( s == null )
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponseListaGiocatori("Sessione non esistente!", NOT_FOUND, new LinkedList<Giocatore>());
+		}
+		//Controllo stato sessione
+		//TODO E' giusto metterlo?!
+		if( s.getStatoCorrente() != StatoSessione.GRUPPO )
+		{
+			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato GRUPPO!");
+			return sendResponseListaGiocatori("Impossibile chiamare il metodo in questo punto!", BAD_REQUEST, new LinkedList<Giocatore>());
+		}
+		LinkedList<Giocatore> lg = new LinkedList<Giocatore>();
+		try {
+			Iterator<Long> it = g.getGiocatoriIscritti().iterator();
+			while(it.hasNext()) {
+				Long idLink = it.next();
+				TipoLinkIscritto link = ofy().load().type(TipoLinkIscritto.class).id(idLink).now();
+				if(link == null) {
+					log.log(Level.SEVERE, "Gruppo "+ g.getId() + "ha un TipoLinkIscritto con id"
+							+ idLink + "non esistente!");
+					continue;
+				}
+				Giocatore gioc = ofy().load().type(Giocatore.class).id(link.getGiocatore()).now();
+				if(gioc == null) {
+					log.log(Level.SEVERE, "TipolinkIscritto "+ link.getId() + "ha un giocatore con id"
+							+ link.getGiocatore() + "non esistente!");
+					continue;
+				}
+				lg.add(gioc);
+			}
+		}
+		catch(EccezioneMolteplicitaMinima e) {
+			log.log(Level.SEVERE, "Il gruppo "+ g.getId() +" non ha alcun giocatore iscritto!");
+			return sendResponseListaGiocatori("Il gruppo non ha alcun giocatore iscritto!", INTERNAL_SERVER_ERROR, lg);
+		}
+		return sendResponseListaGiocatori("Operazione completata con successo!", OK, lg);
+	}
+	
+	@ApiMethod(
+			name = "api.listaPartiteProposteConfermate",
+			path = "api/listaPartiteProposteConfermate",
+			httpMethod = HttpMethod.GET
+          )
+	public ListaPartiteBean listaPartiteProposteConfermate(@Named("idGruppo")Long idGruppo, @Named("tipo")int tipo,
+														   @Named("idSessione")Long idSessione) {
+		setUp();
+		//Controllo esistenza Sessione
+		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( s == null )
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponseListaPartite("Sessione non esistente!", NOT_FOUND, new LinkedList<Partita>());
+		}
+		//Controllo stato sessione
+		if( s.getStatoCorrente() != StatoSessione.PARTITE_PROPOSTE )
+		{
+			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato PARTITE_PROPOSTE!");
+			return sendResponseListaPartite("Impossibile chiamare il metodo in questo punto!", BAD_REQUEST, new LinkedList<Partita>());
+		}
+		LinkedList<Partita.Stato> list = new LinkedList<Partita.Stato>();
+		list.add(Partita.Stato.PROPOSTA);
+		list.add(Partita.Stato.CONFERMATA);
+		ListaPartiteBean lg = new ListaPartiteBean();
+		switch(tipo) {
+			case 1:
+				List<PartitaCalcetto> l1 = ofy().load().type(PartitaCalcetto.class)
+											.filter("gruppo", idGruppo).filter("statoCorrente in", list).list();
+				//filtraPartite(l1);
+				Iterator<PartitaCalcetto> it1 =  l1.iterator();
+				log.log(Level.WARNING,"CALCETTO");
+				while(it1.hasNext())
+					lg.addPartita(it1.next());
+				break;
+			case 2:
+				List<PartitaCalciotto> l2 = ofy().load().type(PartitaCalciotto.class)/*.filter("gruppo", idGruppo)*/
+											.filter("statoCorrente in ", list).list();
+				//filtraPartite(l2);
+				if( l2.size() == 0 ) log.log(Level.WARNING, "Questo gruppo non sta organizzando nessuna partita di calciotto!");
+				Iterator<PartitaCalciotto> it2 =  l2.iterator();
+				log.log(Level.WARNING,"CALCIOTTO");
+				while(it2.hasNext())
+				{
+					Partita p = it2.next();
+					log.log(Level.WARNING, "Inserendo partita: "+p.getId());
+					lg.addPartita(p);
+				}
+				break;
+			case 3:
+				List<PartitaCalcio> l3 = ofy().load().type(PartitaCalcio.class).filter("gruppo", idGruppo)
+											.filter("statoCorrente in", list).list();
+				//Aggiorno la lista rimuovendo le partite terminate
+				//filtraPartite(l3);
+				Iterator<PartitaCalcio> it3 =  l3.iterator();
+				log.log(Level.WARNING,"CALCIO");
+				while(it3.hasNext())
+					lg.addPartita(it3.next());
+				break;
+			default:
+				List<Partita> l = ofy().load().type(Partita.class).filter("gruppo", idGruppo)
+					.filter("statoCorrente in", list).list();
+				//filtraPartite(l);
+				Iterator<Partita> it = l.iterator();
+				while(it.hasNext())
+					lg.addPartita(it.next());
+		}
+		
+		tearDown();
+		lg.setHttpCode(OK);
+		lg.setResult("Operazione completata con successo!");
+		return lg;
+	}
+	
+	@ApiMethod(
+			name = "api.listaPartiteTerminate",
+			path = "api/listaPartiteTerminate",
+			httpMethod = HttpMethod.GET
+          )
+	public ListaPartiteBean listaPartiteTerminate(@Named("idGruppo")Long idGruppo, @Named("tipo")int tipo,
+			   									  @Named("idSessione")Long idSessione) {
+		setUp();
+		//Controllo esistenza Sessione
+		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( s == null )
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponseListaPartite("Sessione non esistente!", NOT_FOUND, new LinkedList<Partita>());
+		}
+		//Controllo stato sessione
+		if( s.getStatoCorrente() != StatoSessione.STORICO )
+		{
+			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato STORICO!");
+			return sendResponseListaPartite("Impossibile chiamare il metodo in questo punto!", BAD_REQUEST, new LinkedList<Partita>());
+		}
+		ListaPartiteBean lg = new ListaPartiteBean();
+		switch(tipo) {
+			case 1:
+				List<PartitaCalcetto> l1 = ofy().load().type(PartitaCalcetto.class)
+											.filter("gruppo", idGruppo).filter("statoCorrente", Partita.Stato.GIOCATA).list();
+				//filtraPartite(l1);
+				Iterator<PartitaCalcetto> it1 =  l1.iterator();
+				log.log(Level.WARNING,"CALCETTO");
+				while(it1.hasNext())
+					lg.addPartita(it1.next());
+				break;
+			case 2:
+				List<PartitaCalciotto> l2 = ofy().load().type(PartitaCalciotto.class)/*.filter("gruppo", idGruppo)*/
+											.filter("statoCorrente", Partita.Stato.GIOCATA).list();
+				//filtraPartite(l2);
+				if( l2.size() == 0 ) log.log(Level.WARNING, "Questo gruppo non sta organizzando nessuna partita di calciotto!");
+				Iterator<PartitaCalciotto> it2 =  l2.iterator();
+				log.log(Level.WARNING,"CALCIOTTO");
+				while(it2.hasNext())
+				{
+					Partita p = it2.next();
+					log.log(Level.WARNING, "Inserendo partita: "+p.getId());
+					lg.addPartita(p);
+				}
+				break;
+			case 3:
+				List<PartitaCalcio> l3 = ofy().load().type(PartitaCalcio.class).filter("gruppo", idGruppo)
+											.filter("statoCorrente", Partita.Stato.GIOCATA).list();
+				//Aggiorno la lista rimuovendo le partite terminate
+				//filtraPartite(l3);
+				Iterator<PartitaCalcio> it3 =  l3.iterator();
+				log.log(Level.WARNING,"CALCIO");
+				while(it3.hasNext())
+					lg.addPartita(it3.next());
+				break;
+			default:
+				List<Partita> l = ofy().load().type(Partita.class).filter("gruppo", idGruppo)
+					.filter("statoCorrente", Partita.Stato.GIOCATA).list();
+				//filtraPartite(l);
+				Iterator<Partita> it = l.iterator();
+				while(it.hasNext())
+					lg.addPartita(it.next());
+		}
+		tearDown();
+		lg.setHttpCode(OK);
+		lg.setResult("Operazione completata con successo!");
+		return lg;
+	}
+	
+	@ApiMethod(
+			name = "api.isIscritto",
+			path = "api/isIscritto",
+			httpMethod = HttpMethod.GET
+          )
+	public DefaultBean isIscritto(/*@Named("emailUtente")String emailUtente,*/ @Named("idGruppo")Long idGruppo,
+								  @Named("idSessione")Long idSessione) {
+		setUp();
+		//Controllo esistenza Sessione
+		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( s == null )
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponseAnswer("Sessione non esistente!", NOT_FOUND, false);
+		}
+		//Controllo esistenza Giocatore
+		Giocatore g = ofy().load().type(Giocatore.class).id(/*emailUtente*/s.getEmailUtente()).now();
+		if( g == null)
+		{
+			log.log(Level.SEVERE, "Giocatore non registrato!");
+			return sendResponseAnswer("Giocatore non esistente!", NOT_FOUND, false);
+		}
+		//Controllo esistenza Gruppo
+		Gruppo gr = ofy().load().type(Gruppo.class).id(idGruppo).now();
+		if( gr == null)
+		{
+			log.log(Level.SEVERE, "Gruppo non esistente!");
+			return sendResponseAnswer("Gruppo non esistente!", NOT_FOUND, false);
+		}
+		//Controllo stato sessione
+		//TODO Bisogna metterlo?
+		if( s.getStatoCorrente() != StatoSessione.GRUPPO )
+		{
+			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato GRUPPO!");
+			return sendResponseAnswer("Impossibile chiamare il metodo in questo punto!", BAD_REQUEST, false);
+		}
+		try {
+			Iterator<Long> it = gr.getGiocatoriIscritti().iterator();
+			while(it.hasNext()) {
+				if(g.getEIscritto().contains(it.next()))
+					return sendResponseAnswer("Il giocatore è iscritto al gruppo!", OK, true);
+			}
+		}
+		catch(EccezioneMolteplicitaMinima e) {
+			log.log(Level.SEVERE, "Il gruppo "+ gr.getId() +" non ha alcun giocatore iscritto!");
+			return sendResponseAnswer("Il gruppo non ha alcun giocatore iscritto!", INTERNAL_SERVER_ERROR, false); 
+		}
+		return sendResponseAnswer("Il giocatore non è iscritto al gruppo!", OK, false);
+	}
+	
+	@ApiMethod(
+			name = "api.isDisponibile",
+			path = "api/isDisponibile",
+			httpMethod = HttpMethod.GET
+          )
+	public DefaultBean isDisponibile(/*Named("emailUtente"String emailUtente, */@Named("idPartita")Long idPartita,
+									 @Named("idSessione")Long idSessione) {
+		setUp();
+		//Controllo esistenza Sessione
+		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( s == null )
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponseAnswer("Sessione non esistente!", NOT_FOUND, false);
+		}
+		//Controllo stato sessione
+		/*if( !(s.getStatoCorrente() == StatoSessione.PARTITA ||
+		      s.getStatoCorrente() == StatoSessione.DISPONIBILE_PER_PARTITA) )
+		{
+			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato PARTITA!");
+			return sendResponseAnswer("Impossibile chiamare il metodo in questo punto!", BAD_REQUEST, false);
+		}*/
+		//Controllo esistenza Giocatore
+		Giocatore g = ofy().load().type(Giocatore.class).id(/*emailUtente*/s.getEmailUtente()).now();
+		if( g == null)
+		{
+			log.log(Level.SEVERE, "Giocatore non registrato!");
+			return sendResponseAnswer("Giocatore non esistente!", NOT_FOUND, false);
+		}
+		//Controllo esistenza Partita
+		Partita p = ofy().load().type(Partita.class).id(idPartita).now();
+		if( p == null)
+		{
+			log.log(Level.SEVERE, "Partita non esistente!");
+			return sendResponseAnswer("Partita non esistente!", NOT_FOUND, false);
+		}
+		
+		Iterator<Long> it = null;
+		
+		try {
+			it = p.getLinkDisponibile().iterator();
+		}
+		catch(EccezioneMolteplicitaMinima e) {
+			log.log(Level.SEVERE, "la partita "+p.getId()+
+					" non ha memorizzato nessun link Disponibile!");
+			return sendResponseAnswer("la partita non ha memorizzato alcun link Disponibile!", OK, false);
+		}
+		
+		while(it.hasNext())
+		{
+			TipoLinkDisponibile l = ofy().load().type(TipoLinkDisponibile.class).id(it.next()).now();
+			if( l.getGiocatore().equals(/*emailUtente*/s.getEmailUtente()) )
+				return sendResponseAnswer("l'utente ha già dato la disponibilità per questa partita!", OK, true);
+		}
+		return sendResponseAnswer("l'utente non ha dato la disponibilità per questa partita!", OK, false);
+	}
+	
+	@ApiMethod(
+			name = "api.hasVotato",
+			path = "api/hasVotato",
+			httpMethod = HttpMethod.GET
+          )
+	public DefaultBean hasVotato(/*@Named("emailUtente")String emailUtente, */@Named("idPartita")Long idPartita,
+								 @Named("idSessione")Long idSessione) {
+		setUp();
+		//Controllo esistenza Sessione
+		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( s == null )
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponseAnswer("Sessione non esistente!", NOT_FOUND, true);
+		}
+		//Controllo stato sessione
+		if( s.getStatoCorrente() != StatoSessione.PARTITA )
+		{
+			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato PARTITA!");
+			return sendResponseAnswer("Impossibile chiamare il metodo in questo punto!", BAD_REQUEST, true);
+		}
+		//Controllo esistenza Giocatore
+		Giocatore g = ofy().load().type(Giocatore.class).id(/*emailUtente*/s.getEmailUtente()).now();
+		if( g == null)
+		{
+			log.log(Level.SEVERE, "Giocatore non registrato!");
+			return sendResponseAnswer("Giocatore non esistente!", NOT_FOUND, true);
+		}
+		//Controllo esistenza Partita
+		Partita p = ofy().load().type(Partita.class).id(idPartita).now();
+		if( p == null)
+		{
+			log.log(Level.SEVERE, "Partita non esistente!");
+			return sendResponseAnswer("Partita non esistente!", NOT_FOUND, true);
+		}
+		Iterator<Long> it = p.getLinkPerPartita().iterator();
+		while(it.hasNext())
+		{
+			VotoUomoPartita v = ofy().load().type(VotoUomoPartita.class).id(it.next()).now();
+			try {
+				if( v.getVotanteUP().equals(/*emailUtente*/s.getEmailUtente()) )
+					return sendResponseAnswer("l'utente ha già votato per questa partita!", OK, true);
+				
+			} catch (EccezioneMolteplicitaMinima e) {
+				log.log(Level.SEVERE, "Il voto "+v.getId()+
+						" non ha memorizzato l'id di un votante!");
+				continue;
+			}
+		}
+		return sendResponseAnswer("l'utente non ha votato per questa partita!", OK, false);
+	}
+	
+	@ApiMethod(
+			name = "api.cambiaStatoIscrizione",
+			path = "api/cambiaStatoIscrizione",
+			httpMethod = HttpMethod.GET
+          )
+	public DefaultBean cambiaStatoIscrizione(/*@Named("emailUtente")String emailUtente, */@Named("idGruppo")Long idGruppo,
+								 @Named("idSessione")Long idSessione) {
+		setUp();
+		//Controllo esistenza Sessione
+		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( s == null )
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponse("Sessione non esistente!", NOT_FOUND);
+		}
+		//Controllo esistenza Giocatore
+		Giocatore g = ofy().load().type(Giocatore.class).id(/*emailUtente*/s.getEmailUtente()).now();
+		if( g == null)
+		{
+			log.log(Level.SEVERE, "Giocatore non registrato!");
+			return sendResponse("Giocatore non esistente!", NOT_FOUND);
+		}
+		//Controllo esistenza Gruppo
+		Gruppo gr = ofy().load().type(Gruppo.class).id(idGruppo).now();
+		if( gr == null)
+		{
+			log.log(Level.SEVERE, "Gruppo non esistente!");
+			return sendResponse("Gruppo non esistente!", NOT_FOUND);
+		}
+		//Controllo gruppo aperto
+		if(!gr.getClass().equals(GruppoAperto.class)) 
+		{
+			log.log(Level.SEVERE, "Gruppo non aperto!");
+			return sendResponse("Gruppo non aperto!", PRECONDITION_FAILED);
+		}
+		//Controllo stato sessione
+		//TODO Bisogna metterlo?
+		if( s.getStatoCorrente() != StatoSessione.GRUPPO )
+		{
+			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato GRUPPO!");
+			return sendResponse("Impossibile chiamare il metodo in questo punto!", BAD_REQUEST);
+		}
+		InfoIscrittoGestisceBean igBean = new InfoIscrittoGestisceBean();
+		igBean.setGiocatore(/*emailUtente*/s.getEmailUtente());
+		igBean.setGruppo(idGruppo);
+		if(!isIscritto(idGruppo, idSessione).isAnswer()) {
+			DefaultBean response = inserisciLinkIscritto(igBean);
+			if(!response.getHttpCode().equals(CREATED)) {
+				log.log(Level.SEVERE, "iscriviti: errore durante l'inserimento "
+						 +"del link iscritto nel gruppo "+idGruppo+"!");
+				tearDown();
+				return response;
+			}
+		}
+		else {
+			DefaultBean response = eliminaLinkIscritto(igBean);
+			if(!response.getHttpCode().equals(OK)) {
+				log.log(Level.SEVERE, "iscriviti: errore durante la rimozione "
+						 +"del link iscritto nel gruppo "+idGruppo+"!");
+				tearDown();
+				return response;
+			}
+		}
+		return sendResponse("Stato iscrizione aggiornato con succcesso!", OK);
 	}
 	
 	@BeforeMethod
@@ -1331,5 +2791,137 @@ public class PdE2015_API
     private void tearDown() {
         session.close();
     }
-
+    
+    private DefaultBean sendResponse(String mex, String code)
+    {
+    	DefaultBean response = new DefaultBean();
+		response.setResult(mex);
+		response.setHttpCode(code);
+		tearDown();
+		return response;
+    }
+    
+    private DefaultBean sendResponseCreated(String mex, String code, Long idCreated)
+    {
+    	DefaultBean response = new DefaultBean();
+		response.setResult(mex);
+		response.setHttpCode(code);
+		response.setIdCreated(idCreated);
+		tearDown();
+		return response;
+    }
+    
+    private DefaultBean sendResponseAnswer(String mex, String code, boolean answer)
+    {
+    	DefaultBean response = new DefaultBean();
+		response.setResult(mex);
+		response.setHttpCode(code);
+		response.setAnswer(answer);
+		tearDown();
+		return response;
+    }
+    
+    private GiocatoreBean sendResponseGiocatore(Giocatore g, String mex, String code) {
+    	GiocatoreBean response = new GiocatoreBean();
+    	response.setGiocatore(g);
+    	response.setResult(mex);
+    	response.setHttpCode(code);
+    	tearDown();
+    	return response;
+    }
+    
+    private GruppoBean sendResponseGruppo(Gruppo g, String mex, String code) {
+    	GruppoBean response = new GruppoBean();
+    	response.setGruppo(g);
+    	response.setResult(mex);
+    	response.setHttpCode(code);
+    	tearDown();
+    	return response;
+    }
+    
+    private PartitaBean sendResponsePartita(Partita p, String mex, String code) {
+    	PartitaBean response = new PartitaBean();
+    	response.setPartita(p);
+    	response.setResult(mex);
+    	response.setHttpCode(code);
+    	tearDown();
+    	return response;
+    }
+    
+    private ListaGruppiBean sendResponseListaGruppi(String mex, String code, LinkedList<Gruppo> l) {
+    	ListaGruppiBean response = new ListaGruppiBean();
+		response.setResult(mex);
+		response.setHttpCode(code);
+		response.setListaGruppi(l);
+		tearDown();
+		return response;
+    }
+    
+    private ListaGiocatoriBean sendResponseListaGiocatori(String mex, String code, LinkedList<Giocatore> l) {
+    	ListaGiocatoriBean response = new ListaGiocatoriBean();
+		response.setResult(mex);
+		response.setHttpCode(code);
+		response.setListaGiocatori(l);
+		tearDown();
+		return response;
+    }
+    
+    private ListaPartiteBean sendResponseListaPartite(String mex, String code, LinkedList<Partita> l) {
+    	ListaPartiteBean response = new ListaPartiteBean();
+		response.setResult(mex);
+		response.setHttpCode(code);
+		response.setListaPartite(l);
+		tearDown();
+		return response;
+    }
+    
+    // Metodo privato che data una lista, rimuove le partite Terminate
+    private void filtraPartite(List<? extends Partita> listaPartite)
+    {
+    	if( listaPartite == null ) return;
+    	
+    	Iterator<? extends Partita> it = listaPartite.iterator();
+    	while(it.hasNext())
+    	{
+    		Partita p = it.next();
+    		if(p.getStatoCorrente() == Partita.Stato.CONFERMATA)
+    		{
+    			p.setStatoCorrente(Partita.Stato.GIOCATA);
+    			ofy().save().entity(p).now();
+    			it.remove();
+    			
+    		}
+    		else
+    		{
+	    		Calendar match_date = DateToCalendar(p.getDataOra());
+	    		Calendar now = Calendar.getInstance();
+	    		//TODO poi vediamo
+	    		match_date.add(Calendar.HOUR, 2);
+	    		if( now.after(match_date) )
+	    		{
+	    			p.setStatoCorrente(Partita.Stato.GIOCATA);
+	    			ofy().save().entity(p).now();
+	    			it.remove();
+	    		}
+    		}
+    	}
+    }
+    
+    private static Calendar DateToCalendar(Date date ) 
+    { 
+     Calendar cal = null;
+     try {   
+    	 //DateFormat formatter = new SimpleDateFormat("EEE MMM dd HH:mm:ss: z yyyy");
+    	 DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		 //DateFormat formatter = new SimpleDateFormat("yyyyMMddhhmmss");
+		 date = (Date)formatter.parse(date.toString()); 
+		 cal=Calendar.getInstance();
+		 cal.setTime(date);
+     }
+     catch (ParseException e)
+     {
+    	 System.out.println("Exception :"+e);  
+     }  
+      return cal;
+     }
 }

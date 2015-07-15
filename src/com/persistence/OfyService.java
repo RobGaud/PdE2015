@@ -1,7 +1,7 @@
 package com.persistence;
 
 import com.modello.*;
-
+import com.attivita.SessioneUtente;
 import com.googlecode.objectify.Objectify;
 import com.googlecode.objectify.ObjectifyFactory;
 import com.googlecode.objectify.ObjectifyService;
@@ -24,10 +24,12 @@ public class OfyService {
 		ObjectifyService.register(PartitaCalciotto.class);
 		ObjectifyService.register(PartitaCalcio.class);
 		ObjectifyService.register(Invito.class);
-		// ObjectifyService.register(TipoLinkDestinatario.class);
+		//ObjectifyService.register(TipoLinkDestinatario.class);
 		ObjectifyService.register(VotoUomoPartita.class);
-		// ObjectifyService.register(TipoLinkVotoPerPartita.class);
+		//ObjectifyService.register(TipoLinkVotoPerPartita.class);
+		ObjectifyService.register(TipoLinkDisponibile.class);
 		ObjectifyService.register(TipoLinkIscritto.class);
+		ObjectifyService.register(SessioneUtente.class);
 
 	}
 	 

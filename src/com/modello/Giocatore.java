@@ -11,29 +11,41 @@ public class Giocatore {
 	private String telefono;
 	private String ruoloPreferito;
 	private String fotoProfilo;
-	//private HashSet<TipoLinkDisponibile> eDisponibile;
-	//private HashSet<TipoLinkGioca> haGiocato;
+	
+	private HashSet<Long> elencoDisponibile; 
+	/*TODO: l'associazione Gioca che senso ha dal punto di vista del Giocatore?
+	 *		sono le partite che ha giocato da sempre, o solo quelle che deve giocare?
+	 *		Se sono le partite giocate da sempre, allora dobbiamo tenere traccia, 
+	 *		per sempre, anche del fatto che i giocatori erano disponibili per quelle partite,
+	 *		per garantire il vincolo di subset. 
+	 *		Secondo me conviene fare che sono le partite da giocare, e poi eliminiamo i link 
+	 *		di disponibilità e di giocata dopo la fine della partita.
+	 */
+	private HashSet<Long> partiteDaGiocare;
 	private HashSet<Long> eIscritto;
 	private HashSet<Long> linkDestinatario;
-	//private HashSet<Long> inviti;
 	
 	private Giocatore()
 	{
 		this.linkDestinatario = new HashSet<Long>();
+		this.elencoDisponibile = new HashSet<Long>();
+		this.partiteDaGiocare = new HashSet<Long>();
 		this.eIscritto = new HashSet<Long>();
+
 	}
 	
 	public Giocatore(String nome, String email, String telefono,
 			String ruoloPreferito, String fotoProfilo) {
 		this.nome = nome;
-		this.email = email;
+		this.email = email.toLowerCase();
 		this.telefono = telefono;
 		this.ruoloPreferito = ruoloPreferito;
 		this.fotoProfilo = fotoProfilo;
-		//this.eDisponibile = new HashSet<TipoLinkDisponibile>();
-		//this.haGiocato = new HashSet<TipoLinkGioca>();
+		this.partiteDaGiocare = new HashSet<Long>();
 		this.eIscritto = new HashSet<Long>();
 		this.linkDestinatario = new HashSet<Long>();
+		this.elencoDisponibile = new HashSet<Long>();
+
 	}
 	
 	public String getEmail() {
@@ -41,7 +53,7 @@ public class Giocatore {
 	}
 
 	public void setEmail(String email) {
-		this.email = email;
+		this.email = email.toLowerCase();
 	}
 
 	public String getTelefono() {
@@ -82,78 +94,41 @@ public class Giocatore {
 	           this.ruoloPreferito + " " + this.fotoProfilo;
 	}
 	
-	/*
+	
 	// ASSOCIAZIONE DISPONIBILE
 	
-	public void inserisciLinkDisponibile(TipoLinkDisponibile l) {
-		if(l != null && l.getGiocatore().equals(this))
-			ManagerDisponibile.inserisci(l);
+	public void inserisciLinkDisponibile(Long link)
+	{
+		if( link != null ) this.elencoDisponibile.add(link);
 	}
 	
-	public void eliminaLinkDisponibile(TipoLinkDisponibile l) {
-		if(l != null && l.getGiocatore().equals(this))
-			ManagerDisponibile.elimina(l);;
+	public void eliminaLinkDisponibile(Long link)
+	{
+		if(link != null ) this.elencoDisponibile.remove(link);
 	}
 	
-	public Set<TipoLinkDisponibile> getEDisponibile() {
-		return (HashSet<TipoLinkDisponibile>)eDisponibile.clone();
-	}
-
-	public void inserisciPerManagerDisponibile(ManagerDisponibile m) {
-		if(m!=null)
-			this.eDisponibile.add(m.getLink());
-	}
-
-	public void eliminaPerManagerDisponibile(ManagerDisponibile m) {
-		if(m!=null)
-			this.eDisponibile.remove(m.getLink());
+	public Set<Long> getElencoDisponibile() {
+		return (HashSet<Long>)this.elencoDisponibile.clone();
 	}
 	
 	// ASSOCIAZIONE GIOCA
 
-	public void inserisciLinkGioca(TipoLinkGioca l) {
-		if(l != null && l.getGiocatore().equals(this))
-			ManagerGioca.inserisci(l);
+	public void inserisciLinkGioca(Long idPartita) {
+		if(idPartita != null ) this.partiteDaGiocare.add(idPartita);
 	}
 
-	public void eliminaLinkGioca(TipoLinkGioca l) {
-		if(l != null && l.getGiocatore().equals(this))
-			ManagerGioca.elimina(l);;
+	public void eliminaLinkGioca(Long idPartita) {
+		if(idPartita != null ) this.partiteDaGiocare.remove(idPartita);
 	}
 
-	public Set<TipoLinkGioca> getHaGiocato() throws EccezioneSubset{
-		
-		Set<TipoLinkDisponibile> s = this.eDisponibile;
-		Iterator<TipoLinkGioca> i = this.haGiocato.iterator();
-		while( i.hasNext() )
-		{
-			TipoLinkGioca tg = i.next();
-			TipoLinkDisponibile t;
-			try {
-				t = new TipoLinkDisponibile(tg.getGiocatore(), tg.getPartita(), 0);
-				if( !s.contains(t) )
-					throw new EccezioneSubset("Vincolo di subset violato!");
-			}
-			catch (EccezionePrecondizioni e) {
-					e.printStackTrace();
-			}
-		}
-		return (HashSet<TipoLinkGioca>)haGiocato.clone();
-	}
-	
-	public void inserisciPerManagerGioca(ManagerGioca m) {
-		if(m!=null)
-			this.haGiocato.add(m.getLink());
-		
+	public Set<Long> getLinkGioca() throws EccezioneSubset
+	{
+		//Nota: controllo subset spostato sulle API
+		return (HashSet<Long>)this.partiteDaGiocare.clone();
 	}
 
-	public void eliminaPerManagerGioca(ManagerGioca m) {
-		if(m!=null)
-			this.haGiocato.remove(m.getLink());
-		
-	}
-	*/
 	// ASSOCIAZIONE ISCRITTO
+
 	public Set<Long> getEIscritto() {
 		return (HashSet<Long>)eIscritto.clone();
 	}
@@ -167,7 +142,7 @@ public class Giocatore {
 		if(l != null && eIscritto.contains(l)) this.eIscritto.remove(l);
 		
 	}
-	
+
 	// ASSOCIAZIONE DESTINATARIO
 
 	public void inserisciLinkDestinatario(Long idLink)

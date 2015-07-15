@@ -15,6 +15,7 @@ public class Gruppo
 	private Long eGestito;
 	private HashSet<Long> partiteOrganizzate;
 	private HashSet<Long> campiPreferiti;
+	@Index private String citta;
 	
 	public static final int MIN_LINK_ISCRITTO = 1;
 	public static final int MIN_MAX_LINK_ISCRITTO = 1;
@@ -26,15 +27,24 @@ public class Gruppo
 		this.campiPreferiti = new HashSet<Long>();
 	}
 	
-	public Gruppo(String n)
+	public Gruppo(String n, String c)
 	{
 		this.nome = n;
+		this.citta = c;
 		this.dataCreazione = new Date();
 		this.giocatoriIscritti = new LinkedList<Long>();
 		this.partiteOrganizzate = new HashSet<Long>();
 		this.campiPreferiti = new HashSet<Long>();
 	}
 	
+	public String getCitta() {
+		return citta;
+	}
+
+	public void setCitta(String citta) {
+		this.citta = citta;
+	}
+
 	public Long getId() {
 		return id;
 	}
@@ -103,7 +113,7 @@ public class Gruppo
 		if(l != null) this.giocatoriIscritti.add(l);
 	}
 
-	public void rimuoviLinkIscritto(Long l)
+	public void eliminaLinkIscritto(Long l)
 	{
 		if(l != null && giocatoriIscritti.contains(l)) this.giocatoriIscritti.remove(l);
 	}
@@ -130,7 +140,7 @@ public class Gruppo
 		if(eGestito != null) this.eGestito = eGestito;
 	}
 	
-	public void rimuoviLinkGestito(Long eGestito) {
+	public void eliminaLinkGestito(Long eGestito) {
 		if(eGestito != null && eGestito.equals(this.eGestito)) this.eGestito = null;
 	}
 	
@@ -141,7 +151,7 @@ public class Gruppo
 
 	}
 	
-	public void rimuoviLinkOrganizza(Long l)
+	public void eliminaLinkOrganizza(Long l)
 	{
 		if(l != null) this.partiteOrganizzate.remove(l);
 
@@ -158,7 +168,7 @@ public class Gruppo
 		if(c != null) this.campiPreferiti.add(c);
 	}
 	
-	public void rimuoviCampo(Long c)
+	public void eliminaCampo(Long c)
 	{
 		if(c != null && campiPreferiti.contains(c)) this.campiPreferiti.remove(c);
 	}
@@ -167,5 +177,4 @@ public class Gruppo
 	{
 		return (HashSet<Long>)this.campiPreferiti.clone();
 	}
-	
 }

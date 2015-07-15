@@ -25,15 +25,21 @@
     "maxAge" : 0
   },
   "methods" : {
-    "pdE2015.presso.inserisciLinkPresso" : {
-      "path" : "presso",
+    "pdE2015.api.registrazione" : {
+      "path" : "api/regitstrazione",
       "httpMethod" : "POST",
       "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
-      "rosyMethod" : "com.api.PdE2015_API.inserisciLinkPresso",
+      "rosyMethod" : "com.api.PdE2015_API.registrazione",
       "request" : {
+        "parameters" : {
+          "idSessione" : {
+            "type" : "int64",
+            "required" : true
+          }
+        },
         "body" : "autoTemplate(backendRequest)",
         "bodyName" : "resource"
       },
@@ -41,15 +47,71 @@
         "body" : "autoTemplate(backendResponse)"
       }
     },
-    "pdE2015.organizza.rimuoviLinkOrganizza" : {
-      "path" : "organizza/delete",
+    "pdE2015.api.isDisponibile" : {
+      "path" : "api/isDisponibile",
+      "httpMethod" : "GET",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.isDisponibile",
+      "request" : {
+        "parameters" : {
+          "idPartita" : {
+            "type" : "int64",
+            "required" : true
+          },
+          "idSessione" : {
+            "type" : "int64",
+            "required" : true
+          }
+        },
+        "body" : "empty"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.api.getPartita" : {
+      "path" : "api/getPartita",
+      "httpMethod" : "GET",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.getPartita",
+      "request" : {
+        "parameters" : {
+          "idPartita" : {
+            "type" : "int64",
+            "required" : true
+          },
+          "idSessione" : {
+            "type" : "int64",
+            "required" : true
+          }
+        },
+        "body" : "empty"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.api.setGiocatore" : {
+      "path" : "api/setGiocatore",
       "httpMethod" : "POST",
       "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
-      "rosyMethod" : "com.api.PdE2015_API.rimuoviLinkOrganizza",
+      "rosyMethod" : "com.api.PdE2015_API.setGiocatore",
       "request" : {
+        "parameters" : {
+          "idSessione" : {
+            "type" : "int64",
+            "required" : true
+          }
+        },
         "body" : "autoTemplate(backendRequest)",
         "bodyName" : "resource"
       },
@@ -57,15 +119,46 @@
         "body" : "autoTemplate(backendResponse)"
       }
     },
-    "pdE2015.conosce.rimuoviLinkConosce" : {
-      "path" : "conosce/delete",
+    "pdE2015.api.isIscritto" : {
+      "path" : "api/isIscritto",
+      "httpMethod" : "GET",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.isIscritto",
+      "request" : {
+        "parameters" : {
+          "idGruppo" : {
+            "type" : "int64",
+            "required" : true
+          },
+          "idSessione" : {
+            "type" : "int64",
+            "required" : true
+          }
+        },
+        "body" : "empty"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.api.creaGruppo" : {
+      "path" : "api/creagruppo",
       "httpMethod" : "POST",
       "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
-      "rosyMethod" : "com.api.PdE2015_API.rimuoviLinkConosce",
+      "rosyMethod" : "com.api.PdE2015_API.creaGruppo",
       "request" : {
+        "parameters" : {
+          "idSessione" : {
+            "type" : "int64",
+            "required" : true
+          }
+        },
         "body" : "autoTemplate(backendRequest)",
         "bodyName" : "resource"
       },
@@ -73,15 +166,71 @@
         "body" : "autoTemplate(backendResponse)"
       }
     },
-    "pdE2015.gestito.inserisciLinkGestito" : {
-      "path" : "gestito",
+    "pdE2015.api.getGruppo" : {
+      "path" : "api/getGruppo",
+      "httpMethod" : "GET",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.getGruppo",
+      "request" : {
+        "parameters" : {
+          "idGruppo" : {
+            "type" : "int64",
+            "required" : true
+          },
+          "idSessione" : {
+            "type" : "int64",
+            "required" : true
+          }
+        },
+        "body" : "empty"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.api.hasVotato" : {
+      "path" : "api/hasVotato",
+      "httpMethod" : "GET",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.hasVotato",
+      "request" : {
+        "parameters" : {
+          "idPartita" : {
+            "type" : "int64",
+            "required" : true
+          },
+          "idSessione" : {
+            "type" : "int64",
+            "required" : true
+          }
+        },
+        "body" : "empty"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.api.setGruppo" : {
+      "path" : "api/setGruppo",
       "httpMethod" : "POST",
       "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
-      "rosyMethod" : "com.api.PdE2015_API.inserisciLinkGestito",
+      "rosyMethod" : "com.api.PdE2015_API.setGruppo",
       "request" : {
+        "parameters" : {
+          "idSessione" : {
+            "type" : "int64",
+            "required" : true
+          }
+        },
         "body" : "autoTemplate(backendRequest)",
         "bodyName" : "resource"
       },
@@ -89,15 +238,25 @@
         "body" : "autoTemplate(backendResponse)"
       }
     },
-    "pdE2015.conosce.inserisciLinkConosce" : {
-      "path" : "conosce",
+    "pdE2015.api.creaPartita" : {
+      "path" : "api/creapartita",
       "httpMethod" : "POST",
       "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
-      "rosyMethod" : "com.api.PdE2015_API.inserisciLinkConosce",
+      "rosyMethod" : "com.api.PdE2015_API.creaPartita",
       "request" : {
+        "parameters" : {
+          "idSessione" : {
+            "type" : "int64",
+            "required" : true
+          },
+          "idGruppo" : {
+            "type" : "int64",
+            "required" : true
+          }
+        },
         "body" : "autoTemplate(backendRequest)",
         "bodyName" : "resource"
       },
@@ -105,15 +264,46 @@
         "body" : "autoTemplate(backendResponse)"
       }
     },
-    "pdE2015.gestito.rimuoviLinkGestito" : {
-      "path" : "gestito/delete",
+    "pdE2015.api.getGiocatore" : {
+      "path" : "api/getGiocatore",
+      "httpMethod" : "GET",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.getGiocatore",
+      "request" : {
+        "parameters" : {
+          "emailUtente" : {
+            "type" : "string",
+            "required" : true
+          },
+          "idSessione" : {
+            "type" : "int64",
+            "required" : true
+          }
+        },
+        "body" : "empty"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.api.setPartita" : {
+      "path" : "api/setPartita",
       "httpMethod" : "POST",
       "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
-      "rosyMethod" : "com.api.PdE2015_API.rimuoviLinkGestito",
+      "rosyMethod" : "com.api.PdE2015_API.setPartita",
       "request" : {
+        "parameters" : {
+          "idSessione" : {
+            "type" : "int64",
+            "required" : true
+          }
+        },
         "body" : "autoTemplate(backendRequest)",
         "bodyName" : "resource"
       },
@@ -121,30 +311,14 @@
         "body" : "autoTemplate(backendResponse)"
       }
     },
-    "pdE2015.organizza.inserisciLinkOrganizza" : {
-      "path" : "organizza",
-      "httpMethod" : "POST",
-      "authLevel" : "NONE",
-      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
-      "audiences" : [ ],
-      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
-      "rosyMethod" : "com.api.PdE2015_API.inserisciLinkOrganizza",
-      "request" : {
-        "body" : "autoTemplate(backendRequest)",
-        "bodyName" : "resource"
-      },
-      "response" : {
-        "body" : "autoTemplate(backendResponse)"
-      }
-    },
-    "pdE2015.voto.inserisciVoto" : {
-      "path" : "voto",
+    "pdE2015.campo.modificaCampo" : {
+      "path" : "campo",
       "httpMethod" : "PUT",
       "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
-      "rosyMethod" : "com.api.PdE2015_API.inserisciVotoUomoPartita",
+      "rosyMethod" : "com.api.PdE2015_API.modificaCampo",
       "request" : {
         "body" : "autoTemplate(backendRequest)",
         "bodyName" : "resource"
@@ -153,78 +327,60 @@
         "body" : "autoTemplate(backendResponse)"
       }
     },
-    "pdE2015.giocatore.inserisciGiocatore" : {
+    "pdE2015.campo.eliminaCampo" : {
+      "path" : "campo/delete",
+      "httpMethod" : "POST",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.eliminaCampo",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.campo.listaCampi" : {
+      "path" : "campo",
+      "httpMethod" : "GET",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.listaCampi",
+      "request" : {
+        "body" : "empty"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.giocatore.listaGiocatori" : {
       "path" : "giocatore",
-      "httpMethod" : "POST",
+      "httpMethod" : "GET",
       "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
-      "rosyMethod" : "com.api.PdE2015_API.inserisciGiocatore",
+      "rosyMethod" : "com.api.PdE2015_API.listaGiocatori",
       "request" : {
-        "body" : "autoTemplate(backendRequest)",
-        "bodyName" : "resource"
+        "body" : "empty"
       },
       "response" : {
         "body" : "autoTemplate(backendResponse)"
       }
     },
-    "pdE2015.giocatore.modificaGiocatore" : {
-      "path" : "giocatore",
-      "httpMethod" : "PUT",
-      "authLevel" : "NONE",
-      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
-      "audiences" : [ ],
-      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
-      "rosyMethod" : "com.api.PdE2015_API.modificaGiocatore",
-      "request" : {
-        "body" : "autoTemplate(backendRequest)",
-        "bodyName" : "resource"
-      },
-      "response" : {
-        "body" : "autoTemplate(backendResponse)"
-      }
-    },
-    "pdE2015.iscritto.rimuoviLinkIscritto" : {
-      "path" : "iscritto/delete",
+    "pdE2015.giocatore.eliminaGiocatore" : {
+      "path" : "giocatore/delete",
       "httpMethod" : "POST",
       "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
-      "rosyMethod" : "com.api.PdE2015_API.rimuoviLinkIscritto",
-      "request" : {
-        "body" : "autoTemplate(backendRequest)",
-        "bodyName" : "resource"
-      },
-      "response" : {
-        "body" : "autoTemplate(backendResponse)"
-      }
-    },
-    "pdE2015.iscritto.inserisciLinkIscritto" : {
-      "path" : "iscritto",
-      "httpMethod" : "POST",
-      "authLevel" : "NONE",
-      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
-      "audiences" : [ ],
-      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
-      "rosyMethod" : "com.api.PdE2015_API.inserisciLinkIscritto",
-      "request" : {
-        "body" : "autoTemplate(backendRequest)",
-        "bodyName" : "resource"
-      },
-      "response" : {
-        "body" : "autoTemplate(backendResponse)"
-      }
-    },
-    "pdE2015.presso.rimuoviLinkPresso" : {
-      "path" : "presso/delete",
-      "httpMethod" : "POST",
-      "authLevel" : "NONE",
-      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
-      "audiences" : [ ],
-      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
-      "rosyMethod" : "com.api.PdE2015_API.rimuoviLinkPresso",
+      "rosyMethod" : "com.api.PdE2015_API.eliminaGiocatore",
       "request" : {
         "body" : "autoTemplate(backendRequest)",
         "bodyName" : "resource"
@@ -244,21 +400,6 @@
       "request" : {
         "body" : "autoTemplate(backendRequest)",
         "bodyName" : "resource"
-      },
-      "response" : {
-        "body" : "autoTemplate(backendResponse)"
-      }
-    },
-    "pdE2015.giocatore.listaGiocatori" : {
-      "path" : "giocatore",
-      "httpMethod" : "GET",
-      "authLevel" : "NONE",
-      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
-      "audiences" : [ ],
-      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
-      "rosyMethod" : "com.api.PdE2015_API.listaGiocatori",
-      "request" : {
-        "body" : "empty"
       },
       "response" : {
         "body" : "autoTemplate(backendResponse)"
@@ -293,26 +434,9 @@
           "aperto" : {
             "type" : "boolean",
             "required" : true
-          }
-        },
-        "body" : "empty"
-      },
-      "response" : {
-        "body" : "autoTemplate(backendResponse)"
-      }
-    },
-    "pdE2015.partita.listaPartite" : {
-      "path" : "partita",
-      "httpMethod" : "GET",
-      "authLevel" : "NONE",
-      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
-      "audiences" : [ ],
-      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
-      "rosyMethod" : "com.api.PdE2015_API.listaPartite",
-      "request" : {
-        "parameters" : {
-          "tipo" : {
-            "type" : "int32",
+          },
+          "citta" : {
+            "type" : "string",
             "required" : true
           }
         },
@@ -322,47 +446,25 @@
         "body" : "autoTemplate(backendResponse)"
       }
     },
-    "pdE2015.partita.inserisciPartita" : {
-      "path" : "partita",
+    "pdE2015.partita.conferma" : {
+      "path" : "partita/confirm",
       "httpMethod" : "POST",
       "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
-      "rosyMethod" : "com.api.PdE2015_API.inserisciPartita",
+      "rosyMethod" : "com.api.PdE2015_API.confermaPartita",
       "request" : {
-        "body" : "autoTemplate(backendRequest)",
-        "bodyName" : "resource"
-      },
-      "response" : {
-        "body" : "autoTemplate(backendResponse)"
-      }
-    },
-    "pdE2015.gruppo.modificaGruppo" : {
-      "path" : "gruppo",
-      "httpMethod" : "PUT",
-      "authLevel" : "NONE",
-      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
-      "audiences" : [ ],
-      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
-      "rosyMethod" : "com.api.PdE2015_API.modificaGruppo",
-      "request" : {
-        "body" : "autoTemplate(backendRequest)",
-        "bodyName" : "resource"
-      },
-      "response" : {
-        "body" : "autoTemplate(backendResponse)"
-      }
-    },
-    "pdE2015.campo.listaCampi" : {
-      "path" : "campo",
-      "httpMethod" : "GET",
-      "authLevel" : "NONE",
-      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
-      "audiences" : [ ],
-      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
-      "rosyMethod" : "com.api.PdE2015_API.listaCampi",
-      "request" : {
+        "parameters" : {
+          "emailGiocatore" : {
+            "type" : "string",
+            "required" : true
+          },
+          "idPartita" : {
+            "type" : "int64",
+            "required" : true
+          }
+        },
         "body" : "empty"
       },
       "response" : {
@@ -385,30 +487,14 @@
         "body" : "autoTemplate(backendResponse)"
       }
     },
-    "pdE2015.campo.eliminaCampo" : {
-      "path" : "campo/delete",
+    "pdE2015.partita.inserisciPartita" : {
+      "path" : "partita",
       "httpMethod" : "POST",
       "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
-      "rosyMethod" : "com.api.PdE2015_API.eliminaCampo",
-      "request" : {
-        "body" : "autoTemplate(backendRequest)",
-        "bodyName" : "resource"
-      },
-      "response" : {
-        "body" : "autoTemplate(backendResponse)"
-      }
-    },
-    "pdE2015.giocatore.eliminaGiocatore" : {
-      "path" : "giocatore/delete",
-      "httpMethod" : "POST",
-      "authLevel" : "NONE",
-      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
-      "audiences" : [ ],
-      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
-      "rosyMethod" : "com.api.PdE2015_API.eliminaGiocatore",
+      "rosyMethod" : "com.api.PdE2015_API.inserisciPartita",
       "request" : {
         "body" : "autoTemplate(backendRequest)",
         "bodyName" : "resource"
@@ -433,14 +519,14 @@
         "body" : "autoTemplate(backendResponse)"
       }
     },
-    "pdE2015.campo.modificaCampo" : {
-      "path" : "campo",
+    "pdE2015.gruppo.modificaGruppo" : {
+      "path" : "gruppo",
       "httpMethod" : "PUT",
       "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
-      "rosyMethod" : "com.api.PdE2015_API.modificaCampo",
+      "rosyMethod" : "com.api.PdE2015_API.modificaGruppo",
       "request" : {
         "body" : "autoTemplate(backendRequest)",
         "bodyName" : "resource"
@@ -460,6 +546,81 @@
       "request" : {
         "body" : "autoTemplate(backendRequest)",
         "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.partita.getNDisponibili" : {
+      "path" : "partita/ndisponibili",
+      "httpMethod" : "GET",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.getNDisponibili",
+      "request" : {
+        "parameters" : {
+          "Id Partita" : {
+            "type" : "int64",
+            "required" : true
+          }
+        },
+        "body" : "empty"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.invito.rispondiInvito" : {
+      "path" : "invito/answer",
+      "httpMethod" : "POST",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.rispondiInvito",
+      "request" : {
+        "parameters" : {
+          "emailDestinatario" : {
+            "type" : "string",
+            "required" : true
+          },
+          "idInvito" : {
+            "type" : "int64",
+            "required" : true
+          },
+          "risposta" : {
+            "type" : "boolean",
+            "required" : true
+          }
+        },
+        "body" : "empty"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.partita.annullaPartita" : {
+      "path" : "partita/cancel",
+      "httpMethod" : "POST",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.annullaPartita",
+      "request" : {
+        "parameters" : {
+          "emailGiocatore" : {
+            "type" : "string",
+            "required" : true
+          },
+          "idPartita" : {
+            "type" : "int64",
+            "required" : true
+          }
+        },
+        "body" : "empty"
       },
       "response" : {
         "body" : "autoTemplate(backendResponse)"
@@ -505,93 +666,622 @@
       "response" : {
         "body" : "autoTemplate(backendResponse)"
       }
+    },
+    "pdE2015.gioca.eliminaLinkGioca" : {
+      "path" : "gioca/delete",
+      "httpMethod" : "POST",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.eliminaLinkGioca",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.sessione.eliminaSessione" : {
+      "path" : "sessione/delete",
+      "httpMethod" : "POST",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.eliminaSessione",
+      "request" : {
+        "parameters" : {
+          "idSessione" : {
+            "type" : "int64",
+            "required" : true
+          }
+        },
+        "body" : "empty"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.sessione.sessioneIndietro" : {
+      "path" : "sessione/back",
+      "httpMethod" : "PUT",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.sessioneIndietro",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.sessione.listaStati" : {
+      "path" : "sessione/list",
+      "httpMethod" : "POST",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.listaStati",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.api.login" : {
+      "path" : "api/login",
+      "httpMethod" : "POST",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.login",
+      "request" : {
+        "parameters" : {
+          "emailUtente" : {
+            "type" : "string",
+            "required" : true
+          },
+          "idSessione" : {
+            "type" : "int64",
+            "required" : true
+          }
+        },
+        "body" : "empty"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.api.logout" : {
+      "path" : "api/logout",
+      "httpMethod" : "POST",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.logout",
+      "request" : {
+        "parameters" : {
+          "emailUtente" : {
+            "type" : "string",
+            "required" : true
+          },
+          "idSessione" : {
+            "type" : "int64",
+            "required" : true
+          }
+        },
+        "body" : "empty"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.api.cambiaStatoIscrizione" : {
+      "path" : "api/cambiaStatoIscrizione",
+      "httpMethod" : "GET",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.cambiaStatoIscrizione",
+      "request" : {
+        "parameters" : {
+          "idGruppo" : {
+            "type" : "int64",
+            "required" : true
+          },
+          "idSessione" : {
+            "type" : "int64",
+            "required" : true
+          }
+        },
+        "body" : "empty"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.disponibile.eliminaDisponibile" : {
+      "path" : "disponibile/delete",
+      "httpMethod" : "POST",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.eliminaLinkDisponibile",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.giocatore.modificaGiocatore" : {
+      "path" : "giocatore",
+      "httpMethod" : "PUT",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.modificaGiocatore",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.disponibile.modificaDisponibile" : {
+      "path" : "disponibile",
+      "httpMethod" : "PUT",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.modificaDisponibile",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.propone.eliminaPropone" : {
+      "path" : "propone/delete",
+      "httpMethod" : "POST",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.eliminaLinkPropone",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.propone.inserisciPropone" : {
+      "path" : "propone",
+      "httpMethod" : "POST",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.inserisciLinkPropone",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.voto.inserisciVotoUomoPartita" : {
+      "path" : "voto",
+      "httpMethod" : "PUT",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.inserisciVotoUomoPartita",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.gioca.inserisciLinkGioca" : {
+      "path" : "gioca",
+      "httpMethod" : "POST",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.inserisciLinkGioca",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.giocatore.inserisciGiocatore" : {
+      "path" : "giocatore",
+      "httpMethod" : "POST",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.inserisciGiocatore",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.voto.eliminaVotoUomoPartita" : {
+      "path" : "voto/delete",
+      "httpMethod" : "POST",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.eliminaVotoUomoPartita",
+      "request" : {
+        "parameters" : {
+          "emailVotante" : {
+            "type" : "string",
+            "required" : true
+          },
+          "idVoto" : {
+            "type" : "int64",
+            "required" : true
+          }
+        },
+        "body" : "empty"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.disponibile.inserisciDisponibile" : {
+      "path" : "disponibile",
+      "httpMethod" : "POST",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.inserisciLinkDisponibile",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.api.listaPartiteTerminate" : {
+      "path" : "api/listaPartiteTerminate",
+      "httpMethod" : "GET",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.listaPartiteTerminate",
+      "request" : {
+        "parameters" : {
+          "idGruppo" : {
+            "type" : "int64",
+            "required" : true
+          },
+          "tipo" : {
+            "type" : "int32",
+            "required" : true
+          },
+          "idSessione" : {
+            "type" : "int64",
+            "required" : true
+          }
+        },
+        "body" : "empty"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.presso.eliminaLinkPresso" : {
+      "path" : "presso/delete",
+      "httpMethod" : "POST",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.eliminaLinkPresso",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.organizza.inserisciLinkOrganizza" : {
+      "path" : "organizza",
+      "httpMethod" : "POST",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.inserisciLinkOrganizza",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.presso.inserisciLinkPresso" : {
+      "path" : "presso",
+      "httpMethod" : "POST",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.inserisciLinkPresso",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.gestito.inserisciLinkGestito" : {
+      "path" : "gestito",
+      "httpMethod" : "POST",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.inserisciLinkGestito",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.api.listaIscrittiGruppo" : {
+      "path" : "api/listaIscrittiGruppo",
+      "httpMethod" : "GET",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.listaIscrittiGrupppo",
+      "request" : {
+        "parameters" : {
+          "idGruppo" : {
+            "type" : "int64",
+            "required" : true
+          },
+          "idSessione" : {
+            "type" : "int64",
+            "required" : true
+          }
+        },
+        "body" : "empty"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.conosce.eliminaLinkConosce" : {
+      "path" : "conosce/delete",
+      "httpMethod" : "POST",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.eliminaLinkConosce",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.gestito.eliminaLinkGestito" : {
+      "path" : "gestito/delete",
+      "httpMethod" : "POST",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.eliminaLinkGestito",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.iscritto.eliminaLinkIscritto" : {
+      "path" : "iscritto/delete",
+      "httpMethod" : "POST",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.eliminaLinkIscritto",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.conosce.inserisciLinkConosce" : {
+      "path" : "conosce",
+      "httpMethod" : "POST",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.inserisciLinkConosce",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.organizza.eliminaLinkOrganizza" : {
+      "path" : "organizza/delete",
+      "httpMethod" : "POST",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.eliminaLinkOrganizza",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.api.listaPartiteProposteConfermate" : {
+      "path" : "api/listaPartiteProposteConfermate",
+      "httpMethod" : "GET",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.listaPartiteProposteConfermate",
+      "request" : {
+        "parameters" : {
+          "idGruppo" : {
+            "type" : "int64",
+            "required" : true
+          },
+          "tipo" : {
+            "type" : "int32",
+            "required" : true
+          },
+          "idSessione" : {
+            "type" : "int64",
+            "required" : true
+          }
+        },
+        "body" : "empty"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.sessione.inserisciSessione" : {
+      "path" : "sessione",
+      "httpMethod" : "POST",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.inserisciSessione",
+      "request" : {
+        "body" : "empty"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.iscritto.inserisciLinkIscritto" : {
+      "path" : "iscritto",
+      "httpMethod" : "POST",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.inserisciLinkIscritto",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.sessione.aggiornaStato" : {
+      "path" : "sessione",
+      "httpMethod" : "PUT",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.aggiornaStatoSessione",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "pdE2015.api.listaGruppiIscritto" : {
+      "path" : "api/listaGruppiIscritto",
+      "httpMethod" : "GET",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.api.PdE2015_API.listaGruppiIscritto",
+      "request" : {
+        "parameters" : {
+          "idGruppo" : {
+            "type" : "string",
+            "required" : true
+          },
+          "idSessione" : {
+            "type" : "int64",
+            "required" : true
+          }
+        },
+        "body" : "empty"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
     }
   },
   "descriptor" : {
     "schemas" : {
-      "InfoPressoBean" : {
-        "id" : "InfoPressoBean",
-        "type" : "object",
-        "properties" : {
-          "campo" : {
-            "type" : "string",
-            "format" : "int64"
-          },
-          "partita" : {
-            "type" : "string",
-            "format" : "int64"
-          }
-        }
-      },
-      "DefaultBean" : {
-        "id" : "DefaultBean",
-        "type" : "object",
-        "properties" : {
-          "result" : {
-            "type" : "string"
-          }
-        }
-      },
-      "InfoOrganizzaBean" : {
-        "id" : "InfoOrganizzaBean",
-        "type" : "object",
-        "properties" : {
-          "gruppo" : {
-            "type" : "string",
-            "format" : "int64"
-          },
-          "partita" : {
-            "type" : "string",
-            "format" : "int64"
-          }
-        }
-      },
-      "InfoConosceBean" : {
-        "id" : "InfoConosceBean",
-        "type" : "object",
-        "properties" : {
-          "gruppo" : {
-            "type" : "string",
-            "format" : "int64"
-          },
-          "campo" : {
-            "type" : "string",
-            "format" : "int64"
-          }
-        }
-      },
-      "InfoIscrittoGestisceBean" : {
-        "id" : "InfoIscrittoGestisceBean",
-        "type" : "object",
-        "properties" : {
-          "giocatore" : {
-            "type" : "string"
-          },
-          "gruppo" : {
-            "type" : "string",
-            "format" : "int64"
-          }
-        }
-      },
-      "InfoVotoUomoPartitaBean" : {
-        "id" : "InfoVotoUomoPartitaBean",
-        "type" : "object",
-        "properties" : {
-          "commento" : {
-            "type" : "string"
-          },
-          "votante" : {
-            "type" : "string"
-          },
-          "linkVotoPerPartita" : {
-            "type" : "string",
-            "format" : "int64"
-          },
-          "votato" : {
-            "type" : "string"
-          }
-        }
-      },
       "InfoGiocatoreBean" : {
         "id" : "InfoGiocatoreBean",
         "type" : "object",
@@ -613,73 +1303,91 @@
           }
         }
       },
-      "InfoCampoBean" : {
-        "id" : "InfoCampoBean",
+      "DefaultBean" : {
+        "id" : "DefaultBean",
         "type" : "object",
         "properties" : {
-          "nome" : {
+          "result" : {
             "type" : "string"
           },
-          "telefono" : {
+          "httpCode" : {
             "type" : "string"
           },
-          "indirizzo" : {
+          "idCreated" : {
+            "type" : "string",
+            "format" : "int64"
+          },
+          "answer" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "PartitaBean" : {
+        "id" : "PartitaBean",
+        "type" : "object",
+        "properties" : {
+          "partita" : {
+            "$ref" : "Partita"
+          },
+          "result" : {
             "type" : "string"
           },
-          "prezzo" : {
+          "httpCode" : {
+            "type" : "string"
+          }
+        }
+      },
+      "Partita" : {
+        "id" : "Partita",
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "int64"
+          },
+          "dataOraPartita" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "quota" : {
             "type" : "number",
             "format" : "float"
           },
-          "citta" : {
+          "campo" : {
+            "type" : "string",
+            "format" : "int64"
+          },
+          "statoCorrente" : {
+            "$ref" : "Stato"
+          },
+          "npartecipanti" : {
+            "type" : "integer"
+          },
+          "dataOra" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "linkOrganizza" : {
+            "type" : "string",
+            "format" : "int64"
+          },
+          "propone" : {
             "type" : "string"
           },
-          "giorniChiusura" : {
+          "linkGioca" : {
             "type" : "array",
             "items" : {
               "type" : "string"
             }
-          }
-        }
-      },
-      "ListaGiocatoriBean" : {
-        "id" : "ListaGiocatoriBean",
-        "type" : "object",
-        "properties" : {
-          "listaGiocatori" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "Giocatore"
-            }
-          }
-        }
-      },
-      "Giocatore" : {
-        "id" : "Giocatore",
-        "type" : "object",
-        "properties" : {
-          "email" : {
-            "type" : "string"
           },
-          "nome" : {
-            "type" : "string"
-          },
-          "telefono" : {
-            "type" : "string"
-          },
-          "ruoloPreferito" : {
-            "type" : "string"
-          },
-          "fotoProfilo" : {
-            "type" : "string"
-          },
-          "linkDestinatario" : {
+          "linkPerPartita" : {
             "type" : "array",
             "items" : {
               "type" : "string",
               "format" : "int64"
             }
           },
-          "eiscritto" : {
+          "linkDisponibile" : {
             "type" : "array",
             "items" : {
               "type" : "string",
@@ -687,6 +1395,11 @@
             }
           }
         }
+      },
+      "Stato" : {
+        "id" : "Stato",
+        "type" : "string",
+        "enum" : [ "PROPOSTA", "CONFERMATA", "GIOCATA" ]
       },
       "InfoGruppoBean" : {
         "id" : "InfoGruppoBean",
@@ -699,20 +1412,26 @@
           "nome" : {
             "type" : "string"
           },
+          "citta" : {
+            "type" : "string"
+          },
           "aperto" : {
             "type" : "boolean"
           }
         }
       },
-      "ListaGruppiBean" : {
-        "id" : "ListaGruppiBean",
+      "GruppoBean" : {
+        "id" : "GruppoBean",
         "type" : "object",
         "properties" : {
-          "listaGruppi" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "Gruppo"
-            }
+          "gruppo" : {
+            "$ref" : "Gruppo"
+          },
+          "result" : {
+            "type" : "string"
+          },
+          "httpCode" : {
+            "type" : "string"
           }
         }
       },
@@ -752,52 +1471,10 @@
               "format" : "int64"
             }
           },
+          "citta" : {
+            "type" : "string"
+          },
           "linkGestito" : {
-            "type" : "string",
-            "format" : "int64"
-          }
-        }
-      },
-      "ListaPartiteBean" : {
-        "id" : "ListaPartiteBean",
-        "type" : "object",
-        "properties" : {
-          "listaPartite" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "Partita"
-            }
-          }
-        }
-      },
-      "Partita" : {
-        "id" : "Partita",
-        "type" : "object",
-        "properties" : {
-          "dataOraPartita" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "quota" : {
-            "type" : "number",
-            "format" : "float"
-          },
-          "campo" : {
-            "type" : "string",
-            "format" : "int64"
-          },
-          "linkPerPartita" : {
-            "type" : "array",
-            "items" : {
-              "type" : "string",
-              "format" : "int64"
-            }
-          },
-          "dataOra" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "linkOrganizza" : {
             "type" : "string",
             "format" : "int64"
           }
@@ -817,10 +1494,98 @@
           },
           "tipo" : {
             "type" : "integer"
+          }
+        }
+      },
+      "GiocatoreBean" : {
+        "id" : "GiocatoreBean",
+        "type" : "object",
+        "properties" : {
+          "giocatore" : {
+            "$ref" : "Giocatore"
           },
-          "quota" : {
+          "result" : {
+            "type" : "string"
+          },
+          "httpCode" : {
+            "type" : "string"
+          }
+        }
+      },
+      "Giocatore" : {
+        "id" : "Giocatore",
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string"
+          },
+          "nome" : {
+            "type" : "string"
+          },
+          "telefono" : {
+            "type" : "string"
+          },
+          "ruoloPreferito" : {
+            "type" : "string"
+          },
+          "fotoProfilo" : {
+            "type" : "string"
+          },
+          "elencoDisponibile" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "int64"
+            }
+          },
+          "linkDestinatario" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "int64"
+            }
+          },
+          "eiscritto" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "int64"
+            }
+          },
+          "linkGioca" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "int64"
+            }
+          }
+        }
+      },
+      "InfoCampoBean" : {
+        "id" : "InfoCampoBean",
+        "type" : "object",
+        "properties" : {
+          "nome" : {
+            "type" : "string"
+          },
+          "telefono" : {
+            "type" : "string"
+          },
+          "indirizzo" : {
+            "type" : "string"
+          },
+          "prezzo" : {
             "type" : "number",
             "format" : "float"
+          },
+          "citta" : {
+            "type" : "string"
+          },
+          "giorniChiusura" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
           }
         }
       },
@@ -868,6 +1633,60 @@
           }
         }
       },
+      "ListaGiocatoriBean" : {
+        "id" : "ListaGiocatoriBean",
+        "type" : "object",
+        "properties" : {
+          "listaGiocatori" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "Giocatore"
+            }
+          },
+          "result" : {
+            "type" : "string"
+          },
+          "httpCode" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ListaGruppiBean" : {
+        "id" : "ListaGruppiBean",
+        "type" : "object",
+        "properties" : {
+          "listaGruppi" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "Gruppo"
+            }
+          },
+          "result" : {
+            "type" : "string"
+          },
+          "httpCode" : {
+            "type" : "string"
+          }
+        }
+      },
+      "NDisponibiliBean" : {
+        "id" : "NDisponibiliBean",
+        "type" : "object",
+        "properties" : {
+          "result" : {
+            "type" : "string"
+          },
+          "httpCode" : {
+            "type" : "string"
+          },
+          "nDisponibili" : {
+            "type" : "integer"
+          },
+          "report" : {
+            "type" : "string"
+          }
+        }
+      },
       "InfoInvitoBean" : {
         "id" : "InfoInvitoBean",
         "type" : "object",
@@ -883,74 +1702,156 @@
             "format" : "int64"
           }
         }
+      },
+      "InfoGestionePartiteBean" : {
+        "id" : "InfoGestionePartiteBean",
+        "type" : "object",
+        "properties" : {
+          "emailGiocatore" : {
+            "type" : "string"
+          },
+          "idPartita" : {
+            "type" : "string",
+            "format" : "int64"
+          },
+          "nAmici" : {
+            "type" : "integer"
+          }
+        }
+      },
+      "PayloadBean" : {
+        "id" : "PayloadBean",
+        "type" : "object",
+        "properties" : {
+          "idSessione" : {
+            "type" : "string",
+            "format" : "int64"
+          },
+          "profiloDaVisitare" : {
+            "type" : "string"
+          },
+          "idGruppo" : {
+            "type" : "string",
+            "format" : "int64"
+          },
+          "idPartita" : {
+            "type" : "string",
+            "format" : "int64"
+          },
+          "nuovoStato" : {
+            "$ref" : "StatoSessione"
+          }
+        }
+      },
+      "StatoSessione" : {
+        "id" : "StatoSessione",
+        "type" : "string",
+        "enum" : [ "LOGIN_E_REGISTRAZIONE", "LOGIN", "REGISTRAZIONE", "PRINCIPALE", "GRUPPO", "PROFILO", "MODIFICA_PROFILO", "RICERCA_GRUPPO", "INVITO", "ISCRITTI_GRUPPO", "STORICO", "PARTITE_PROPOSTE", "CREA_PARTITA", "PARTITA", "VOTO", "RICERCA_CAMPO", "DISPONIBILE_PER_PARTITA", "CAMPO", "CREA_CAMPO", "CREA_GRUPPO", "EXIT", "MODIFICA_GRUPPO", "MODIFICA_PARTITA", "STATO_SENTINELLA" ]
+      },
+      "ListaStatiBean" : {
+        "id" : "ListaStatiBean",
+        "type" : "object",
+        "properties" : {
+          "httpCode" : {
+            "type" : "string"
+          }
+        }
+      },
+      "InfoVotoUomoPartitaBean" : {
+        "id" : "InfoVotoUomoPartitaBean",
+        "type" : "object",
+        "properties" : {
+          "commento" : {
+            "type" : "string"
+          },
+          "votante" : {
+            "type" : "string"
+          },
+          "linkVotoPerPartita" : {
+            "type" : "string",
+            "format" : "int64"
+          },
+          "votato" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ListaPartiteBean" : {
+        "id" : "ListaPartiteBean",
+        "type" : "object",
+        "properties" : {
+          "listaPartite" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "Partita"
+            }
+          },
+          "result" : {
+            "type" : "string"
+          },
+          "httpCode" : {
+            "type" : "string"
+          }
+        }
+      },
+      "InfoPressoBean" : {
+        "id" : "InfoPressoBean",
+        "type" : "object",
+        "properties" : {
+          "campo" : {
+            "type" : "string",
+            "format" : "int64"
+          },
+          "partita" : {
+            "type" : "string",
+            "format" : "int64"
+          }
+        }
+      },
+      "InfoOrganizzaBean" : {
+        "id" : "InfoOrganizzaBean",
+        "type" : "object",
+        "properties" : {
+          "gruppo" : {
+            "type" : "string",
+            "format" : "int64"
+          },
+          "partita" : {
+            "type" : "string",
+            "format" : "int64"
+          }
+        }
+      },
+      "InfoIscrittoGestisceBean" : {
+        "id" : "InfoIscrittoGestisceBean",
+        "type" : "object",
+        "properties" : {
+          "giocatore" : {
+            "type" : "string"
+          },
+          "gruppo" : {
+            "type" : "string",
+            "format" : "int64"
+          }
+        }
+      },
+      "InfoConosceBean" : {
+        "id" : "InfoConosceBean",
+        "type" : "object",
+        "properties" : {
+          "gruppo" : {
+            "type" : "string",
+            "format" : "int64"
+          },
+          "campo" : {
+            "type" : "string",
+            "format" : "int64"
+          }
+        }
       }
     },
     "methods" : {
-      "com.api.PdE2015_API.inserisciLinkPresso" : {
-        "request" : {
-          "$ref" : "InfoPressoBean"
-        },
-        "response" : {
-          "$ref" : "DefaultBean"
-        }
-      },
-      "com.api.PdE2015_API.rimuoviLinkOrganizza" : {
-        "request" : {
-          "$ref" : "InfoOrganizzaBean"
-        },
-        "response" : {
-          "$ref" : "DefaultBean"
-        }
-      },
-      "com.api.PdE2015_API.rimuoviLinkConosce" : {
-        "request" : {
-          "$ref" : "InfoConosceBean"
-        },
-        "response" : {
-          "$ref" : "DefaultBean"
-        }
-      },
-      "com.api.PdE2015_API.inserisciLinkGestito" : {
-        "request" : {
-          "$ref" : "InfoIscrittoGestisceBean"
-        },
-        "response" : {
-          "$ref" : "DefaultBean"
-        }
-      },
-      "com.api.PdE2015_API.inserisciLinkConosce" : {
-        "request" : {
-          "$ref" : "InfoConosceBean"
-        },
-        "response" : {
-          "$ref" : "DefaultBean"
-        }
-      },
-      "com.api.PdE2015_API.rimuoviLinkGestito" : {
-        "request" : {
-          "$ref" : "InfoIscrittoGestisceBean"
-        },
-        "response" : {
-          "$ref" : "DefaultBean"
-        }
-      },
-      "com.api.PdE2015_API.inserisciLinkOrganizza" : {
-        "request" : {
-          "$ref" : "InfoOrganizzaBean"
-        },
-        "response" : {
-          "$ref" : "DefaultBean"
-        }
-      },
-      "com.api.PdE2015_API.inserisciVotoUomoPartita" : {
-        "request" : {
-          "$ref" : "InfoVotoUomoPartitaBean"
-        },
-        "response" : {
-          "$ref" : "DefaultBean"
-        }
-      },
-      "com.api.PdE2015_API.inserisciGiocatore" : {
+      "com.api.PdE2015_API.registrazione" : {
         "request" : {
           "$ref" : "InfoGiocatoreBean"
         },
@@ -958,7 +1859,17 @@
           "$ref" : "DefaultBean"
         }
       },
-      "com.api.PdE2015_API.modificaGiocatore" : {
+      "com.api.PdE2015_API.isDisponibile" : {
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.getPartita" : {
+        "response" : {
+          "$ref" : "PartitaBean"
+        }
+      },
+      "com.api.PdE2015_API.setGiocatore" : {
         "request" : {
           "$ref" : "InfoGiocatoreBean"
         },
@@ -966,44 +1877,12 @@
           "$ref" : "DefaultBean"
         }
       },
-      "com.api.PdE2015_API.rimuoviLinkIscritto" : {
-        "request" : {
-          "$ref" : "InfoIscrittoGestisceBean"
-        },
+      "com.api.PdE2015_API.isIscritto" : {
         "response" : {
           "$ref" : "DefaultBean"
         }
       },
-      "com.api.PdE2015_API.inserisciLinkIscritto" : {
-        "request" : {
-          "$ref" : "InfoIscrittoGestisceBean"
-        },
-        "response" : {
-          "$ref" : "DefaultBean"
-        }
-      },
-      "com.api.PdE2015_API.rimuoviLinkPresso" : {
-        "request" : {
-          "$ref" : "InfoPressoBean"
-        },
-        "response" : {
-          "$ref" : "DefaultBean"
-        }
-      },
-      "com.api.PdE2015_API.inserisciCampo" : {
-        "request" : {
-          "$ref" : "InfoCampoBean"
-        },
-        "response" : {
-          "$ref" : "DefaultBean"
-        }
-      },
-      "com.api.PdE2015_API.listaGiocatori" : {
-        "response" : {
-          "$ref" : "ListaGiocatoriBean"
-        }
-      },
-      "com.api.PdE2015_API.inserisciGruppo" : {
+      "com.api.PdE2015_API.creaGruppo" : {
         "request" : {
           "$ref" : "InfoGruppoBean"
         },
@@ -1011,17 +1890,25 @@
           "$ref" : "DefaultBean"
         }
       },
-      "com.api.PdE2015_API.listaGruppi" : {
+      "com.api.PdE2015_API.getGruppo" : {
         "response" : {
-          "$ref" : "ListaGruppiBean"
+          "$ref" : "GruppoBean"
         }
       },
-      "com.api.PdE2015_API.listaPartite" : {
+      "com.api.PdE2015_API.hasVotato" : {
         "response" : {
-          "$ref" : "ListaPartiteBean"
+          "$ref" : "DefaultBean"
         }
       },
-      "com.api.PdE2015_API.inserisciPartita" : {
+      "com.api.PdE2015_API.setGruppo" : {
+        "request" : {
+          "$ref" : "InfoGruppoBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.creaPartita" : {
         "request" : {
           "$ref" : "InfoPartitaBean"
         },
@@ -1029,44 +1916,12 @@
           "$ref" : "DefaultBean"
         }
       },
-      "com.api.PdE2015_API.modificaGruppo" : {
-        "request" : {
-          "$ref" : "InfoGruppoBean"
-        },
+      "com.api.PdE2015_API.getGiocatore" : {
         "response" : {
-          "$ref" : "DefaultBean"
+          "$ref" : "GiocatoreBean"
         }
       },
-      "com.api.PdE2015_API.listaCampi" : {
-        "response" : {
-          "$ref" : "ListaCampiBean"
-        }
-      },
-      "com.api.PdE2015_API.eliminaGruppo" : {
-        "request" : {
-          "$ref" : "InfoGruppoBean"
-        },
-        "response" : {
-          "$ref" : "DefaultBean"
-        }
-      },
-      "com.api.PdE2015_API.eliminaCampo" : {
-        "request" : {
-          "$ref" : "InfoCampoBean"
-        },
-        "response" : {
-          "$ref" : "DefaultBean"
-        }
-      },
-      "com.api.PdE2015_API.eliminaGiocatore" : {
-        "request" : {
-          "$ref" : "InfoGiocatoreBean"
-        },
-        "response" : {
-          "$ref" : "DefaultBean"
-        }
-      },
-      "com.api.PdE2015_API.eliminaPartita" : {
+      "com.api.PdE2015_API.setPartita" : {
         "request" : {
           "$ref" : "InfoPartitaBean"
         },
@@ -1082,10 +1937,109 @@
           "$ref" : "DefaultBean"
         }
       },
+      "com.api.PdE2015_API.eliminaCampo" : {
+        "request" : {
+          "$ref" : "InfoCampoBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.listaCampi" : {
+        "response" : {
+          "$ref" : "ListaCampiBean"
+        }
+      },
+      "com.api.PdE2015_API.listaGiocatori" : {
+        "response" : {
+          "$ref" : "ListaGiocatoriBean"
+        }
+      },
+      "com.api.PdE2015_API.eliminaGiocatore" : {
+        "request" : {
+          "$ref" : "InfoGiocatoreBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.inserisciCampo" : {
+        "request" : {
+          "$ref" : "InfoCampoBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.inserisciGruppo" : {
+        "request" : {
+          "$ref" : "InfoGruppoBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.listaGruppi" : {
+        "response" : {
+          "$ref" : "ListaGruppiBean"
+        }
+      },
+      "com.api.PdE2015_API.confermaPartita" : {
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.eliminaGruppo" : {
+        "request" : {
+          "$ref" : "InfoGruppoBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.inserisciPartita" : {
+        "request" : {
+          "$ref" : "InfoPartitaBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.eliminaPartita" : {
+        "request" : {
+          "$ref" : "InfoPartitaBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.modificaGruppo" : {
+        "request" : {
+          "$ref" : "InfoGruppoBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
       "com.api.PdE2015_API.modificaPartita" : {
         "request" : {
           "$ref" : "InfoPartitaBean"
         },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.getNDisponibili" : {
+        "response" : {
+          "$ref" : "NDisponibiliBean"
+        }
+      },
+      "com.api.PdE2015_API.rispondiInvito" : {
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.annullaPartita" : {
         "response" : {
           "$ref" : "DefaultBean"
         }
@@ -1101,6 +2055,240 @@
       "com.api.PdE2015_API.eliminaInvito" : {
         "response" : {
           "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.eliminaLinkGioca" : {
+        "request" : {
+          "$ref" : "InfoGestionePartiteBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.eliminaSessione" : {
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.sessioneIndietro" : {
+        "request" : {
+          "$ref" : "PayloadBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.listaStati" : {
+        "request" : {
+          "$ref" : "PayloadBean"
+        },
+        "response" : {
+          "$ref" : "ListaStatiBean"
+        }
+      },
+      "com.api.PdE2015_API.login" : {
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.logout" : {
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.cambiaStatoIscrizione" : {
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.eliminaLinkDisponibile" : {
+        "request" : {
+          "$ref" : "InfoGestionePartiteBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.modificaGiocatore" : {
+        "request" : {
+          "$ref" : "InfoGiocatoreBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.modificaDisponibile" : {
+        "request" : {
+          "$ref" : "InfoGestionePartiteBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.eliminaLinkPropone" : {
+        "request" : {
+          "$ref" : "InfoGestionePartiteBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.inserisciLinkPropone" : {
+        "request" : {
+          "$ref" : "InfoGestionePartiteBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.inserisciVotoUomoPartita" : {
+        "request" : {
+          "$ref" : "InfoVotoUomoPartitaBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.inserisciLinkGioca" : {
+        "request" : {
+          "$ref" : "InfoGestionePartiteBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.inserisciGiocatore" : {
+        "request" : {
+          "$ref" : "InfoGiocatoreBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.eliminaVotoUomoPartita" : {
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.inserisciLinkDisponibile" : {
+        "request" : {
+          "$ref" : "InfoGestionePartiteBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.listaPartiteTerminate" : {
+        "response" : {
+          "$ref" : "ListaPartiteBean"
+        }
+      },
+      "com.api.PdE2015_API.eliminaLinkPresso" : {
+        "request" : {
+          "$ref" : "InfoPressoBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.inserisciLinkOrganizza" : {
+        "request" : {
+          "$ref" : "InfoOrganizzaBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.inserisciLinkPresso" : {
+        "request" : {
+          "$ref" : "InfoPressoBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.inserisciLinkGestito" : {
+        "request" : {
+          "$ref" : "InfoIscrittoGestisceBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.listaIscrittiGrupppo" : {
+        "response" : {
+          "$ref" : "ListaGiocatoriBean"
+        }
+      },
+      "com.api.PdE2015_API.eliminaLinkConosce" : {
+        "request" : {
+          "$ref" : "InfoConosceBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.eliminaLinkGestito" : {
+        "request" : {
+          "$ref" : "InfoIscrittoGestisceBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.eliminaLinkIscritto" : {
+        "request" : {
+          "$ref" : "InfoIscrittoGestisceBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.inserisciLinkConosce" : {
+        "request" : {
+          "$ref" : "InfoConosceBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.eliminaLinkOrganizza" : {
+        "request" : {
+          "$ref" : "InfoOrganizzaBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.listaPartiteProposteConfermate" : {
+        "response" : {
+          "$ref" : "ListaPartiteBean"
+        }
+      },
+      "com.api.PdE2015_API.inserisciSessione" : {
+        "response" : {
+          "$ref" : "PayloadBean"
+        }
+      },
+      "com.api.PdE2015_API.inserisciLinkIscritto" : {
+        "request" : {
+          "$ref" : "InfoIscrittoGestisceBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.aggiornaStatoSessione" : {
+        "request" : {
+          "$ref" : "PayloadBean"
+        },
+        "response" : {
+          "$ref" : "DefaultBean"
+        }
+      },
+      "com.api.PdE2015_API.listaGruppiIscritto" : {
+        "response" : {
+          "$ref" : "ListaGruppiBean"
         }
       }
     }

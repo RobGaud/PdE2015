@@ -1,5 +1,6 @@
 package com.bean;
 
+
 public class InfoVotoUomoPartitaBean
 {
 	private String commento;

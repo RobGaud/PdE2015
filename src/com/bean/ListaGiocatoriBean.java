@@ -6,7 +6,9 @@ import java.util.List;
 import com.modello.Giocatore;
 
 public class ListaGiocatoriBean {
-	LinkedList<Giocatore> listaGiocatori;
+	private LinkedList<Giocatore> listaGiocatori;
+	private String result;
+	private String httpCode;
 
 	public ListaGiocatoriBean() {
 		this.listaGiocatori = new LinkedList<Giocatore>();
@@ -28,5 +30,25 @@ public class ListaGiocatoriBean {
 	{
 		return (LinkedList<Giocatore>)this.listaGiocatori.clone();
 	}
+	
+	public void setListaGiocatori(LinkedList<Giocatore> listaGiocatori) {
+		this.listaGiocatori = listaGiocatori;
+	}
 
+	public String getResult() {
+		return result;
+	}
+
+	public void setResult(String result) {
+		this.result = result;
+	}
+
+	public String getHttpCode() {
+		return httpCode;
+	}
+
+	public void setHttpCode(String httpCode) {
+		this.httpCode = httpCode;
+	}
+	
 }
