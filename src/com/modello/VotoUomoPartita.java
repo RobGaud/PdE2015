@@ -14,8 +14,8 @@ public class VotoUomoPartita
 	
 	@Id Long id;
 	private String votante; //Giocatore
-	private Long linkVotoPerPartita;	//Partita
-	private String votato;	//Giocatore
+	@Index private Long linkVotoPerPartita;	//Partita
+	@Index private String votato;	//Giocatore
 	
 	private VotoUomoPartita(){}
 	

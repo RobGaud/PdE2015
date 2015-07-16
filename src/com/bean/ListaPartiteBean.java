@@ -7,8 +7,10 @@ import com.modello.Partita;
 
 public class ListaPartiteBean {
 
-	LinkedList<Partita> listaPartite;
-
+	private LinkedList<Partita> listaPartite;
+	private String result;
+	private String httpCode;
+	
 	public ListaPartiteBean() {
 		this.listaPartite = new LinkedList<Partita>();
 	}
@@ -25,9 +27,29 @@ public class ListaPartiteBean {
 	}
 	
 
-	public List<Partita> getlistaPartite()
+	public List<Partita> getListaPartite()
 	{
 		return (LinkedList<Partita>)this.listaPartite.clone();
+	}
+	
+	public void setListaPartite(LinkedList<Partita> listaPartite) {
+		this.listaPartite = listaPartite;
+	}
+
+	public String getResult() {
+		return result;
+	}
+
+	public void setResult(String result) {
+		this.result = result;
+	}
+
+	public String getHttpCode() {
+		return httpCode;
+	}
+
+	public void setHttpCode(String httpCode) {
+		this.httpCode = httpCode;
 	}
 
 }

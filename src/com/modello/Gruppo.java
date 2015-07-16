@@ -11,11 +11,12 @@ public class Gruppo
 
 	@Index private String nome;
 	private Date dataCreazione;
-	private LinkedList<Long> giocatoriIscritti;
-	private Long eGestito;
-	private HashSet<Long> partiteOrganizzate;
-	private HashSet<Long> campiPreferiti;
 	@Index private String citta;
+	
+	private LinkedList<Long> giocatoriIscritti;	//elenco degli id dei linkIscritto
+	private Long eGestito;						//linkIscritto con l'amministratore
+	private HashSet<Long> partiteOrganizzate;	//elenco degli id delle partite
+	private HashSet<Long> campiPreferiti;		//elenco degli id dei campi
 	
 	public static final int MIN_LINK_ISCRITTO = 1;
 	public static final int MIN_MAX_LINK_ISCRITTO = 1;

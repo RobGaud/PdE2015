@@ -1,10 +1,9 @@
 package com.attivita;
 
-import java.util.HashSet;
+import java.util.LinkedList;
 
-import com.bean.PayloadBean;
+//import java.util.HashSet;
 import com.googlecode.objectify.annotation.*;
-import com.modello.Partita.Stato;
 
 @Entity
 public class SessioneUtente {
@@ -13,19 +12,20 @@ public class SessioneUtente {
 										 PRINCIPALE, GRUPPO, PROFILO, MODIFICA_PROFILO,
 										 RICERCA_GRUPPO, INVITO, ISCRITTI_GRUPPO, STORICO,
 										 PARTITE_PROPOSTE, CREA_PARTITA, PARTITA, 
-										 VOTO, RICERCA_CAMPO, DISPONIBILE_PER_PARTITA,
-										 CAMPO, CREA_CAMPO, CREA_GRUPPO, EXIT
+										 CREA_VOTO, RICERCA_CAMPO, DISPONIBILE_PER_PARTITA,
+										 CAMPO, CREA_CAMPO, CREA_GRUPPO, EXIT, ESCI_GRUPPO,
+										 ANNULLA_PARTITA, ELENCO_VOTI, MODIFICA_GRUPPO,
+										 MODIFICA_PARTITA, STATO_SENTINELLA
 										};
 	
 	@Id private Long id;
 	private String emailUtente;
-	private StatoSessione statoCorrente;
-	private StatoSessione statoPrecedente;
-	//private HashSet<StatoSessione> listaStati;
+	private LinkedList<StatoSessione> pilaStati; // primo elemento = cima stack;
 	
 	public SessioneUtente(){
-		this.statoCorrente = StatoSessione.LOGIN_E_REGISTRAZIONE;
-		this.statoPrecedente = null;
+		this.pilaStati = new LinkedList<StatoSessione>();
+		this.pilaStati.add(0, StatoSessione.EXIT);
+		this.pilaStati.add(0, StatoSessione.LOGIN_E_REGISTRAZIONE);
 	}
 	
 	public Long getId() {
@@ -37,19 +37,20 @@ public class SessioneUtente {
 	}
 
 	public StatoSessione getStatoCorrente() {
-		return statoCorrente;
+		return this.pilaStati.get(0);
 	}
 
-	public void setStatoCorrente(StatoSessione statoCorrente) {
-		this.statoCorrente = statoCorrente;
+	public void push(StatoSessione statoCorrente) {
+		this.pilaStati.add(0, statoCorrente);
 	}
 
+	public void pop()
+	{
+		this.pilaStati.removeFirst();
+	}
+	
 	public StatoSessione getStatoPrecedente() {
-		return statoPrecedente;
-	}
-
-	public void setStatoPrecedente(StatoSessione statoPrecedente) {
-		this.statoPrecedente = statoPrecedente;
+		return this.pilaStati.get(1);
 	}
 
 	public void setEmailUtente(String emailUtente) {
@@ -59,29 +60,67 @@ public class SessioneUtente {
 	public String getEmailUtente() {
 		return emailUtente;
 	}
-	public StatoSessione getStatoSessioneCorrente() {
+/*	public StatoSessione getStatoSessioneCorrente() {
 		return statoCorrente;
 	}
-
+*/
 	public void aggiornaStato(StatoSessione nuovoStato)
 	{
 		switch(nuovoStato)
+		{
+			case PRINCIPALE:
+				if(   this.getStatoCorrente() == StatoSessione.LOGIN 
+				   || this.getStatoCorrente() == StatoSessione.REGISTRAZIONE)
+				{
+					this.pop();
+					this.pop();
+					this.push(nuovoStato);
+				}
+				break;
+		}
+		
+	/*	switch(nuovoStato)
 		{
 			//Se dalla schermata principale l'utente preme il tasto "Indietro"
 			//Si esce dall'applicazione, rimanendo loggati.
 			case PRINCIPALE:
 				this.statoPrecedente = StatoSessione.EXIT;
 				break;
-			//Se la transizione è crea_gruppo -> gruppo, devo cambiare lo stato precedente.	
+			//Se la transizione è crea_gruppo -> gruppo, o annulla_partita->crea_gruppo,
+			//devo cambiare lo stato precedente.	
 			case GRUPPO:
-				if(this.statoCorrente == StatoSessione.CREA_GRUPPO)
+				if(this.statoCorrente == StatoSessione.CREA_GRUPPO
+				   || this.statoCorrente == StatoSessione.ANNULLA_PARTITA
+				   || this.statoCorrente == StatoSessione.MODIFICA_GRUPPO)
+				   this.statoPrecedente = StatoSessione.PRINCIPALE;
+				else if( this.statoCorrente == StatoSessione.RICERCA_GRUPPO )
+				{
+					this.statoPrecedente = StatoSessione.RICERCA_GRUPPO;
+					this.statoPrePrecedente = StatoSessione.RICERCA_GRUPPO;
+				}
+				else
+					this.statoPrecedente = this.statoCorrente;
+				break;
+			case PROFILO:
+				if(this.statoCorrente == StatoSessione.MODIFICA_PROFILO ||
+				   this.statoCorrente == StatoSessione.PRINCIPALE)
 					this.statoPrecedente = StatoSessione.PRINCIPALE;
+				else if(this.statoCorrente == StatoSessione.ISCRITTI_GRUPPO) {
+					this.statoPrecedente = StatoSessione.ISCRITTI_GRUPPO;
+					this.statoPrePrecedente = StatoSessione.ISCRITTI_GRUPPO;
+				}
 				else
 					this.statoPrecedente = this.statoCorrente;
 				break;
 			case PARTITA:
-				if(this.statoCorrente == StatoSessione.CREA_PARTITA)
+				if(	this.statoCorrente == StatoSessione.CREA_PARTITA 
+				   || this.statoCorrente == StatoSessione.MODIFICA_PARTITA
+				   || this.statoCorrente == StatoSessione.PARTITE_PROPOSTE)
 					this.statoPrecedente = StatoSessione.GRUPPO;
+				else if(this.statoCorrente == StatoSessione.STORICO) {
+					this.statoPrecedente = StatoSessione.STORICO;
+					this.statoPrePrecedente = StatoSessione.STORICO;
+				}
 				else
 					this.statoPrecedente = this.statoCorrente;
 				break;
@@ -91,13 +130,17 @@ public class SessioneUtente {
 				else
 					this.statoPrecedente = this.statoCorrente;
 				break;
+			case LOGIN_E_REGISTRAZIONE:
+				this.statoPrecedente = StatoSessione.EXIT;
+				break;
 			default:
 				this.statoPrecedente = this.statoCorrente;
 		}
 		this.statoCorrente = nuovoStato;
+	*/
 	}
 	
-	public StatoSessione getStatoSessionePrecedente() {
+/*	public StatoSessione getStatoSessionePrecedente() {
 		return statoPrecedente;
 	}
 /*	
@@ -126,11 +169,12 @@ public class SessioneUtente {
 				statiSuccessivi.add(StatoSessione.CREA_GRUPPO);
 				break;
 			case GRUPPO:
-				//TODO controllo appartenenza gruppo
+				//TODO controllo appartenenza gruppo: perché non farlo nelle API?
 				statiSuccessivi.add(StatoSessione.ISCRITTI_GRUPPO);
 				statiSuccessivi.add(StatoSessione.INVITO);
 				statiSuccessivi.add(StatoSessione.STORICO);
 				statiSuccessivi.add(StatoSessione.CREA_PARTITA);
+				statiSuccessivi.add(StatoSessione.PARTITE_PROPOSTE);
 				statiSuccessivi.add(StatoSessione.PARTITE_PROPOSTE);
 				break;
 			case PROFILO:
@@ -168,7 +212,7 @@ public class SessioneUtente {
 				statiSuccessivi.add(StatoSessione.CREA_PARTITA);
 				break;
 			case PARTITA:
-				//TODO Controllo stato partita 
+				//TODO Controllo stato partita
 				statiSuccessivi.add(StatoSessione.RICERCA_CAMPO);
 				statiSuccessivi.add(StatoSessione.DISPONIBILE_PER_PARTITA);
 				statiSuccessivi.add(StatoSessione.VOTO);
@@ -194,6 +238,9 @@ public class SessioneUtente {
 			case CREA_GRUPPO:
 				statiSuccessivi.add(StatoSessione.CREA_GRUPPO);
 				statiSuccessivi.add(StatoSessione.GRUPPO);
+				break;
+			case ESCI_GRUPPO:
+				statiSuccessivi.add(StatoSessione.PRINCIPALE);
 				break;
 		}
 		return statiSuccessivi;
