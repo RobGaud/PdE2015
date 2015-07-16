@@ -7,6 +7,7 @@ public class InfoVotoUomoPartitaBean
 	private String votante; //Giocatore
 	private Long linkVotoPerPartita;	//Partita
 	private String votato;	//Giocatore
+	
 	public String getCommento() {
 		return commento;
 	}

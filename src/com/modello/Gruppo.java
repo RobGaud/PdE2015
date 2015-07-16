@@ -16,7 +16,7 @@ public class Gruppo
 	private LinkedList<Long> giocatoriIscritti;	//elenco degli id dei linkIscritto
 	private Long eGestito;						//linkIscritto con l'amministratore
 	private HashSet<Long> partiteOrganizzate;	//elenco degli id delle partite
-	private HashSet<Long> campiPreferiti;		//elenco degli id dei campi
+	//private HashSet<Long> campiPreferiti;		//elenco degli id dei campi
 	
 	public static final int MIN_LINK_ISCRITTO = 1;
 	public static final int MIN_MAX_LINK_ISCRITTO = 1;
@@ -25,7 +25,7 @@ public class Gruppo
 		this.dataCreazione = new Date();
 		this.giocatoriIscritti = new LinkedList<Long>();
 		this.partiteOrganizzate = new HashSet<Long>();
-		this.campiPreferiti = new HashSet<Long>();
+		//this.campiPreferiti = new HashSet<Long>();
 	}
 	
 	public Gruppo(String n, String c)
@@ -35,7 +35,7 @@ public class Gruppo
 		this.dataCreazione = new Date();
 		this.giocatoriIscritti = new LinkedList<Long>();
 		this.partiteOrganizzate = new HashSet<Long>();
-		this.campiPreferiti = new HashSet<Long>();
+		//this.campiPreferiti = new HashSet<Long>();
 	}
 	
 	public String getCitta() {
@@ -162,7 +162,7 @@ public class Gruppo
 	{
 		return (HashSet<Long>)this.partiteOrganizzate.clone();
 	}
-
+/*
 	// ASSOCIAZIONE CONOSCE
 	public void inserisciCampo(Long c)
 	{
@@ -178,4 +178,5 @@ public class Gruppo
 	{
 		return (HashSet<Long>)this.campiPreferiti.clone();
 	}
+*/
 }

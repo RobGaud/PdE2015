@@ -1146,7 +1146,7 @@ public class PdE2015_API
 		
 		return sendResponse("LinkGestisce rimosso con successo!", OK);
 	}
-	// TODO API Conosce
+/*	// TODO API Conosce
 	@ApiMethod(
 			name = "conosce.inserisciLinkConosce",
 			path = "conosce",
@@ -1177,7 +1177,7 @@ public class PdE2015_API
 				return response;
 			}
 		}
-		*/
+		/*
 		if(gruppo.getCampiPreferiti().contains(conosceBean.getCampo()))
 			return sendResponse("Campo già presente!", CONFLICT);
 		
@@ -1210,7 +1210,7 @@ public class PdE2015_API
 		
 		return sendResponse("LinkConosce rimosso con successo!", OK);
 	}
-	
+*/	
 	// TODO API Organizza
 	@ApiMethod(
 			name = "organizza.inserisciLinkOrganizza",
@@ -1497,7 +1497,7 @@ public class PdE2015_API
 					listaBean.addStatoSessione(StatoSessione.INVITO);
 					listaBean.addStatoSessione(StatoSessione.STORICO);
 					listaBean.addStatoSessione(StatoSessione.CREA_PARTITA);
-					listaBean.addStatoSessione(StatoSessione.PARTITE_PROPOSTE);
+					//listaBean.addStatoSessione(StatoSessione.PARTITE_PROPOSTE);
 				}
 				//Altrimenti, se il gruppo è aperto...
 				else
@@ -1532,9 +1532,6 @@ public class PdE2015_API
 				listaBean.addStatoSessione(StatoSessione.PROFILO);
 				break;
 			case STORICO:
-				listaBean.addStatoSessione(StatoSessione.PARTITA);
-				break;
-			case PARTITE_PROPOSTE:
 				listaBean.addStatoSessione(StatoSessione.PARTITA);
 				break;
 			case CREA_PARTITA:
@@ -1933,6 +1930,44 @@ public class PdE2015_API
 			log.log(Level.SEVERE, "errore durante l'uscita del giocatore dalla partita "
 									+gestioneBean.getIdPartita()+"!");
 		}
+		return partialResult;
+	}
+	
+	@ApiMethod(
+			name = "api.creaCampo",
+			path = "api/creacampo",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean creaCampo(@Named("idSessione")Long idSessione,
+								 InfoCampoBean campoBean)
+	{
+		setUp();
+		//Controllo esistenza sessione
+		SessioneUtente sessione = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( sessione == null )
+		{
+			log.log(Level.SEVERE, "creaGruppo: la sessione "+idSessione+" non è presente nel Datastore!");
+			return sendResponse("Sessione non presente!", NOT_FOUND);
+		}
+		//Controllo stato giusto
+		if( sessione.getStatoCorrente() != StatoSessione.CREA_CAMPO )
+		{
+			log.log(Level.SEVERE, "creaGruppo: la sessione "+idSessione+" non è nello stato CREA_CAMPO!");
+			return sendResponse("Impossibile creare un gruppo in questo punto!", BAD_REQUEST);
+		}
+		
+		DefaultBean partialResult = inserisciCampo(campoBean);
+		if( !partialResult.getHttpCode().equals(CREATED) )
+		{
+			tearDown();
+			return partialResult;
+		}
+		
+		//Aggiorno stato sessione
+		sessione.aggiornaStato(StatoSessione.CAMPO);
+		ofy().save().entity(sessione).now();
+		tearDown();
+		
 		return partialResult;
 	}
 
@@ -2403,7 +2438,7 @@ public class PdE2015_API
 			
 		}
 		setUp();
-		s.aggiornaStato(StatoSessione.PROFILO);
+		s.tornaIndietro();
 		ofy().save().entity(s).now();
 		tearDown();
 		return response;
@@ -2463,7 +2498,7 @@ public class PdE2015_API
 			
 		}
 		setUp();
-		s.aggiornaStato(StatoSessione.GRUPPO);
+		s.tornaIndietro();
 		ofy().save().entity(s).now();
 		tearDown();
 		return response;
@@ -2523,7 +2558,7 @@ public class PdE2015_API
 			
 		}
 		setUp();
-		s.aggiornaStato(StatoSessione.PARTITA);
+		s.tornaIndietro();
 		ofy().save().entity(s).now();
 		tearDown();
 		return response;
@@ -2534,16 +2569,9 @@ public class PdE2015_API
 			path = "api/listaGruppiIscritto",
 			httpMethod = HttpMethod.GET
           )
-	public ListaGruppiBean listaGruppiIscritto(@Named("idGruppo")String emailUtente,
+	public ListaGruppiBean listaGruppiIscritto(//@Named("emailUtente")String emailUtente,
 			  								   @Named("idSessione")Long idSessione) {
 		setUp();
-		//Controllo esistenza Giocatore
-		Giocatore g = ofy().load().type(Giocatore.class).id(emailUtente).now();
-		if( g == null)
-		{
-			log.log(Level.SEVERE, "Giocatore non registrato!");
-			return sendResponseListaGruppi("Giocatore non registrato!", NOT_FOUND, new LinkedList<Gruppo>());
-		}
 		//Controllo esistenza Sessione
 		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(idSessione).now();
 		if( s == null )
@@ -2558,6 +2586,14 @@ public class PdE2015_API
 			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato PRINCIPALE!");
 			return sendResponseListaGruppi("Impossibile chiamare il metodo in questo punto!", BAD_REQUEST, new LinkedList<Gruppo>());
 		}
+		//Controllo esistenza Giocatore
+		Giocatore g = ofy().load().type(Giocatore.class).id(/*emailUtente*/s.getEmailUtente()).now();
+		if( g == null)
+		{
+			log.log(Level.SEVERE, "Giocatore non registrato!");
+			return sendResponseListaGruppi("Giocatore non registrato!", NOT_FOUND, new LinkedList<Gruppo>());
+		}
+		
 		LinkedList<Gruppo> lg = new LinkedList<Gruppo>();
 		Iterator<Long> it = g.getEIscritto().iterator();
 		while(it.hasNext()) {
@@ -2636,7 +2672,71 @@ public class PdE2015_API
 	}
 	
 	@ApiMethod(
-			name = "api.listaVoti",
+			name = "api.creaVoto",
+			path = "api/creavoto",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean creaVoto(@Named("idSessione")Long idSessione,
+								InfoVotoUomoPartitaBean votoBean)
+	{
+		setUp();
+		//Controllo esistenza Sessione
+		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( s == null )
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponse("Sessione non esistente!", NOT_FOUND);
+		}
+		//Controllo stato sessione
+		if( s.getStatoCorrente() != StatoSessione.CREA_VOTO )
+		{
+			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato CREA_VOTO!");
+			return sendResponse("Impossibile chiamare il metodo in questo punto!", BAD_REQUEST);
+		}
+		
+		//Controllo esistenza partita
+		Partita partita = ofy().load().type(Partita.class).id(votoBean.getLinkVotoPerPartita()).now();
+		if( partita == null )
+		{
+			return sendResponse("Partita non esistente!", NOT_FOUND);
+		}
+		//Controllo stato partita
+		if( partita.getStatoCorrente() != Stato.GIOCATA )
+		{
+			return sendResponse("Impossibile votare l'uomo partita per una partita non terminata!", BAD_REQUEST);
+		}	
+		//Controllo esistenza votante
+		Giocatore votante = ofy().load().type(Giocatore.class).id(votoBean.getVotante()).now();
+		if( votante == null )
+		{
+			return sendResponse("Votante non trovato!", NOT_FOUND);
+		}
+		//Controllo esistenza votato
+		Giocatore votato = ofy().load().type(Giocatore.class).id(votoBean.getVotato()).now();
+		if( votato == null )
+		{
+			return sendResponse("Votato non trovato!", NOT_FOUND);
+		}
+		
+		DefaultBean partialResult = inserisciVotoUomoPartita(votoBean);
+		if( !partialResult.getHttpCode().equals(CREATED) )
+		{
+			log.log(Level.SEVERE, "Errore durante l'inserimento del voto!");
+			tearDown();
+			return partialResult;
+		}
+		
+		//Aggiorno lo stato della sessione e termino.
+		s.aggiornaStato(StatoSessione.PARTITA);
+		ofy().save().entity(s).now();
+		
+		tearDown();
+		return partialResult;
+	}
+
+	
+	@ApiMethod(
+			name = "api.elencoVotiUomoPartita",
 			path = "api/listavoti",
 			httpMethod = HttpMethod.GET
           )
@@ -2717,7 +2817,8 @@ public class PdE2015_API
 		return listaVotiBean;
 	*/
 		List<VotoUomoPartita> listaVoti = ofy().load().type(VotoUomoPartita.class)
-										  .filter("partita", idPartita).list();
+										  .filter("linkVotoPerPartita", idPartita).list();
+		log.log(Level.SEVERE, "dimensione listavoti = "+listaVoti.size());
 		log.log(Level.SEVERE, "faccio tearDown().");
 		tearDown();
 		if( listaVoti == null)
@@ -3043,7 +3144,11 @@ public class PdE2015_API
 		
 		//Cambio stato partita
 		partita.setStatoCorrente(Partita.Stato.CONFERMATA);
-		
+		//Ricarico la partita sul datastore
+		ofy().save().entity(partita).now();
+				
+		//tearDown();
+		//setUp();
 		//Inserimento linkGioca con i giocatori che giocheranno la partita
 		int x = 0;
 		Iterator<Long> it;
@@ -3107,9 +3212,8 @@ public class PdE2015_API
 			return sendResponse("La partita non ha giocatori disponibili!", INTERNAL_SERVER_ERROR);
 		}
 		
-		//Ricarico la partita sul datastore
-		ofy().save().entity(partita).now();
-		
+		//Per evitare errori
+		//setUp();
 		return sendResponse("Partita confermata con successo.", OK);
    	}
 	
@@ -3523,10 +3627,10 @@ public class PdE2015_API
 			return sendResponse("Sessione non esistente!", NOT_FOUND);
 		}
 		//Controllo stato giusto
-		if( sessione.getStatoCorrente() != StatoSessione.PARTITA )
+		if( sessione.getStatoCorrente() != StatoSessione.CAMPO )
 		{
 			log.log(Level.SEVERE, "la sessione "+idSessione
-								 +" non è nello stato PARTITA!");
+								 +" non è nello stato CAMPO!");
 			return sendResponse("Impossibile impostare un campo da questo punto!", BAD_REQUEST);
 			
 		}
@@ -3567,7 +3671,7 @@ public class PdE2015_API
 		
 		//Inserimento del nuovo linkPresso
 		partialResult = inserisciLinkPresso(pressoBean);
-		if( !partialResult.getHttpCode().equals(OK) )
+		if( !partialResult.getHttpCode().equals(CREATED) )
 		{
 			log.log(Level.SEVERE, "Errore durante l'inserimento del linkPresso"
 					           	 +" dalla partita "+partita.getId()+"!" );
@@ -3590,7 +3694,8 @@ public class PdE2015_API
 			path = "api/listaPartiteProposteConfermate",
 			httpMethod = HttpMethod.GET
           )
-	public ListaPartiteBean listaPartiteProposteConfermate(@Named("idGruppo")Long idGruppo, @Named("tipo")int tipo,
+	public ListaPartiteBean listaPartiteProposteConfermate(@Named("idGruppo")Long idGruppo,
+														   @Named("tipo")int tipo,
 														   @Named("idSessione")Long idSessione) {
 		setUp();
 		//Controllo esistenza Sessione
@@ -3601,9 +3706,9 @@ public class PdE2015_API
 			return sendResponseListaPartite("Sessione non esistente!", NOT_FOUND, new LinkedList<Partita>());
 		}
 		//Controllo stato sessione
-		if( s.getStatoCorrente() != StatoSessione.PARTITE_PROPOSTE )
+		if( s.getStatoCorrente() != StatoSessione.GRUPPO )
 		{
-			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato PARTITE_PROPOSTE!");
+			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato GRUPPO!");
 			return sendResponseListaPartite("Impossibile chiamare il metodo in questo punto!", BAD_REQUEST, new LinkedList<Partita>());
 		}
 		LinkedList<Partita.Stato> list = new LinkedList<Partita.Stato>();
@@ -3795,12 +3900,12 @@ public class PdE2015_API
 			return sendResponseAnswer("Sessione non esistente!", NOT_FOUND, false);
 		}
 		//Controllo stato sessione
-		/*if( !(s.getStatoCorrente() == StatoSessione.PARTITA ||
+		if( !(s.getStatoCorrente() == StatoSessione.PARTITA ||
 		      s.getStatoCorrente() == StatoSessione.DISPONIBILE_PER_PARTITA) )
 		{
-			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato PARTITA!");
+			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato PARTITA né in DISPONIBILE_PER_PARTITA!");
 			return sendResponseAnswer("Impossibile chiamare il metodo in questo punto!", BAD_REQUEST, false);
-		}*/
+		}
 		//Controllo esistenza Giocatore
 		Giocatore g = ofy().load().type(Giocatore.class).id(/*emailUtente*/s.getEmailUtente()).now();
 		if( g == null)

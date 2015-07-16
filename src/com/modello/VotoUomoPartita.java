@@ -120,7 +120,8 @@ public class VotoUomoPartita
 			return false;
 		
 		VotoUomoPartita v = (VotoUomoPartita)o;
-		return this.votante.equals(v.votante) && this.votato.equals(v.votato) && this.linkVotoPerPartita.equals(v.linkVotoPerPartita);
+		return this.votante.equals(v.votante) && this.votato.equals(v.votato) 
+				&& this.linkVotoPerPartita.equals(v.linkVotoPerPartita);
 	}
 	
 	public int hashCode()

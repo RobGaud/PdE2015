@@ -11,11 +11,11 @@ public class SessioneUtente {
 	public static enum StatoSessione	{LOGIN_E_REGISTRAZIONE, LOGIN, REGISTRAZIONE,
 										 PRINCIPALE, GRUPPO, PROFILO, MODIFICA_PROFILO,
 										 RICERCA_GRUPPO, INVITO, ISCRITTI_GRUPPO, STORICO,
-										 PARTITE_PROPOSTE, CREA_PARTITA, PARTITA, 
+										 CREA_PARTITA, PARTITA, 
 										 CREA_VOTO, RICERCA_CAMPO, DISPONIBILE_PER_PARTITA,
 										 CAMPO, CREA_CAMPO, CREA_GRUPPO, EXIT, ESCI_GRUPPO,
 										 ANNULLA_PARTITA, ELENCO_VOTI, MODIFICA_GRUPPO,
-										 MODIFICA_PARTITA, STATO_SENTINELLA
+										 MODIFICA_PARTITA
 										};
 	
 	@Id private Long id;
@@ -24,7 +24,7 @@ public class SessioneUtente {
 	
 	public SessioneUtente(){
 		this.pilaStati = new LinkedList<StatoSessione>();
-		this.pilaStati.add(0, StatoSessione.EXIT);
+		//this.pilaStati.add(0, StatoSessione.EXIT);
 		this.pilaStati.add(0, StatoSessione.LOGIN_E_REGISTRAZIONE);
 	}
 	
@@ -44,7 +44,12 @@ public class SessioneUtente {
 		this.pilaStati.add(0, statoCorrente);
 	}
 
-	public void pop()
+	public void tornaIndietro()
+	{
+		if( this.getStatoCorrente() != StatoSessione.PRINCIPALE ) this.pop();
+	}
+	
+	private void pop()
 	{
 		this.pilaStati.removeFirst();
 	}
@@ -77,6 +82,56 @@ public class SessioneUtente {
 					this.push(nuovoStato);
 				}
 				break;
+			case PROFILO:
+				if(this.getStatoCorrente() == StatoSessione.MODIFICA_PROFILO ||
+				   this.getStatoCorrente() == StatoSessione.INVITO)
+				{
+					this.pop();
+				}
+				else this.push(nuovoStato);
+				break;
+			case GRUPPO:
+				if(this.getStatoCorrente() == StatoSessione.MODIFICA_GRUPPO ||
+				   this.getStatoCorrente() == StatoSessione.ANNULLA_PARTITA)
+				{
+					this.pop();
+				}
+				else if(this.getStatoCorrente() == StatoSessione.CREA_GRUPPO)
+				{
+					this.pop();
+					this.push(nuovoStato);
+				}
+				else this.push(nuovoStato);
+				break;
+			case PARTITA:
+				if(this.getStatoCorrente() == StatoSessione.MODIFICA_PARTITA ||
+				   this.getStatoCorrente() == StatoSessione.CREA_VOTO ||
+				   this.getStatoCorrente() == StatoSessione.DISPONIBILE_PER_PARTITA)
+				{
+					this.pop();
+				}
+				else if(this.getStatoCorrente() == StatoSessione.CREA_PARTITA)
+				{
+					this.pop();
+					this.push(nuovoStato);
+				}
+				else if(this.getStatoCorrente() == StatoSessione.CAMPO)
+				{
+					this.pop();
+					this.pop();
+				}
+				else this.push(nuovoStato);
+				break;
+			case CAMPO:
+				if(this.getStatoCorrente() == StatoSessione.CREA_CAMPO)
+				{
+					this.pop();
+					this.push(nuovoStato);
+				}
+				else this.push(nuovoStato);
+				break;
+				
+			default: this.push(nuovoStato);
 		}
 		
 	/*	switch(nuovoStato)
