@@ -32,4 +32,10 @@ public class ListaStatiBean {
 	{
 		return this.httpCode;
 	}
+	
+	public HashSet<StatoSessione> getStatiSuccessivi() {
+		return (HashSet<StatoSessione>) statiSuccessivi.clone();
+	}
+
+	
 }

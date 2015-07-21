@@ -8,7 +8,7 @@ import com.googlecode.objectify.annotation.*;
 @Entity
 public class SessioneUtente {
 	
-	public static enum StatoSessione	{LOGIN_E_REGISTRAZIONE, LOGIN, REGISTRAZIONE,
+	public static enum StatoSessione	{LOGIN_E_REGISTRAZIONE, /*LOGIN,*/ REGISTRAZIONE,
 										 PRINCIPALE, GRUPPO, PROFILO, MODIFICA_PROFILO,
 										 RICERCA_GRUPPO, INVITO, ISCRITTI_GRUPPO, STORICO,
 										 CREA_PARTITA, PARTITA, 
@@ -74,10 +74,14 @@ public class SessioneUtente {
 		switch(nuovoStato)
 		{
 			case PRINCIPALE:
-				if(   this.getStatoCorrente() == StatoSessione.LOGIN 
-				   || this.getStatoCorrente() == StatoSessione.REGISTRAZIONE)
+				if(this.getStatoCorrente() == StatoSessione.REGISTRAZIONE)
 				{
 					this.pop();
+					this.pop();
+					this.push(nuovoStato);
+				}
+				else if(this.getStatoCorrente() == StatoSessione.LOGIN_E_REGISTRAZIONE )
+				{	
 					this.pop();
 					this.push(nuovoStato);
 				}

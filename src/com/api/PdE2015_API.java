@@ -26,6 +26,7 @@ import com.modello.*;
 import com.modello.Partita.Stato;
 import com.attivita.SessioneUtente.StatoSessione;
 import com.bean.*;
+import com.auth.*;
 
 import javax.annotation.Nullable;
 import javax.inject.*;
@@ -36,7 +37,10 @@ import javax.naming.PartialResultException;
 @Api(
 	 	name = "pdE2015",
 		version = "v1",
-		description = "PdE2015_API"
+		description = "PdE2015_API",
+		scopes = {Constants.EMAIL_SCOPE},
+	    clientIds = {Constants.WEB_CLIENT_ID, Constants.ANDROID_CLIENT_ID},
+	    audiences = {Constants.ANDROID_AUDIENCE}
 	)
 public class PdE2015_API
 {
@@ -427,7 +431,7 @@ public class PdE2015_API
 				path = "partita/ndisponibili",
 				httpMethod = HttpMethod.GET
 	          )
-	public NDisponibiliBean getNDisponibili(@Named("Id Partita")Long idPartita)
+	public NDisponibiliBean getNDisponibili(@Named("idPartita")Long idPartita)
 	{
 		log.log(Level.SEVERE, "faccio setUp().");
 		setUp();
@@ -1390,14 +1394,14 @@ public class PdE2015_API
 			path = "sessione/back",
 			httpMethod = HttpMethod.PUT
           )
-	public DefaultBean sessioneIndietro(PayloadBean payload) {
+	public PayloadBean sessioneIndietro(PayloadBean payload) {
 		setUp();
 		//Controllo esistenza Sessione
 		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(payload.getIdSessione()).now();
 		if( s == null)
 		{
 			log.log(Level.SEVERE, "Sessione non esistente!");
-			return sendResponse("Sessione non presente!", NOT_FOUND);
+			return new PayloadBean();
 		}
 		
 		s.tornaIndietro();
@@ -1443,7 +1447,34 @@ public class PdE2015_API
 		}
 	*/
 		ofy().save().entity(s).now();
-		return sendResponse("Stato sessione aggiornato con successo!", OK);
+		PayloadBean bean = new PayloadBean();
+		bean.setNuovoStato(s.getStatoCorrente());
+		return bean;
+	}
+	
+	@ApiMethod(
+			name = "sessione.statoAttuale",
+			path = "sessione/statoattuale",
+			httpMethod = HttpMethod.GET
+          )
+	public PayloadBean statoAttuale(@Named("idSessione")Long idSessione)
+	{
+		setUp();
+		//Controllo esistenza Sessione
+		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( s == null)
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			PayloadBean p = new PayloadBean();
+			p.setNuovoStato(null);
+			return p;
+		}
+		
+		tearDown();
+		PayloadBean p = new PayloadBean();
+		p.setIdSessione(idSessione);
+		p.setNuovoStato(s.getStatoCorrente());
+		return p;
 	}
 	
 	@ApiMethod(
@@ -1471,13 +1502,15 @@ public class PdE2015_API
 		switch( sessione.getStatoCorrente() )
 		{
 			case LOGIN_E_REGISTRAZIONE:
-				listaBean.addStatoSessione(StatoSessione.LOGIN);
+				//listaBean.addStatoSessione(StatoSessione.LOGIN);
+				listaBean.addStatoSessione(StatoSessione.LOGIN_E_REGISTRAZIONE);
 				listaBean.addStatoSessione(StatoSessione.REGISTRAZIONE);
-				break;
-			case LOGIN:
-				listaBean.addStatoSessione(StatoSessione.LOGIN);
 				listaBean.addStatoSessione(StatoSessione.PRINCIPALE);
 				break;
+		/*	case LOGIN:
+				listaBean.addStatoSessione(StatoSessione.LOGIN);
+				listaBean.addStatoSessione(StatoSessione.PRINCIPALE);
+				break;*/
 			case REGISTRAZIONE:
 				listaBean.addStatoSessione(StatoSessione.REGISTRAZIONE);
 				listaBean.addStatoSessione(StatoSessione.PRINCIPALE);
@@ -1632,7 +1665,7 @@ public class PdE2015_API
 			return sendResponse("Sessione non esistente!", NOT_FOUND);
 		}
 		//Controllo stato sessione
-		if( s.getStatoCorrente() != StatoSessione.LOGIN )
+		if( s.getStatoCorrente() != StatoSessione.LOGIN_E_REGISTRAZIONE )
 		{
 			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato LOGIN!");
 			return sendResponse("Impossibile effettuare il login in questo punto!", BAD_REQUEST);
