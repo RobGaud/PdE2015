@@ -2082,7 +2082,7 @@ public class PdE2015_API
 			return partialResult;
 		}
 		
-		Long idGruppoCreato = partialResult.getIdCreated();
+		//Long idGruppoCreato = partialResult.getIdCreated();
 		
 		//Aggiorno stato sessione
 		PayloadBean payload = new PayloadBean();
@@ -2097,7 +2097,7 @@ public class PdE2015_API
 			tearDown();
 			return partialResult;
 		}
-		return sendResponseCreated("Gruppo creato con successo!", CREATED, idGruppoCreato);
+		return sendResponseCreated("Gruppo creato con successo!", CREATED, idGruppo);
 	}
 	
 	
@@ -2395,22 +2395,44 @@ public class PdE2015_API
 		if( g == null)
 		{
 			log.log(Level.SEVERE, "Gruppo non esistente!");
-			return sendResponseGruppo(null, "Gruppo non esistente!", NOT_FOUND);
+			return sendResponseGruppo(null, null, "Gruppo non esistente!", NOT_FOUND);
 		}
 		//Controllo esistenza Sessione
 		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(idSessione).now();
 		if( s == null )
 		{
 			log.log(Level.SEVERE, "Sessione non esistente!");
-			return sendResponseGruppo(null, "Sessione non esistente!", NOT_FOUND);
+			return sendResponseGruppo(null, null, "Sessione non esistente!", NOT_FOUND);
 		}
 		//Controllo stato sessione
 		if( s.getStatoCorrente() != StatoSessione.GRUPPO )
 		{
 			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato GRUPPO!");
-			return sendResponseGruppo(null, "Impossibile chiamare il metodo in questo punto!", BAD_REQUEST);
+			return sendResponseGruppo(null, null, "Impossibile chiamare il metodo in questo punto!", BAD_REQUEST);
 		}
-		return sendResponseGruppo(g, "Operazione completata con successo", OK);
+		try{
+			//Load mail Admin
+			TipoLinkIscritto link = ofy().load().type(TipoLinkIscritto.class).id(g.getLinkGestito()).now();
+			if( link == null ){
+				log.log(Level.SEVERE, "Il gruppo "+idGruppo+" ha memorizzato un gestore che non esiste!");
+				return sendResponseGruppo(null, null, "Admin non trovato!", NOT_FOUND);
+			}
+			Giocatore admin = ofy().load().type(Giocatore.class).id(link.getGiocatore()).now();
+			if( admin == null ){
+				log.log(Level.SEVERE, "Il giocatore "+link.getGiocatore()+" non esiste!");
+				return sendResponseGruppo(null, null, "Admin non esistente!", NOT_FOUND);
+			}
+			
+			//Invio gruppoBean
+			return sendResponseGruppo(g, admin.getEmail(), "Operazione completata con successo", OK);
+		
+		}catch(EccezioneSubset e){
+			log.log(Level.SEVERE, "Il gruppo "+idGruppo+" ha memorizzato un admin che non e' iscritto!");
+			return sendResponseGruppo(null, null, "Admin non iscritto!", NOT_FOUND);
+		} catch (EccezioneMolteplicitaMinima e) {
+			log.log(Level.SEVERE, "Il gruppo "+idGruppo+" non ha memorizzato un admin!");
+			return sendResponseGruppo(null, null, "Gruppo senza admin!", NOT_FOUND);
+		}
 	}
 	
 	@ApiMethod(
@@ -3376,7 +3398,13 @@ public class PdE2015_API
 		while(it.hasNext())
 		{
 			Invito invito = it.next();
-			listaInvitiBean.addInvito(invito);
+			Gruppo g;
+			try {
+				g = ofy().load().type(Gruppo.class).id(invito.getGruppo()).now();
+				if( g != null ) listaInvitiBean.addInvito(invito, g.getNome());
+			} catch (EccezioneMolteplicitaMinima e) {
+				log.log(Level.SEVERE, "L'invito "+invito.getId()+" ha memorizzato un gruppo non esistente!");
+			}
 		}
 		log.log(Level.SEVERE, "faccio tearDown().");
 		tearDown();
@@ -4164,9 +4192,11 @@ public class PdE2015_API
     	return response;
     }
     
-    private GruppoBean sendResponseGruppo(Gruppo g, String mex, String code) {
+    private GruppoBean sendResponseGruppo(Gruppo g, String emailAdmin, String mex, String code)
+    {
     	GruppoBean response = new GruppoBean();
     	response.setGruppo(g);
+    	response.setEmailAdmin(emailAdmin);
     	response.setResult(mex);
     	response.setHttpCode(code);
     	tearDown();
@@ -4565,7 +4595,6 @@ public class PdE2015_API
 		
 		return sendResponse("Disponibilita rimossa con successo.", OK);
     }
-    
     
     // Metodo privato che data una lista, rimuove le partite Terminate
     private void filtraPartite(List<? extends Partita> listaPartite)

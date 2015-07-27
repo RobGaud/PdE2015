@@ -4,6 +4,8 @@ public class InfoInvitoBean
 {
 	private String emailMittente;
 	private String emailDestinatario;
+	private String nomeGruppo;
+	
 	private Long idGruppo;
 	
 	public String getEmailMittente() {
@@ -20,6 +22,14 @@ public class InfoInvitoBean
 
 	public void setEmailDestinatario(String emailDestinatario) {
 		this.emailDestinatario = emailDestinatario;
+	}
+	
+	public String getNomeGruppo() {
+		return nomeGruppo;
+	}
+
+	public void setNomeGruppo(String nomeGruppo) {
+		this.nomeGruppo = nomeGruppo;
 	}
 
 	public Long getIdGruppo() {

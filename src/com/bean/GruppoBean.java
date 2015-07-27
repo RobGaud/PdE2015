@@ -7,6 +7,7 @@ public class GruppoBean {
 	Gruppo gruppo;
 	private String result;
 	private String httpCode;
+	private String emailAdmin;
 	
 	public Gruppo getGruppo() {
 		return gruppo;
@@ -16,6 +17,14 @@ public class GruppoBean {
 		this.gruppo = gruppo;
 	}
 	
+	public String getEmailAdmin() {
+		return emailAdmin;
+	}
+
+	public void setEmailAdmin(String emailAdmin) {
+		this.emailAdmin = emailAdmin;
+	}
+
 	public String getResult() {
 		return result;
 	}
