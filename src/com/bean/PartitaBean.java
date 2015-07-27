@@ -5,6 +5,15 @@ import com.modello.Partita;
 public class PartitaBean {
 
 	Partita partita;
+	int tipo;
+	public int getTipo() {
+		return tipo;
+	}
+
+	public void setTipo(int tipo) {
+		this.tipo = tipo;
+	}
+
 	private String result;
 	private String httpCode;
 	

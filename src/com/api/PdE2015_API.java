@@ -62,6 +62,18 @@ public class PdE2015_API
 	
 	
 	@ApiMethod(
+			name = "api.tearDown",
+			path = "api/teardown",
+			httpMethod = HttpMethod.POST
+          )
+	public DefaultBean singleTearDown(@Named("unused")Long unused)
+	{
+		log.log(Level.SEVERE, "endlessteardown()");
+		tearDown();
+		return new DefaultBean();
+	}
+	
+	@ApiMethod(
 				name = "campo.inserisciCampo",
 				path = "campo",
 				httpMethod = HttpMethod.POST
@@ -1636,6 +1648,8 @@ public class PdE2015_API
 			case ELENCO_VOTI:
 				break;
 		}
+		
+		//tearDown();
 		return listaBean;
 	}
 	
@@ -1844,7 +1858,7 @@ public class PdE2015_API
 			tearDown();
 			return partialResult;
 		}
-		return sendResponse("Partita creata con successo!", CREATED);
+		return sendResponseCreated("Partita creata con successo!", CREATED, idPartita);
 	}
 	
 	@ApiMethod(
@@ -2068,6 +2082,8 @@ public class PdE2015_API
 			return partialResult;
 		}
 		
+		Long idGruppoCreato = partialResult.getIdCreated();
+		
 		//Aggiorno stato sessione
 		PayloadBean payload = new PayloadBean();
 		payload.setIdSessione(idSessione);
@@ -2081,7 +2097,7 @@ public class PdE2015_API
 			tearDown();
 			return partialResult;
 		}
-		return sendResponse("Gruppo creato con successo!", CREATED);
+		return sendResponseCreated("Gruppo creato con successo!", CREATED, idGruppoCreato);
 	}
 	
 	
@@ -4170,7 +4186,14 @@ public class PdE2015_API
     	ListaGruppiBean response = new ListaGruppiBean();
 		response.setResult(mex);
 		response.setHttpCode(code);
-		response.setListaGruppi(l);
+		LinkedList<InfoGruppoBean> li = new LinkedList<InfoGruppoBean>();
+ 		Iterator<Gruppo> it = l.iterator();
+		while( it.hasNext() )
+		{
+			Gruppo g = it.next();
+			li.add(ListaGruppiBean.convertiGruppo(g));
+		}
+		response.setListaGruppi(li);
 		tearDown();
 		return response;
     }
