@@ -1,9 +1,15 @@
 package com.bean;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
-
 import java.util.Iterator;
+import java.util.logging.Level;
+
 import com.modello.Partita;
 import com.modello.PartitaCalcetto;
 import com.modello.PartitaCalcio;
@@ -24,6 +30,20 @@ public class ListaPartiteBean {
 		if(partita != null){
 			PartitaBean partitaBean = new PartitaBean();
 			partitaBean.setPartita(partita);
+
+			String dataString = partita.getDataOra().toString().substring(4);
+			
+			String giorno, mese, anno, ora, minuti;
+			
+			giorno = dataString.substring(4, 6);
+			mese = dataString.substring(0, 3);
+			anno = dataString.substring(20);
+			ora = dataString.substring(7, 9);
+			minuti = dataString.substring(10, 12);
+			
+			dataString = ora+":"+minuti+" "+giorno+" "+mese+" "+anno;
+			partitaBean.setDataString(dataString);
+			
 			if( partita.getClass().equals(PartitaCalcetto.class) ) partitaBean.setTipo(1);
 			else if( partita.getClass().equals(PartitaCalciotto.class) ) partitaBean.setTipo(2);
 			else if( partita.getClass().equals(PartitaCalcio.class)) partitaBean.setTipo(3);

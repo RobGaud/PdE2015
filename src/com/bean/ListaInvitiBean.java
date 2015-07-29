@@ -16,13 +16,14 @@ public class ListaInvitiBean
 		listaInviti = new LinkedList<InfoInvitoBean>();
 	}
 	
-	public void addInvito(Invito invito, String nomeGruppo)
+	public void addInvito(Invito invito, String nomeGruppo, Long idInvito)
 	{
 		if(invito != null){
 			InfoInvitoBean invitoBean = new InfoInvitoBean();
 			try {
 				invitoBean.setEmailMittente(invito.getEmailMittente());
 				invitoBean.setIdGruppo(invito.getGruppo());
+				invitoBean.setIdInvito(idInvito);
 			} catch (EccezioneMolteplicitaMinima e){}
 			
 			invitoBean.setNomeGruppo(nomeGruppo);
@@ -31,15 +32,15 @@ public class ListaInvitiBean
 		}
 	}
 	
-	public void removeInvito(Invito Invito)
+	public void removeInvito(InfoInvitoBean Invito)
 	{
 		this.listaInviti.remove(Invito);
 	}
 	
 
-	public List<Invito> getlistaInviti()
+	public List<InfoInvitoBean> getlistaInviti()
 	{
-		return (LinkedList<Invito>)this.listaInviti.clone();
+		return (LinkedList<InfoInvitoBean>)this.listaInviti.clone();
 	}
 
 

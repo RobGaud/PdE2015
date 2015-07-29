@@ -1,13 +1,13 @@
 {
   "files": [
     {
-      "downloadUrl": "/downloads/pdE2015/v1/20150727154456/java/1.18.0-rc/futsalapp_1008_appspot_com-pdE2015-v1-20150727154456-java-1.18.0-rc-sources.jar", 
-      "path": "futsalapp_1008_appspot_com-pdE2015-v1-20150727154456-java-1.18.0-rc-sources.jar", 
+      "downloadUrl": "/downloads/pdE2015/v1/20150729141935/java/1.18.0-rc/futsalapp_1008_appspot_com-pdE2015-v1-20150729141935-java-1.18.0-rc-sources.jar", 
+      "path": "futsalapp_1008_appspot_com-pdE2015-v1-20150729141935-java-1.18.0-rc-sources.jar", 
       "type": "source", 
-      "timestamp": "2015-07-27 15:45"
+      "timestamp": "2015-07-29 14:19"
     }, 
     {
-      "path": "futsalapp_1008_appspot_com-pdE2015-v1-20150727154456-java-1.18.0-rc.jar.properties", 
+      "path": "futsalapp_1008_appspot_com-pdE2015-v1-20150729141935-java-1.18.0-rc.jar.properties", 
       "type": "android.properties"
     }
   ], 
@@ -674,5 +674,5 @@
   "version": "v1", 
   "language_version": "1.18.0-rc", 
   "id": "pdE2015:v1", 
-  "revision": 20150727154456
+  "revision": 20150729141935
 }

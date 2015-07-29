@@ -24,7 +24,7 @@ public abstract class Partita {
 	
 	@Index private Stato statoCorrente;
 	
-	public static final int MIN_MAX_LINK_PRESSO = 1;
+	public static final int MIN_MAX_LINK_PRESSO = 0;
 	public static final int MIN_LINK_GIOCA = 0;
 	public static final int MIN_LINK_PROPONE = 1;
 	public static final int MIN_LINK_DISPONIBILE = 1;

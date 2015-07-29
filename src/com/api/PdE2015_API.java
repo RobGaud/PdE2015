@@ -679,7 +679,6 @@ public class PdE2015_API
 				)
 	public DefaultBean inserisciLinkDisponibile(InfoGestionePartiteBean gestioneBean)
 	{
-		//TODO controllo se il giocatore appartiene al gruppo?
 		log.log(Level.SEVERE, "faccio setUp().");
 		setUp();
 		//Controllo che la partita esista nel Datastore
@@ -1542,6 +1541,7 @@ public class PdE2015_API
 					listaBean.addStatoSessione(StatoSessione.INVITO);
 					listaBean.addStatoSessione(StatoSessione.STORICO);
 					listaBean.addStatoSessione(StatoSessione.CREA_PARTITA);
+					listaBean.addStatoSessione(StatoSessione.PRINCIPALE);
 					//listaBean.addStatoSessione(StatoSessione.PARTITE_PROPOSTE);
 				}
 				//Altrimenti, se il gruppo è aperto...
@@ -1597,7 +1597,7 @@ public class PdE2015_API
 							break;
 						case GIOCATA:
 							listaBean.addStatoSessione(StatoSessione.CREA_VOTO);
-							listaBean.addStatoSessione(StatoSessione.ELENCO_VOTI);
+							//listaBean.addStatoSessione(StatoSessione.ELENCO_VOTI);
 							break;
 						default:
 							break;
@@ -1631,9 +1631,9 @@ public class PdE2015_API
 			case EXIT:
 				listaBean.addStatoSessione(StatoSessione.PRINCIPALE);
 				break;
-			case ESCI_GRUPPO:
+			/*case ESCI_GRUPPO:
 				listaBean.addStatoSessione(StatoSessione.PRINCIPALE);
-				break;
+				break;*/
 			case ANNULLA_PARTITA:
 				listaBean.addStatoSessione(StatoSessione.GRUPPO);
 				listaBean.addStatoSessione(StatoSessione.ANNULLA_PARTITA); //In caso di errore.
@@ -1645,8 +1645,8 @@ public class PdE2015_API
 			case MODIFICA_PARTITA:
 				listaBean.addStatoSessione(StatoSessione.MODIFICA_PARTITA);
 				listaBean.addStatoSessione(StatoSessione.PARTITA);
-			case ELENCO_VOTI:
-				break;
+		/*	case ELENCO_VOTI:
+				break; */
 		}
 		
 		//tearDown();
@@ -1845,6 +1845,7 @@ public class PdE2015_API
 			tearDown();
 			return partialResult;
 		}
+		/*
 		//Aggiorno stato sessione
 		PayloadBean payload = new PayloadBean();
 		payload.setIdSessione(idSessione);
@@ -1857,7 +1858,7 @@ public class PdE2015_API
 			log.log(Level.SEVERE, "faccio tearDown().");
 			tearDown();
 			return partialResult;
-		}
+		}*/
 		return sendResponseCreated("Partita creata con successo!", CREATED, idPartita);
 	}
 	
@@ -2011,8 +2012,8 @@ public class PdE2015_API
 		}
 		
 		//Aggiorno stato sessione
-		sessione.aggiornaStato(StatoSessione.CAMPO);
-		ofy().save().entity(sessione).now();
+		//sessione.aggiornaStato(StatoSessione.CAMPO);
+		//ofy().save().entity(sessione).now();
 		tearDown();
 		
 		return partialResult;
@@ -2084,6 +2085,7 @@ public class PdE2015_API
 		
 		//Long idGruppoCreato = partialResult.getIdCreated();
 		
+		/*
 		//Aggiorno stato sessione
 		PayloadBean payload = new PayloadBean();
 		payload.setIdSessione(idSessione);
@@ -2096,7 +2098,7 @@ public class PdE2015_API
 			log.log(Level.SEVERE, "faccio tearDown().");
 			tearDown();
 			return partialResult;
-		}
+		}*/
 		return sendResponseCreated("Gruppo creato con successo!", CREATED, idGruppo);
 	}
 	
@@ -2120,10 +2122,10 @@ public class PdE2015_API
 			return sendResponse("Sessione non presente!", NOT_FOUND);
 		}
 		//Controllo stato giusto
-		if( sessione.getStatoCorrente() != StatoSessione.ESCI_GRUPPO )
+		if( sessione.getStatoCorrente() != StatoSessione.GRUPPO )
 		{
 			log.log(Level.SEVERE, "esciGruppo: la sessione "+idSessione+
-									" non è nello stato ESCI_GRUPPO!");
+									" non è nello stato GRUPPO!");
 			return sendResponse("Impossibile uscire da un gruppo in questo punto!", BAD_REQUEST);
 		}
 		//Controllo presenza mail utente in sessione
@@ -2343,11 +2345,11 @@ public class PdE2015_API
 									" non ha giocatori iscritti!");
 			return sendResponse("Errore durante la gestione delle iscrizioni!", INTERNAL_SERVER_ERROR);
 		}
-		
+		/*
 		PayloadBean payload = new PayloadBean();
 		payload.setIdSessione(idSessione);
 		payload.setNuovoStato(StatoSessione.PRINCIPALE);
-		aggiornaStatoSessione(payload);
+		aggiornaStatoSessione(payload); */
 		return sendResponse("Uscita dal gruppo effettuata con successo!", OK);
 	}
 	
@@ -2796,11 +2798,11 @@ public class PdE2015_API
 			tearDown();
 			return partialResult;
 		}
-		
+		/*
 		//Aggiorno lo stato della sessione e termino.
 		s.aggiornaStato(StatoSessione.PARTITA);
 		ofy().save().entity(s).now();
-		
+		*/
 		tearDown();
 		return partialResult;
 	}
@@ -2829,10 +2831,10 @@ public class PdE2015_API
 			return listaVotiBean;
 		}
 		//Controllo stato giusto
-		if( sessione.getStatoCorrente() != StatoSessione.ELENCO_VOTI )
+		if( sessione.getStatoCorrente() != StatoSessione.PARTITA )
 		{
 			log.log(Level.SEVERE, "elencoVotiUomoPartita: la sessione "+idSessione+
-									" non è nello stato ELENCO_VOTI!");
+									" non è nello stato PARTITA!");
 			log.log(Level.SEVERE, "faccio tearDown().");
 			tearDown();
 			listaVotiBean.setHttpCode(BAD_REQUEST);
@@ -3401,7 +3403,7 @@ public class PdE2015_API
 			Gruppo g;
 			try {
 				g = ofy().load().type(Gruppo.class).id(invito.getGruppo()).now();
-				if( g != null ) listaInvitiBean.addInvito(invito, g.getNome());
+				if( g != null ) listaInvitiBean.addInvito(invito, g.getNome(), invito.getId());
 			} catch (EccezioneMolteplicitaMinima e) {
 				log.log(Level.SEVERE, "L'invito "+invito.getId()+" ha memorizzato un gruppo non esistente!");
 			}
@@ -3684,7 +3686,50 @@ public class PdE2015_API
 			return result;
 		}
 	}
-	//TODO impostaCampo
+	
+	@ApiMethod(
+			name = "api.getCampo",
+			path = "api/getcampo",
+			httpMethod = HttpMethod.GET
+          )
+	public CampoBean getCampo(@Named("idCampo")Long idCampo,
+							  @Named("idSessione")Long idSessione)
+	{
+		setUp();
+		CampoBean result = new CampoBean();
+		//Controllo esistenza Sessione
+		SessioneUtente sessione = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( sessione == null)
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			tearDown();
+			result.setHttpCode(NOT_FOUND);
+			return result;
+		}
+		//Controllo stato giusto
+		if( sessione.getStatoCorrente() != StatoSessione.CAMPO )
+		{
+			log.log(Level.SEVERE, "la sessione "+idSessione
+								 +" non è nello stato CAMPO!");
+			log.log(Level.SEVERE, "faccio tearDown().");
+			tearDown();
+			result.setHttpCode(BAD_REQUEST);
+			return result;
+		}
+		//Controllo esistenza campo
+		Campo campo = ofy().load().type(Campo.class).id(idCampo).now();
+		if( campo == null )
+		{
+			log.log(Level.SEVERE, "Il campo "+idCampo+"richiesto non esiste!");
+			tearDown();
+			result.setHttpCode(NOT_FOUND);
+			return result;
+		}
+		result.setCampo(campo);
+		result.setHttpCode(OK);
+		return result;
+	}
+
 	@ApiMethod(
 			name = "api.impostaCampo",
 			path = "api/impostacampo",
@@ -3756,15 +3801,17 @@ public class PdE2015_API
 			tearDown();
 			return partialResult;
 		}
-		
+	/*	
 		//Aggiorna stato sessione in PARTITA
 		PayloadBean payload = new PayloadBean();
 		payload.setIdSessione(idSessione);
 		payload.setNuovoStato(StatoSessione.PARTITA);
 		aggiornaStatoSessione(payload);
-		
+	*/	
 		return sendResponse("Campo impostato con successo!", OK);
 	}
+	
+	
 	
 	@ApiMethod(
 			name = "api.listaPartiteProposteConfermate",
@@ -3833,8 +3880,10 @@ public class PdE2015_API
 				Iterator<Partita> it = l.iterator();
 				while(it.hasNext())
 					lg.addPartita(it.next());
+				
+				log.log(Level.SEVERE, "Data="+l.get(0).getDataOra().toString());
 		}
-		
+				
 		tearDown();
 		lg.setHttpCode(OK);
 		lg.setResult("Operazione completata con successo!");
@@ -3941,7 +3990,6 @@ public class PdE2015_API
 			return sendResponseAnswer("Gruppo non esistente!", NOT_FOUND, false);
 		}
 		//Controllo stato sessione
-		//TODO Bisogna metterlo?
 		if( s.getStatoCorrente() != StatoSessione.GRUPPO )
 		{
 			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato GRUPPO!");
@@ -4106,7 +4154,6 @@ public class PdE2015_API
 			return sendResponse("Gruppo non aperto!", PRECONDITION_FAILED);
 		}
 		//Controllo stato sessione
-		//TODO Bisogna metterlo?
 		if( s.getStatoCorrente() != StatoSessione.GRUPPO )
 		{
 			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato GRUPPO!");
@@ -4135,7 +4182,8 @@ public class PdE2015_API
 		}
 		return sendResponse("Stato iscrizione aggiornato con succcesso!", OK);
 	}
-
+	
+	
 	/////////////////////////////////////////
 	///////// TODO METODI AUSILIARI /////////
 	/////////////////////////////////////////
@@ -4607,16 +4655,10 @@ public class PdE2015_API
     		Partita p = it.next();
     		if(p.getStatoCorrente() == Partita.Stato.CONFERMATA)
     		{
-    			p.setStatoCorrente(Partita.Stato.GIOCATA);
-    			ofy().save().entity(p).now();
-    			it.remove();
-    			
-    		}
-    		else
-    		{
-	    		Calendar match_date = DateToCalendar(p.getDataOra());
+    			Calendar match_date = DateToCalendar(p.getDataOra());
+    			log.log(Level.SEVERE, "filtraPartite: "+match_date.toString());
 	    		Calendar now = Calendar.getInstance();
-	    		//TODO poi vediamo
+
 	    		match_date.add(Calendar.HOUR, 2);
 	    		if( now.after(match_date) )
 	    		{
@@ -4630,19 +4672,27 @@ public class PdE2015_API
     
     private static Calendar DateToCalendar(Date date ) 
     { 
+    	//Provo due SimpleDateFormat
 		 Calendar cal = null;
 		 try {   
 			 //DateFormat formatter = new SimpleDateFormat("EEE MMM dd HH:mm:ss: z yyyy");
-			 DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-			 //DateFormat formatter = new SimpleDateFormat("yyyy-MM-ddTHH:mm:ssZ");
-			 //DateFormat formatter = new SimpleDateFormat("yyyyMMddhhmmss");
+			 DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+
 			 date = (Date)formatter.parse(date.toString()); 
 			 cal=Calendar.getInstance();
 			 cal.setTime(date);
 		  }
 		  catch (ParseException e)
 		  {
-			  System.out.println("Exception :"+e);  
+			  DateFormat formatter = new SimpleDateFormat("EEE MMM dd HH:mm:ss: z yyyy");
+			  try {
+				date = (Date)formatter.parse(date.toString());
+				cal=Calendar.getInstance();
+				 cal.setTime(date);
+				 
+			} catch (ParseException e1) {
+				System.out.println("Exception :"+e);  
+			}
 		  }  
 		  return cal;
     }

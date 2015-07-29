@@ -6,14 +6,8 @@ public class PartitaBean {
 
 	Partita partita;
 	int tipo;
-	public int getTipo() {
-		return tipo;
-	}
-
-	public void setTipo(int tipo) {
-		this.tipo = tipo;
-	}
-
+	String dataString;
+	
 	private String result;
 	private String httpCode;
 	
@@ -23,6 +17,22 @@ public class PartitaBean {
 	
 	public void setPartita(Partita partita) {
 		this.partita = partita;
+	}
+	
+	public String getDataString() {
+		return dataString;
+	}
+
+	public void setDataString(String dataString) {
+		this.dataString = dataString;
+	}
+
+	public int getTipo() {
+		return tipo;
+	}
+
+	public void setTipo(int tipo) {
+		this.tipo = tipo;
 	}
 	
 	public String getResult() {

@@ -13,8 +13,8 @@ public class SessioneUtente {
 										 RICERCA_GRUPPO, INVITO, ISCRITTI_GRUPPO, STORICO,
 										 CREA_PARTITA, PARTITA, 
 										 CREA_VOTO, RICERCA_CAMPO, DISPONIBILE_PER_PARTITA,
-										 CAMPO, CREA_CAMPO, CREA_GRUPPO, EXIT, ESCI_GRUPPO,
-										 ANNULLA_PARTITA, ELENCO_VOTI, MODIFICA_GRUPPO,
+										 CAMPO, CREA_CAMPO, CREA_GRUPPO, EXIT, /*ESCI_GRUPPO,*/
+										 ANNULLA_PARTITA, /*ELENCO_VOTI,*/ MODIFICA_GRUPPO,
 										 MODIFICA_PARTITA
 										};
 	
@@ -71,6 +71,8 @@ public class SessioneUtente {
 */
 	public void aggiornaStato(StatoSessione nuovoStato)
 	{
+		if( nuovoStato == this.getStatoCorrente() ) return;
+		
 		switch(nuovoStato)
 		{
 			case PRINCIPALE:
