@@ -1967,7 +1967,7 @@ public class PdE2015_API
 			log.log(Level.SEVERE, "Errore durante l'annullamento della disponibilità");
 			return partialResult;
 		}
-		
+		/*
 		//Aggiorno stato sessione
 		PayloadBean payload = new PayloadBean();
 		payload.setIdSessione(idSessione);
@@ -1977,7 +1977,7 @@ public class PdE2015_API
 		{
 			log.log(Level.SEVERE, "errore durante l'uscita del giocatore dalla partita "
 									+gestioneBean.getIdPartita()+"!");
-		}
+		} */
 		return partialResult;
 	}
 	
@@ -3607,14 +3607,14 @@ public class PdE2015_API
 			tearDown();
 			return partialResult;
 		}
-		
+		/*
 		//Aggiorna stato sessione in PARTITA
 		//Aggiornamento stato sessione
 		PayloadBean payload = new PayloadBean();
 		payload.setIdSessione(idSessione);
 		payload.setNuovoStato(StatoSessione.PARTITA);
 		aggiornaStatoSessione(payload);
-		log.log(Level.SEVERE, "faccio tearDown().");		
+		log.log(Level.SEVERE, "faccio tearDown()."); */		
 		tearDown();
 		return partialResult;
 	}
