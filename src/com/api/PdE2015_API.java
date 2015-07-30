@@ -2814,7 +2814,8 @@ public class PdE2015_API
 			httpMethod = HttpMethod.GET
           )
 	public ListaVotiBean elencoVotiUomoPartita(@Named("idPartita")Long idPartita,
-											   @Named("idSessione")Long idSessione)
+											   @Named("idSessione")Long idSessione,
+											   @Named("emailVotato")String emailVotato)
 	{
 		log.log(Level.SEVERE, "faccio setUp().");
 		setUp();
@@ -2890,6 +2891,7 @@ public class PdE2015_API
 		return listaVotiBean;
 	*/
 		List<VotoUomoPartita> listaVoti = ofy().load().type(VotoUomoPartita.class)
+										  .filter("votato", emailVotato)
 										  .filter("linkVotoPerPartita", idPartita).list();
 		log.log(Level.SEVERE, "dimensione listavoti = "+listaVoti.size());
 		log.log(Level.SEVERE, "faccio tearDown().");
@@ -3049,13 +3051,13 @@ public class PdE2015_API
 			log.log(Level.SEVERE, "invitaGiocatore: errore durante la creazione dell'invito!");
 			return partialResult;
 		}
-		
+		/*
 		//Aggiornamento stato sessione
 		PayloadBean payload = new PayloadBean();
 		payload.setIdSessione(idSessione);
 		payload.setNuovoStato(StatoSessione.GRUPPO);
-		aggiornaStatoSessione(payload);
-		return partialResult;
+		aggiornaStatoSessione(payload); */
+		return partialResult; 
    }
 	
 	@ApiMethod(
@@ -3343,13 +3345,13 @@ public class PdE2015_API
 		link.setnAmici(gestioneBean.getnAmici());
 		ofy().save().entity(link).now();
 		
-		//Aggiorna stato sessione in PARTITA
+	/*	//Aggiorna stato sessione in PARTITA
 		//Aggiornamento stato sessione
 		PayloadBean payload = new PayloadBean();
 		payload.setIdSessione(idSessione);
 		payload.setNuovoStato(StatoSessione.PARTITA);
 		aggiornaStatoSessione(payload);
-		
+	*/	
 		return sendResponse("Link disponibile aggiornato con successo!", OK);
 	}
 	
@@ -4253,7 +4255,25 @@ public class PdE2015_API
     
     private PartitaBean sendResponsePartita(Partita p, String mex, String code) {
     	PartitaBean response = new PartitaBean();
+    	//Set partita
     	response.setPartita(p);
+    	//Set tipo
+    	if( p.getClass().equals(PartitaCalcetto.class) ) response.setTipo(1);
+    	else if( p.getClass().equals(PartitaCalciotto.class) ) response.setTipo(2);
+    	else if( p.getClass().equals(PartitaCalcio.class) ) response.setTipo(3);
+    	//Set data
+    	String dataString = p.getDataOra().toString().substring(4);
+		String giorno, mese, anno, ora, minuti;
+		
+		giorno = dataString.substring(4, 6);
+		mese = dataString.substring(0, 3);
+		anno = dataString.substring(20);
+		ora = dataString.substring(7, 9);
+		minuti = dataString.substring(10, 12);
+		
+		dataString = ora+":"+minuti+" "+giorno+" "+mese+" "+anno;
+		response.setDataString(dataString);
+    	
     	response.setResult(mex);
     	response.setHttpCode(code);
     	tearDown();
