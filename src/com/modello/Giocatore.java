@@ -158,4 +158,15 @@ public class Giocatore {
 	public Set<Long> getLinkDestinatario() {
 		return (HashSet<Long>)linkDestinatario.clone();
 	}
+	
+	public boolean equals(Object o){
+		if(o == null || !o.getClass().equals(this.getClass()))
+			return false;
+		Giocatore g = (Giocatore)o;
+		return this.email.equals(g.email);
+	}
+	
+	public int hashCode(){
+		return this.email.length();
+	}
 }

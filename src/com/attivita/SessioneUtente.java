@@ -14,7 +14,7 @@ public class SessioneUtente {
 										 CREA_PARTITA, PARTITA, 
 										 CREA_VOTO, RICERCA_CAMPO, DISPONIBILE_PER_PARTITA,
 										 CAMPO, CREA_CAMPO, CREA_GRUPPO, EXIT, /*ESCI_GRUPPO,*/
-										 ANNULLA_PARTITA, /*ELENCO_VOTI,*/ MODIFICA_GRUPPO,
+										 /*ANNULLA_PARTITA, ELENCO_VOTI,*/ MODIFICA_GRUPPO,
 										 MODIFICA_PARTITA
 										};
 	
@@ -98,7 +98,7 @@ public class SessioneUtente {
 				break;
 			case GRUPPO:
 				if(this.getStatoCorrente() == StatoSessione.MODIFICA_GRUPPO ||
-				   this.getStatoCorrente() == StatoSessione.ANNULLA_PARTITA)
+				   this.getStatoCorrente() == StatoSessione.INVITO)
 				{
 					this.pop();
 				}

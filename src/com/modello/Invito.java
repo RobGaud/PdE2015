@@ -35,8 +35,6 @@ public class Invito
 		return id;
 	}
 
-	
-	
 	int quantiMittente() {
 		if( this.emailMittente == null )
 			return 0;
@@ -114,11 +112,14 @@ public class Invito
 		if(o==null || !o.getClass().equals(this.getClass()))
 			return false;
 		Invito i = (Invito)o;
-		return i.emailMittente.equals(this.emailMittente) && i.emailDestinatario.equals(this.emailDestinatario) &&
-			   i.idGruppo.equals(this.idGruppo);
+		return this.id.equals(i.id);
+		
+		//return i.emailMittente.equals(this.emailMittente) && i.emailDestinatario.equals(this.emailDestinatario) &&
+		//	   i.idGruppo.equals(this.idGruppo);
 	}
 	
 	public int hashCode() {
-		return emailMittente.hashCode() + emailDestinatario.hashCode() + idGruppo.hashCode();
+		return this.id.intValue();
+		//return emailMittente.hashCode() + emailDestinatario.hashCode() + idGruppo.hashCode();
 	}
 }

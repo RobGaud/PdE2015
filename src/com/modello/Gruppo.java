@@ -86,12 +86,14 @@ public class Gruppo
 			return false;
 		
 		Gruppo g = (Gruppo)o;
-		return g.nome.equals(this.nome) && g.dataCreazione.equals(this.dataCreazione);
+		return this.id.equals(g.id);
+		//return g.nome.equals(this.nome) && g.dataCreazione.equals(this.dataCreazione);
 	}
 	
 	public int hashCode()
 	{
-		return this.nome.length() + this.dataCreazione.hashCode();
+		return this.id.intValue();
+		//return this.nome.length() + this.dataCreazione.hashCode();
 	}
 	
 	

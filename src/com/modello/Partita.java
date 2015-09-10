@@ -4,7 +4,6 @@ import java.util.*;
 import com.googlecode.objectify.annotation.*;
 
 
-
 @Entity
 public abstract class Partita {
 	
@@ -98,7 +97,7 @@ public abstract class Partita {
 	
 	public Long getCampo() throws EccezioneMolteplicitaMinima
 	{
-		if( this.quantiCampi() != MIN_MAX_LINK_PRESSO )
+		if( this.quantiCampi() < MIN_MAX_LINK_PRESSO )
 			throw new EccezioneMolteplicitaMinima("Cardinalita min/max violata!");
 		else
 			return this.campo;
@@ -230,5 +229,16 @@ public abstract class Partita {
 
 	public void setStatoCorrente(Stato statoCorrente) {
 		this.statoCorrente = statoCorrente;
+	}
+	
+	public boolean equals(Object o){
+		if(o == null || !o.getClass().equals(this.getClass()))
+			return false;
+		Partita p = (Partita)o;
+		return this.id.equals(p.id);
+	}
+	
+	public int hashCode(){
+		return this.id.intValue();
 	}
 }

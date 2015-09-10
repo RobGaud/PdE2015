@@ -8,15 +8,25 @@ import com.modello.Giocatore;
 public class ListaGiocatoriBean
 {
 	private LinkedList<Giocatore> listaGiocatori;
+	private LinkedList<Integer> listaAmici;
 	private String httpCode;
 	private String result;
 	
 	public ListaGiocatoriBean() {
 		this.listaGiocatori = new LinkedList<Giocatore>();
+		this.listaAmici = new LinkedList<Integer>();
 	}
 	
 	public void setListaGiocatori(LinkedList<Giocatore> listaGiocatori) {
 		this.listaGiocatori = listaGiocatori;
+	}
+
+	public List<Integer> getListaAmici() {
+		return (LinkedList<Integer>)listaAmici.clone();
+	}
+
+	public void setListaAmici(LinkedList<Integer> listaAmici) {
+		this.listaAmici = listaAmici;
 	}
 
 	public String getResult() {
@@ -46,7 +56,16 @@ public class ListaGiocatoriBean
 		this.listaGiocatori.remove(Giocatore);
 	}
 	
-
+	public void addAmici(Integer i)
+	{
+		this.listaAmici.add(i);
+	}
+	
+	public void removeAmici(Integer i)
+	{
+		this.listaAmici.remove(i);
+	}
+	
 	public List<Giocatore> getListaGiocatori()
 	{
 		return (LinkedList<Giocatore>)this.listaGiocatori.clone();

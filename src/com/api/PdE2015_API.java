@@ -512,7 +512,6 @@ public class PdE2015_API
 		Gruppo gruppo = ofy().load().type(Gruppo.class).id(invitoBean.getIdGruppo()).now();
 		if( gruppo == null) return sendResponse("Gruppo non esistente!", PRECONDITION_FAILED);
 		
-		//TODO controllare che il mittente faccia parte del gruppo, ovviamente.
 		//Controllo che il destinatario non faccia già parte del gruppo;
 		//devo quindi controllare che non esista un tipoLinkIscritto
 		//con questo gruppo e questo giocatore
@@ -775,7 +774,6 @@ public class PdE2015_API
 		Giocatore giocatore = ofy().load().type(Giocatore.class).id(gestioneBean.getEmailGiocatore()).now();
 		if(giocatore==null) return sendResponse("Giocatore non esistente!", PRECONDITION_FAILED);
 		
-		//TODO: vediamola bene sta cosa
 		//Controllo che la partita non abbia già un giocatore che l'ha proposta
 		if( partita.quantiPropone() == 1 )
 			return sendResponse("La partita ha già memorizzato un giocatore che l'ha proposta!", PRECONDITION_FAILED);
@@ -1244,7 +1242,6 @@ public class PdE2015_API
 		if( partita == null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
 		
 		// Controllo link duplicati
-		// TODO Rivedere bene gli equals!!
 		if(gruppo.getPartiteOrganizzate().contains(organizzaBean.getPartita())) 
 			return sendResponse("Partita già organizzata!", CONFLICT);
 		
@@ -1302,7 +1299,6 @@ public class PdE2015_API
 		if( partita == null) return sendResponse("Partita non esistente!", PRECONDITION_FAILED);
 		
 		// Controllo unicità Campo
-		// TODO vedere bene per la possibilità di cambiare campo
 		if(partita.quantiCampi() == 1) return sendResponse("Campo già impostato!", CONFLICT);
 		
 		// inserimento LinkPresso e salvataggio/aggiornamento
@@ -1340,7 +1336,6 @@ public class PdE2015_API
 	}
 	
 	//TODO API Sessione
-	
 	@ApiMethod(
 			name = "sessione.inserisciSessione",
 			path = "sessione",
@@ -1495,7 +1490,6 @@ public class PdE2015_API
           )
 	public ListaStatiBean listaStati(PayloadBean payload)
 	{
-		//TODO cambia parametro bean in named nullable
 		log.log(Level.SEVERE, "faccio setUp().");
 		setUp();
 		ListaStatiBean listaBean = new ListaStatiBean();
@@ -1547,9 +1541,14 @@ public class PdE2015_API
 				//Altrimenti, se il gruppo è aperto...
 				else
 				{
-					GruppoAperto ga = ofy().load().type(GruppoAperto.class).id(payload.getIdGruppo()).now();
-					if( ga != null )
-						listaBean.addStatoSessione(StatoSessione.GRUPPO); //Iscrizione GruppoAPerto
+					try {
+						 GruppoAperto ga = ofy().load().type(GruppoAperto.class).id(payload.getIdGruppo()).now();
+						 if( ga != null )
+								listaBean.addStatoSessione(StatoSessione.GRUPPO); //Iscrizione GruppoAPerto
+						}
+						catch(ClassCastException e) {
+							e.printStackTrace();
+						}
 				}
 				break;
 			case PROFILO:
@@ -1633,11 +1632,11 @@ public class PdE2015_API
 				break;
 			/*case ESCI_GRUPPO:
 				listaBean.addStatoSessione(StatoSessione.PRINCIPALE);
-				break;*/
+				break;
 			case ANNULLA_PARTITA:
 				listaBean.addStatoSessione(StatoSessione.GRUPPO);
-				listaBean.addStatoSessione(StatoSessione.ANNULLA_PARTITA); //In caso di errore.
-				break;
+				listaBean.addStatoSessione(StatoSessione.ANNULLA_PARTITA); //In caso di errore. 
+				break; */
 			case MODIFICA_GRUPPO:
 				listaBean.addStatoSessione(StatoSessione.MODIFICA_GRUPPO);
 				listaBean.addStatoSessione(StatoSessione.GRUPPO);
@@ -1651,6 +1650,33 @@ public class PdE2015_API
 		
 		//tearDown();
 		return listaBean;
+	}
+	
+	@ApiMethod(
+			name = "sessione.reimpostaStato",
+			path = "sessione/reset",
+			httpMethod = HttpMethod.PUT
+		  )
+	public DefaultBean reimpostaStato(@Named("idSessione")Long idSessione)
+	{
+		log.log(Level.SEVERE, "faccio setUp().");
+		setUp();
+		//Controllo esistenza Sessione
+		SessioneUtente s = ofy().load().type(SessioneUtente.class).id(idSessione).now();
+		if( s == null)
+		{
+			log.log(Level.SEVERE, "Sessione non esistente!");
+			return sendResponse("Sessione non presente!", NOT_FOUND);
+		}
+		
+		//Torna allo stato principale
+		while(s.getStatoCorrente() != StatoSessione.PRINCIPALE)
+		{
+			s.tornaIndietro();
+		}
+		// Salva gli eventuali cambiamenti sul Datastore 
+		ofy().save().entity(s).now();
+		return sendResponse("Stato sessione reimpostato con successo!", OK);
 	}
 	
 	//TODO API alto livello
@@ -1880,10 +1906,10 @@ public class PdE2015_API
 			return sendResponse("Sessione non presente!", NOT_FOUND);
 		}
 		//Controllo stato giusto
-		if( s.getStatoCorrente() != StatoSessione.ANNULLA_PARTITA )
+		if( s.getStatoCorrente() != StatoSessione.PARTITA )
 		{
 			log.log(Level.SEVERE, "annullaPartita: la sessione "+idSessione
-								 +" non è nello stato ANNULLA_PARTITA!");
+								 +" non è nello stato PARTITA!");
 			return sendResponse("Impossibile annullare una partita in questo punto!", BAD_REQUEST);
 		}
 		//Controllo esistenza partita
@@ -1898,7 +1924,6 @@ public class PdE2015_API
 			
 		} catch (EccezioneMolteplicitaMinima e) {
 			log.log(Level.SEVERE, "annullaPartita: la partita "+annullaBean.getIdPartita()+" non ha un proponitore!");
-			//TODO che famo?
 			return sendResponse("Non si ha traccia del giocatore che ha proposto la partita!", INTERNAL_SERVER_ERROR);
 		}
 		
@@ -2259,7 +2284,6 @@ public class PdE2015_API
 						log.log(Level.SEVERE, "esciGruppo: errore durante l'annullamento della partita "
 											  +idPartita+"!");
 						continue;
-						//TODO o return partialResult; ?
 					}
 				}
 				//Eliminazione gruppo
@@ -2277,7 +2301,7 @@ public class PdE2015_API
 				
 				//Se tutto è andato a buon fine, aggiorno lo stato della sessione,
 				//E riporto l'utente alla schermata principale.
-				PayloadBean payload = new PayloadBean();
+				/*PayloadBean payload = new PayloadBean();
 				payload.setIdSessione(idSessione);
 				payload.setNuovoStato(StatoSessione.PRINCIPALE);
 				partialResult = aggiornaStatoSessione(payload);
@@ -2288,7 +2312,7 @@ public class PdE2015_API
 					log.log(Level.SEVERE, "faccio tearDown().");
 					tearDown();
 					return partialResult;
-				}
+				}*/
 				return sendResponse("Uscita dal gruppo effettuata con successo!", OK);
 			}
 			
@@ -2376,9 +2400,9 @@ public class PdE2015_API
 			return sendResponseGiocatore(null, "Sessione non esistente!", NOT_FOUND);
 		}
 		//Controllo stato sessione
-		if( s.getStatoCorrente() != StatoSessione.PROFILO )
+		if( s.getStatoCorrente() != StatoSessione.PROFILO && s.getStatoCorrente() != StatoSessione.PRINCIPALE)
 		{
-			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato PROFILO!");
+			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato PROFILO o in PRINCIPALE!");
 			return sendResponseGiocatore(null, "Impossibile chiamare il metodo in questo punto!", BAD_REQUEST);
 		}
 		return sendResponseGiocatore(g, "Operazione completata con successo", OK);
@@ -2653,7 +2677,6 @@ public class PdE2015_API
 			return sendResponseListaGruppi("Sessione non esistente!", NOT_FOUND, new LinkedList<Gruppo>());
 		}
 		//Controllo stato sessione
-		//TODO E' giusto metterlo?!
 		if( s.getStatoCorrente() != StatoSessione.PRINCIPALE )
 		{
 			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato PRINCIPALE!");
@@ -2711,7 +2734,6 @@ public class PdE2015_API
 			return sendResponseListaGiocatori("Sessione non esistente!", NOT_FOUND, new LinkedList<Giocatore>());
 		}
 		//Controllo stato sessione
-		//TODO E' giusto metterlo?!
 		if( s.getStatoCorrente() != StatoSessione.ISCRITTI_GRUPPO )
 		{
 			log.log(Level.SEVERE, "La sessione "+idSessione+" non è nello stato ISCRITTI_GRUPPO!");
@@ -2896,8 +2918,8 @@ public class PdE2015_API
 		log.log(Level.SEVERE, "dimensione listavoti = "+listaVoti.size());
 		log.log(Level.SEVERE, "faccio tearDown().");
 		tearDown();
-		if( listaVoti == null)
-			return listaVotiBean;
+		if( listaVoti == null) return listaVotiBean;
+		
 		Iterator<VotoUomoPartita> it = listaVoti.iterator();
 		while(it.hasNext())
 		{
@@ -2977,6 +2999,7 @@ public class PdE2015_API
 		
 		try {
 			int nVoti;
+			List<VotoUomoPartita> elencoVoti;
 			Set<String> elencoEmailGiocanti = partita.getLinkGioca();
 			Iterator<String> itGiocanti = elencoEmailGiocanti.iterator();
 			while(itGiocanti.hasNext())
@@ -2992,8 +3015,12 @@ public class PdE2015_API
 				}
 				classificaVotiBean.addGiocatore(giocatore);
 				//Conto il numero di voti
-				nVoti = ofy().load().type(VotoUomoPartita.class).filter("partita", idPartita)
-														 .filter("votato", email).count();
+				/*nVoti = ofy().load().type(VotoUomoPartita.class).filter("partita", idPartita)
+														 .filter("votato", email).count();*/
+				elencoVoti = ofy().load().type(VotoUomoPartita.class).filter("linkVotoPerPartita", idPartita)
+						 											 .filter("votato", email)
+						 											 .list();
+				nVoti = elencoVoti.size();
 				classificaVotiBean.addNumeroVoti(nVoti);
 			}
 		} catch (EccezioneMolteplicitaMinima e) {
@@ -3044,6 +3071,7 @@ public class PdE2015_API
 		}
 		log.log(Level.SEVERE, "faccio tearDown().");
 		tearDown();
+		
 		//Creazione invito
 		DefaultBean partialResult = inserisciInvito(invitoBean);
 		if( !partialResult.getHttpCode().equals(CREATED) )
@@ -3206,7 +3234,6 @@ public class PdE2015_API
 			
 		} catch (EccezioneMolteplicitaMinima e) {
 			log.log(Level.SEVERE, "La partita "+idPartita+" non ha un proponitore!");
-			//TODO che famo?
 			return sendResponse("Non si ha traccia del giocatore che ha proposto la partita!", INTERNAL_SERVER_ERROR);
 		}
 		
@@ -3473,7 +3500,8 @@ public class PdE2015_API
 		Iterator<TipoLinkDisponibile> it = elencoLink.iterator();
 		while(it.hasNext())
 		{
-			String email = it.next().getGiocatore();
+			TipoLinkDisponibile l = it.next();
+			String email = l.getGiocatore();
 			Giocatore giocatore = ofy().load().type(Giocatore.class).id(email).now();
 			if( giocatore == null )
 			{
@@ -3481,6 +3509,7 @@ public class PdE2015_API
 				continue;
 			}
 			listaGiocatori.addGiocatore(giocatore);
+			listaGiocatori.addAmici(l.getnAmici());
 		}
 		log.log(Level.SEVERE, "faccio tearDown().");
 		tearDown();
@@ -3508,10 +3537,10 @@ public class PdE2015_API
 			return listaGiocatori;
 		}
 		//Controllo stato giusto
-		if( sessione.getStatoCorrente() != StatoSessione.PARTITA )
+		if( sessione.getStatoCorrente() != StatoSessione.PARTITA && sessione.getStatoCorrente() != StatoSessione.CREA_VOTO)
 		{
 			log.log(Level.SEVERE, "la sessione "+idSessione
-								 +" non è nello stato PARTITA!");
+								 +" non è nello stato PARTITA o nello stato CREA_VOTO!");
 			listaGiocatori.setHttpCode(BAD_REQUEST);
 			return listaGiocatori;
 		}
@@ -3532,7 +3561,7 @@ public class PdE2015_API
 			return listaGiocatori;
 		}
 		//Controllo stato partita
-		if( partita.getStatoCorrente() != Stato.CONFERMATA)
+		if(!(partita.getStatoCorrente() == Stato.CONFERMATA || partita.getStatoCorrente() == Stato.GIOCATA))
 		{
 			log.log(Level.SEVERE, "La partita non è nello stato CONFERMATA!");
 			listaGiocatori.setHttpCode(BAD_REQUEST);
@@ -3540,11 +3569,19 @@ public class PdE2015_API
 		}
 		
 		try {
+			List<TipoLinkDisponibile> elencoLink = ofy().load().type(TipoLinkDisponibile.class)
+														.filter("partita", idPartita).list();
+			Iterator<TipoLinkDisponibile> it = elencoLink.iterator();
 			Set<String> elencoEmailGiocanti = partita.getLinkGioca();
-			Iterator<String> it = elencoEmailGiocanti.iterator();
+			//Iterator<String> it = elencoEmailGiocanti.iterator();
 			while(it.hasNext())
 			{
-				String email = it.next();
+				TipoLinkDisponibile l = it.next();
+				//String email = it.next();
+				String email = l.getGiocatore();
+				if(!elencoEmailGiocanti.contains(email))
+					continue;
+				
 				Giocatore giocatore = ofy().load().type(Giocatore.class).id(email).now();
 				if( giocatore == null )
 				{
@@ -3552,6 +3589,7 @@ public class PdE2015_API
 					continue;
 				}
 				listaGiocatori.addGiocatore(giocatore);
+				listaGiocatori.addAmici(l.getnAmici());
 			}	
 		} catch (EccezioneMolteplicitaMinima e) {
 			log.log(Level.SEVERE, "La partita non ha giocatori giocanti!");
@@ -3883,7 +3921,7 @@ public class PdE2015_API
 				while(it.hasNext())
 					lg.addPartita(it.next());
 				
-				log.log(Level.SEVERE, "Data="+l.get(0).getDataOra().toString());
+				//log.log(Level.SEVERE, "Data="+l.get(0).getDataOra().toString());
 		}
 				
 		tearDown();
@@ -4016,7 +4054,8 @@ public class PdE2015_API
 			path = "api/isDisponibile",
 			httpMethod = HttpMethod.GET
           )
-	public DefaultBean isDisponibile(/*Named("emailUtente"String emailUtente, */@Named("idPartita")Long idPartita,
+	public DefaultBean isDisponibile(/*Named("emailUtente"String emailUtente, */
+									 @Named("idPartita")Long idPartita,
 									 @Named("idSessione")Long idSessione) {
 		setUp();
 		//Controllo esistenza Sessione
@@ -4184,6 +4223,25 @@ public class PdE2015_API
 		}
 		return sendResponse("Stato iscrizione aggiornato con succcesso!", OK);
 	}
+	/*
+	@ApiMethod(
+			name = "admin.cancellaVoti",
+			path = "admin/cancellaVOti",
+			httpMethod = HttpMethod.GET
+          )
+	public DefaultBean cancellaVoto(@Named("idPartita")Long idPartita,
+									@Named("idVoto")Long idVoto) {
+		setUp();
+		
+		Partita partita = ofy().load().type(Partita.class).id(idPartita).now();
+		
+		partita.eliminaLinkVotoPerPartita(idVoto);
+		
+		ofy().save().entity(partita).now();
+		
+		return sendResponse("Fatto", OK);
+	}
+	*/
 	
 	
 	/////////////////////////////////////////
@@ -4255,24 +4313,26 @@ public class PdE2015_API
     
     private PartitaBean sendResponsePartita(Partita p, String mex, String code) {
     	PartitaBean response = new PartitaBean();
-    	//Set partita
-    	response.setPartita(p);
-    	//Set tipo
-    	if( p.getClass().equals(PartitaCalcetto.class) ) response.setTipo(1);
-    	else if( p.getClass().equals(PartitaCalciotto.class) ) response.setTipo(2);
-    	else if( p.getClass().equals(PartitaCalcio.class) ) response.setTipo(3);
-    	//Set data
-    	String dataString = p.getDataOra().toString().substring(4);
-		String giorno, mese, anno, ora, minuti;
-		
-		giorno = dataString.substring(4, 6);
-		mese = dataString.substring(0, 3);
-		anno = dataString.substring(20);
-		ora = dataString.substring(7, 9);
-		minuti = dataString.substring(10, 12);
-		
-		dataString = ora+":"+minuti+" "+giorno+" "+mese+" "+anno;
-		response.setDataString(dataString);
+    	if(p != null) {
+	    	//Set partita
+	    	response.setPartita(p);
+	    	//Set tipo
+	    	if( p.getClass().equals(PartitaCalcetto.class) ) response.setTipo(1);
+	    	else if( p.getClass().equals(PartitaCalciotto.class) ) response.setTipo(2);
+	    	else if( p.getClass().equals(PartitaCalcio.class) ) response.setTipo(3);
+	    	//Set data
+	    	String dataString = p.getDataOra().toString().substring(4);
+			String giorno, mese, anno, ora, minuti;
+			
+			giorno = dataString.substring(4, 6);
+			mese = dataString.substring(0, 3);
+			anno = dataString.substring(20);
+			ora = dataString.substring(7, 9);
+			minuti = dataString.substring(10, 12);
+			
+			dataString = ora+":"+minuti+" "+giorno+" "+mese+" "+anno;
+			response.setDataString(dataString);
+    	}
     	
     	response.setResult(mex);
     	response.setHttpCode(code);
@@ -4345,7 +4405,6 @@ public class PdE2015_API
 							log.log(Level.SEVERE, "rimuoviPartitaGiocata: errore durante l'eliminazione"
 												 +" del voto "+voto.getId()+"!");
 							continue;
-							//TODO o return partialResult; ?
 						}
 					} catch (EccezioneMolteplicitaMinima e) {
 						log.log(Level.SEVERE, "rimuoviPartitaGiocata: il voto "+voto.getId()+
@@ -4378,7 +4437,6 @@ public class PdE2015_API
 				{
 					log.log(Level.SEVERE, "rimuoviPartitaGiocata: errore durante l'eliminazione del linkDisponibile tra "+link.getGiocatore()+"e "+link.getPartita()+"!");
 					continue;
-					//TODO o return partialResult; ?
 				}
 				
 				//Elimina linkGioca
@@ -4389,7 +4447,6 @@ public class PdE2015_API
 					{
 						log.log(Level.SEVERE, "rimuoviPartitaGiocata: errore durante l'eliminazione del linkGioca tra "+link.getGiocatore()+"e "+link.getPartita()+"!");
 						continue;
-						//TODO o return partialResult; ?
 					}
 				}
 			}
@@ -4407,7 +4464,6 @@ public class PdE2015_API
 			{
 				log.log(Level.SEVERE, "rimuoviPartitaGiocata: errore durante l'eliminazione del linkPropone "
 									 +"tra "+partita.getPropone()+"e "+idPartita+"!");
-				//TODO o return partialResult; ?
 			}
 		} catch (EccezioneMolteplicitaMinima e) {
 			log.log(Level.SEVERE, "La partita "+idPartita+"non ha memorizzato l'email di chi l'ha proposta!");
@@ -4422,7 +4478,6 @@ public class PdE2015_API
 			{
 				log.log(Level.SEVERE, "rimuoviPartitaGiocata: errore durante l'eliminazione del linkOrganizza "
 									 +"tra "+partita.getLinkOrganizza()+"e "+idPartita+"!");
-				//TODO o return partialResult; ?
 			}
 		} catch (EccezioneMolteplicitaMinima e) {
 			log.log(Level.SEVERE, "La partita "+idPartita+"non ha memorizzato "
@@ -4466,7 +4521,6 @@ public class PdE2015_API
 			
 		} catch (EccezioneMolteplicitaMinima e) {
 			log.log(Level.SEVERE, "annullaPartita: la partita "+annullaBean.getIdPartita()+" non ha un proponitore!");
-			//TODO che famo?
 			return sendResponse("Non si ha traccia del giocatore che ha proposto la partita!", INTERNAL_SERVER_ERROR);
 		}
 	*/	
@@ -4704,7 +4758,7 @@ public class PdE2015_API
 		  }
 		  catch (ParseException e)
 		  {
-			  DateFormat formatter = new SimpleDateFormat("EEE MMM dd HH:mm:ss: z yyyy");
+			  DateFormat formatter = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy");
 			  try {
 				date = (Date)formatter.parse(date.toString());
 				cal=Calendar.getInstance();

@@ -180,6 +180,9 @@ public class Campo
 		if(o == null || !o.getClass().equals(this.getClass()))
 			return false;
 		Campo c = (Campo)o;
+		return c.id.equals(this.id);
+		
+		/*
 		boolean semiResult = c.nome.equals(this.nome) && c.telefono.equals(this.telefono) && c.indirizzo.equals(this.indirizzo)
 							 && c.prezzo == this.prezzo && this.giorniChiusura.size() == c.giorniChiusura.size()
 							 && c.citta.equals(this.citta);
@@ -196,11 +199,15 @@ public class Campo
 		}
 		
 		return true;
+		*/
 	}
 	
 	public int hashCode()
 	{
+		return this.id.intValue();
+		/*
 		return this.nome.length() + this.telefono.length() + this.indirizzo.length() +
 			   this.citta.length() + this.giorniChiusura.size() + (int)this.prezzo;
+		*/
 	}
 }
